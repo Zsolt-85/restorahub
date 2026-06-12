@@ -1,0 +1,146 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
+import '../services/sync_service.dart';
+
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  final _syncService = SyncService();
+  bool _syncing = false;
+  String? _syncMessage;
+
+  Future<void> _runSync() async {
+    setState(() {
+      _syncing = true;
+      _syncMessage = null;
+    });
+
+    final result = await _syncService.syncAll();
+
+    if (!mounted) return;
+
+    setState(() {
+      _syncing = false;
+      _syncMessage = result.message;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final theme = Provider.of<ThemeProvider>(context);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: ListView(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Edit profile'),
+            subtitle: Text(auth.currentUser?.email ?? ''),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.pushNamed(context, '/profile'),
+          ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text('Theme', style: Theme.of(context).textTheme.titleSmall),
+          ),
+          _ThemeTile(
+            title: 'Teal',
+            theme: AppTheme.teal,
+            iconColor: const Color(0xFF4DB6AC),
+            selected: theme.currentTheme == AppTheme.teal,
+          ),
+          _ThemeTile(
+            title: 'Dark',
+            theme: AppTheme.dark,
+            iconColor: Colors.black87,
+            selected: theme.currentTheme == AppTheme.dark,
+          ),
+          _ThemeTile(
+            title: 'Rose',
+            theme: AppTheme.rose,
+            iconColor: const Color(0xFFE91E63),
+            selected: theme.currentTheme == AppTheme.rose,
+          ),
+          _ThemeTile(
+            title: 'Indigo',
+            theme: AppTheme.indigo,
+            iconColor: Colors.indigo,
+            selected: theme.currentTheme == AppTheme.indigo,
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined),
+            title: const Text('Sync data'),
+            subtitle: const Text('Prepare local data for future cloud sync'),
+            trailing: _syncing
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.chevron_right),
+            onTap: _syncing ? null : _runSync,
+          ),
+          if (_syncMessage != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                _syncMessage!,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: const Text('Logout'),
+            onTap: () {
+              auth.logout();
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (route) => false,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeTile extends StatelessWidget {
+  const _ThemeTile({
+    required this.title,
+    required this.theme,
+    required this.iconColor,
+    required this.selected,
+  });
+
+  final String title;
+  final AppTheme theme;
+  final Color iconColor;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(Icons.color_lens, color: iconColor),
+      title: Text(title),
+      trailing:
+          selected ? const Icon(Icons.check_circle, color: Colors.green) : null,
+      onTap: () =>
+          Provider.of<ThemeProvider>(context, listen: false).setTheme(theme),
+    );
+  }
+}
