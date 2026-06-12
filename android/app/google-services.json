@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "126531394945",
+    "project_id": "restorahub-2da2c",
+    "storage_bucket": "restorahub-2da2c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:126531394945:android:e40acb0de22fd94a2edc80",
+        "android_client_info": {
+          "package_name": "com.example.restorahub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhiso-lo4uQnhjLIvzqNOm71KefX7a3z4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
