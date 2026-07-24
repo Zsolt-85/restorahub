@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../helpers/app_exception.dart';
 import '../models/appointment.dart';
 import '../pages/edit_appointment_page.dart';
 import '../providers/appointment_provider.dart';
@@ -36,14 +37,26 @@ class AppointmentActions {
 
     if (confirmed != true || !context.mounted) return;
 
-    await Provider.of<AppointmentProvider>(context, listen: false)
-        .cancelAppointment(appointment.id!);
+    try {
+      await Provider.of<AppointmentProvider>(context, listen: false)
+          .cancelAppointment(appointment.id!);
 
-    if (!context.mounted) return;
+      if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Booking cancelled')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Booking cancelled')),
+      );
+    } on AppException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to cancel booking: ${e.message}')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to cancel booking')),
+      );
+    }
   }
 
   static Future<void> openReschedule(
@@ -58,8 +71,20 @@ class AppointmentActions {
     );
 
     if (updated == true && context.mounted) {
-      await Provider.of<AppointmentProvider>(context, listen: false)
-          .loadAppointments();
+      try {
+        await Provider.of<AppointmentProvider>(context, listen: false)
+            .loadAppointments();
+      } on AppException catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to refresh bookings: ${e.message}')),
+        );
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to refresh bookings')),
+        );
+      }
     }
   }
 }

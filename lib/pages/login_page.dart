@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/constants.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
@@ -68,7 +69,16 @@ class _LoginPageState extends State<LoginPage> {
               ),
               obscureText: true,
             ),
-            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _loading
+                    ? null
+                    : () => Navigator.pushNamed(context, '/forgot-password'),
+                child: const Text('Forgot password?'),
+              ),
+            ),
+            const SizedBox(height: 8),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -97,16 +107,15 @@ class _LoginPageState extends State<LoginPage> {
                         _error = null;
                       });
 
-                      final success = await auth.login(
+                      final result = await auth.login(
                         _emailController.text.trim(),
                         _passwordController.text.trim(),
                       );
 
-                      if (!mounted) return;
+                      if (!context.mounted) return;
 
-                      setState(() => _loading = false);
-
-                      if (success) {
+                      if (result == LoginResult.success) {
+                        setState(() => _loading = false);
                         Provider.of<AppointmentProvider>(context, listen: false)
                             .setCurrentUser(auth.currentUser!);
 
@@ -114,8 +123,14 @@ class _LoginPageState extends State<LoginPage> {
                             ? '/professional_home'
                             : '/user_home';
                         Navigator.pushReplacementNamed(context, route);
+                      } else if (result == LoginResult.needsProfile) {
+                        setState(() => _loading = false);
+                        _showProfileCompletionDialog(auth);
                       } else {
-                        setState(() => _error = 'Invalid email or password');
+                        setState(() {
+                          _loading = false;
+                          _error = 'Invalid email or password';
+                        });
                       }
                     },
               child: _loading
@@ -137,6 +152,141 @@ class _LoginPageState extends State<LoginPage> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showProfileCompletionDialog(AuthProvider auth) {
+    final nameController = TextEditingController(text: _emailController.text.split('@')[0]);
+    final phoneController = TextEditingController();
+    String role = 'customer';
+    String? specialty = serviceNames.first;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Complete your profile'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('It looks like this is your first login. Please provide details to complete registration.'),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Full name',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Phone number',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Account type', style: TextStyle(fontWeight: FontWeight.bold)),
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(
+                          value: 'customer',
+                          label: Text('Customer'),
+                        ),
+                        ButtonSegment(
+                          value: 'professional',
+                          label: Text('Professional'),
+                        ),
+                      ],
+                      selected: {role},
+                      onSelectionChanged: (selection) {
+                        setStateDialog(() {
+                          role = selection.first;
+                        });
+                      },
+                    ),
+                    if (role == 'professional') ...[
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        initialValue: specialty,
+                        decoration: const InputDecoration(
+                          labelText: 'Specialty',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: serviceNames
+                            .map((name) => DropdownMenuItem(
+                                  value: name,
+                                  child: Text(name),
+                                ))
+                            .toList(),
+                        onChanged: (val) {
+                          setStateDialog(() {
+                            specialty = val;
+                          });
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (nameController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Name is required')),
+                      );
+                      return;
+                    }
+                    if (phoneController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Phone number is required')),
+                      );
+                      return;
+                    }
+                    
+                    final success = await auth.createProfile(
+                      name: nameController.text.trim(),
+                      phone: phoneController.text.trim(),
+                      role: role,
+                      specialty: role == 'professional' ? specialty ?? '' : '',
+                    );
+                    
+                    if (success && context.mounted) {
+                      Provider.of<AppointmentProvider>(context, listen: false)
+                          .setCurrentUser(auth.currentUser!);
+                      Navigator.pop(context); // close dialog
+                      
+                      final route = auth.currentUser!.isProfessional
+                          ? '/professional_home'
+                          : '/user_home';
+                      Navigator.pushReplacementNamed(context, route);
+                    } else if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Failed to save profile')),
+                      );
+                    }
+                  },
+                  child: const Text('Save & Continue'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

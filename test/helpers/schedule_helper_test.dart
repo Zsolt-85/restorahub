@@ -52,11 +52,11 @@ void main() {
       final day = DateTime(2026, 6, 9, 10, 0);
       final appointments = [
         Appointment(
-          id: 42,
+          id: '42',
           service: 'Massage — Full Body',
           dateTime: day,
           durationMinutes: 60,
-          professionalId: 7,
+          professionalId: '7',
         ),
       ];
 
@@ -64,9 +64,9 @@ void main() {
         ScheduleHelper.isSlotAvailable(
           slotStart: day,
           slotDuration: 60,
-          professionalId: 7,
+          professionalId: '7',
           appointments: appointments,
-          excludeAppointmentId: 42,
+          excludeAppointmentId: '42',
         ),
         isTrue,
       );
@@ -76,11 +76,11 @@ void main() {
       final day = DateTime(2026, 6, 9, 10, 0);
       final appointments = [
         Appointment(
-          id: 1,
+          id: '1',
           service: 'Massage — Full Body',
           dateTime: day,
           durationMinutes: 60,
-          professionalId: 7,
+          professionalId: '7',
         ),
       ];
 
@@ -88,7 +88,7 @@ void main() {
         ScheduleHelper.isSlotAvailable(
           slotStart: day.add(const Duration(minutes: 30)),
           slotDuration: 60,
-          professionalId: 7,
+          professionalId: '7',
           appointments: appointments,
         ),
         isFalse,
@@ -98,7 +98,7 @@ void main() {
         ScheduleHelper.isSlotAvailable(
           slotStart: day.add(const Duration(hours: 2)),
           slotDuration: 60,
-          professionalId: 7,
+          professionalId: '7',
           appointments: appointments,
         ),
         isTrue,

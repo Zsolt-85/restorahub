@@ -254,7 +254,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             user.isProfessional ? _slotDurationMinutes : null,
                       );
 
-                      if (!mounted) return;
+                      if (!context.mounted) return;
 
                       setState(() => _loading = false);
 

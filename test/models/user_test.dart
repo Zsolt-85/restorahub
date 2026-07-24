@@ -6,11 +6,10 @@ void main() {
   group('User', () {
     test('role remains customer or professional via copyWith', () {
       final customer = User(
-        id: 1,
+        id: '1',
         name: 'Alex',
         email: 'alex@example.com',
         phone: '5551234567',
-        password: 'hashed',
         role: 'customer',
       );
 
@@ -24,7 +23,6 @@ void main() {
         name: 'Sam',
         email: 'sam@example.com',
         phone: '5559876543',
-        password: 'hashed',
         role: 'professional',
         specialty: 'Massage',
       );

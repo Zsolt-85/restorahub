@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../helpers/app_exception.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/schedule_helper.dart';
 import '../models/appointment.dart';
@@ -8,7 +9,6 @@ import '../models/booking_summary.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
-import '../repositories/local_booking_repository.dart';
 
 class BookingPage extends StatefulWidget {
   final String service;
@@ -39,21 +39,35 @@ class _BookingPageState extends State<BookingPage> {
   }
 
   Future<void> _loadProfessionals() async {
-    final professionals = await LocalBookingRepository.instance
-        .getProfessionalsBySpecialty(_category);
+    final repo = Provider.of<AppointmentProvider>(context, listen: false).repository;
+    try {
+      final professionals = await repo.getProfessionalsBySpecialty(_category);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _professionals = professionals;
-      _loadingProfessionals = false;
-      if (professionals.length == 1) {
-        _selectedProfessional = professionals.first;
-      } else {
-        _selectedProfessional = null;
-      }
-      _selectedTime = null;
-    });
+      setState(() {
+        _professionals = professionals;
+        _loadingProfessionals = false;
+        if (professionals.length == 1) {
+          _selectedProfessional = professionals.first;
+        } else {
+          _selectedProfessional = null;
+        }
+        _selectedTime = null;
+      });
+    } on AppException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingProfessionals = false;
+        _error = e.message;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingProfessionals = false;
+        _error = 'Failed to load professionals';
+      });
+    }
   }
 
   Future<void> _pickDate() async {
@@ -252,7 +266,7 @@ class _BookingPageState extends State<BookingPage> {
                       try {
                         await apptProvider.addAppointment(newAppt);
 
-                        if (!mounted) return;
+                        if (!context.mounted) return;
 
                         Navigator.pushNamedAndRemoveUntil(
                           context,

@@ -2,12 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/constants.dart';
-import '../helpers/password_helper.dart';
 import '../helpers/validation_helper.dart';
-import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
-import '../repositories/local_booking_repository.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -21,8 +18,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+
   String _role = 'customer';
   String? _specialty;
+
   bool _loading = false;
   String? _error;
 
@@ -35,10 +34,77 @@ class _RegistrationPageState extends State<RegistrationPage> {
     super.dispose();
   }
 
+  Future<void> _register() async {
+    final nameError = ValidationHelper.validateName(_nameController.text);
+    final emailError = ValidationHelper.validateEmail(_emailController.text);
+    final phoneError = ValidationHelper.validatePhone(_phoneController.text);
+    final passwordError =
+        ValidationHelper.validatePassword(_passwordController.text.trim());
+
+    var validationError =
+        nameError ?? emailError ?? phoneError ?? passwordError;
+
+    if (_role == 'professional' &&
+        (_specialty == null || _specialty!.isEmpty)) {
+      validationError = 'Please select your profession';
+    }
+
+    if (validationError != null) {
+      setState(() => _error = validationError);
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+
+      final success = await auth.register(
+        email: email,
+        password: password,
+        role: _role,
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        specialty: _role == 'professional' ? _specialty! : '',
+      );
+
+      if (!mounted) return;
+
+      setState(() => _loading = false);
+
+      if (!mounted) return;
+
+      if (success && auth.currentUser != null) {
+        final appointmentProvider =
+            Provider.of<AppointmentProvider>(context, listen: false);
+        appointmentProvider.setCurrentUser(auth.currentUser!);
+
+        Navigator.pushReplacementNamed(
+          context,
+          auth.currentUser!.isProfessional
+              ? '/professional_home'
+              : '/user_home',
+        );
+      } else {
+        setState(() =>
+            _error = 'Registration failed. Email may already be registered.');
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Registration failed: ${e.toString()}';
+        _loading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-
     return Scaffold(
       appBar: AppBar(title: const Text('Register')),
       body: SingleChildScrollView(
@@ -51,9 +117,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
               decoration: const InputDecoration(
                 labelText: 'Full name',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person_outline),
               ),
-              textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 12),
             TextField(
@@ -61,9 +125,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
               decoration: const InputDecoration(
                 labelText: 'Email',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email_outlined),
               ),
-              keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 12),
             TextField(
@@ -71,186 +133,62 @@ class _RegistrationPageState extends State<RegistrationPage> {
               decoration: const InputDecoration(
                 labelText: 'Phone',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.phone_outlined),
               ),
-              keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _passwordController,
+              obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Password',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock_outline),
               ),
-              obscureText: true,
             ),
             const SizedBox(height: 16),
-            Text(
-              'Account type',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: const Text('Customer'),
-                    value: 'customer',
-                    groupValue: _role,
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _role = value;
-                        _specialty = null;
-                      });
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: const Text('Professional'),
-                    value: 'professional',
-                    groupValue: _role,
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _role = value;
-                        _specialty ??= serviceNames.first;
-                      });
-                    },
-                  ),
-                ),
+            const Text('Account type'),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'customer', label: Text('Customer')),
+                ButtonSegment(value: 'professional', label: Text('Professional')),
               ],
+              selected: {_role},
+              onSelectionChanged: (selection) {
+                setState(() {
+                  _role = selection.first;
+                  _specialty =
+                      _role == 'professional' ? serviceNames.first : null;
+                });
+              },
             ),
             if (_role == 'professional') ...[
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: _specialty,
                 decoration: const InputDecoration(
-                  labelText: 'Profession / specialty',
+                  labelText: 'Specialty',
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.work_outline),
                 ),
                 items: serviceNames
-                    .map(
-                      (name) => DropdownMenuItem(
-                        value: name,
-                        child: Text(name),
-                      ),
-                    )
+                    .map((e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e),
+                        ))
                     .toList(),
-                onChanged: (value) => setState(() => _specialty = value),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'You can set working hours and slot length in your profile after registration.',
-                style: Theme.of(context).textTheme.bodySmall,
+                onChanged: (v) => setState(() => _specialty = v),
               ),
             ],
             const SizedBox(height: 12),
             if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: Colors.red),
-                ),
+              Text(
+                _error!,
+                style: const TextStyle(color: Colors.red),
               ),
+            const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: _loading
-                  ? null
-                  : () async {
-                      final nameError =
-                          ValidationHelper.validateName(_nameController.text);
-                      final emailError =
-                          ValidationHelper.validateEmail(_emailController.text);
-                      final phoneError =
-                          ValidationHelper.validatePhone(_phoneController.text);
-                      final passwordError = ValidationHelper.validatePassword(
-                        _passwordController.text.trim(),
-                      );
-
-                      var validationError = nameError ??
-                          emailError ??
-                          phoneError ??
-                          passwordError;
-
-                      if (_role == 'professional' &&
-                          (_specialty == null || _specialty!.isEmpty)) {
-                        validationError = 'Please select your profession';
-                      }
-
-                      if (validationError != null) {
-                        setState(() => _error = validationError);
-                        return;
-                      }
-
-                      setState(() {
-                        _loading = true;
-                        _error = null;
-                      });
-
-                      final plainPassword = _passwordController.text.trim();
-                      final email = _emailController.text.trim();
-                      final repository = LocalBookingRepository.instance;
-
-                      if (await repository.isEmailTaken(email)) {
-                        setState(() {
-                          _error = 'Email is already registered';
-                          _loading = false;
-                        });
-                        return;
-                      }
-
-                      final newUser = User(
-                        name: _nameController.text.trim(),
-                        email: email,
-                        phone: _phoneController.text.trim(),
-                        password: PasswordHelper.hash(plainPassword),
-                        role: _role,
-                        specialty:
-                            _role == 'professional' ? _specialty! : '',
-                      );
-
-                      try {
-                        await repository.insertUser(newUser);
-                      } catch (_) {
-                        setState(() {
-                          _error = 'Registration failed. Please try again.';
-                          _loading = false;
-                        });
-                        return;
-                      }
-
-                      final success =
-                          await auth.login(newUser.email, plainPassword);
-
-                      if (!mounted) return;
-
-                      setState(() => _loading = false);
-
-                      if (success) {
-                        Provider.of<AppointmentProvider>(context, listen: false)
-                            .setCurrentUser(auth.currentUser!);
-
-                        final route = newUser.isProfessional
-                            ? '/professional_home'
-                            : '/user_home';
-                        Navigator.pushReplacementNamed(context, route);
-                      } else {
-                        setState(() => _error = 'Auto login failed');
-                      }
-                    },
+              onPressed: _loading ? null : _register,
               child: _loading
-                  ? const SizedBox(
-                      height: 22,
-                      width: 22,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text('Register'),
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("Register"),
             ),
           ],
         ),

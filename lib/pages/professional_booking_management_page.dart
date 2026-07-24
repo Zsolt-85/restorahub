@@ -27,7 +27,6 @@ class _ProfessionalBookingManagementPageState
           Provider.of<AppointmentProvider>(context, listen: false);
       if (auth.currentUser != null) {
         apptProvider.setCurrentUser(auth.currentUser!);
-        apptProvider.loadAppointments();
       }
     });
   }
@@ -36,7 +35,6 @@ class _ProfessionalBookingManagementPageState
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final apptProvider = Provider.of<AppointmentProvider>(context);
-    final appointments = apptProvider.filteredAppointments;
     final user = auth.currentUser;
 
     if (user == null) {
@@ -60,45 +58,86 @@ class _ProfessionalBookingManagementPageState
         ],
       ),
       drawer: _ProfessionalDrawer(user: user, auth: auth),
-      body: appointments.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.event_available,
-                      size: 56,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No bookings yet',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Customer bookings assigned to you will appear here',
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+      body: _buildBody(context, apptProvider),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, AppointmentProvider apptProvider) {
+    if (apptProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (apptProvider.error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
+              const SizedBox(height: 16),
+              Text(
+                'Could not load bookings',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: appointments.length,
-              itemBuilder: (context, index) {
-                final appt = appointments[index];
-                return AppointmentCard(
-                  appointment: appt,
-                  viewerIsCustomer: false,
-                  onEdit: () => AppointmentActions.openReschedule(context, appt),
-                  onCancel: () => AppointmentActions.confirmCancel(context, appt),
-                );
-              },
-            ),
+              const SizedBox(height: 8),
+              Text(
+                apptProvider.error!,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => apptProvider.loadAppointments(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final appointments = apptProvider.filteredAppointments;
+    if (appointments.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.event_available,
+                size: 56,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No bookings yet',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Customer bookings assigned to you will appear here',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: appointments.length,
+      itemBuilder: (context, index) {
+        final appt = appointments[index];
+        return AppointmentCard(
+          appointment: appt,
+          viewerIsCustomer: false,
+          onEdit: () => AppointmentActions.openReschedule(context, appt),
+          onCancel: () => AppointmentActions.confirmCancel(context, appt),
+        );
+      },
     );
   }
 }

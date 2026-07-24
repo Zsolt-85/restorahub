@@ -1,53 +1,104 @@
 import 'package:flutter/material.dart';
 
+import '../helpers/app_exception.dart';
 import '../helpers/schedule_helper.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
 import '../repositories/booking_repository.dart';
-import '../repositories/local_booking_repository.dart';
+import '../repositories/firestore_booking_repository.dart';
 
 class AppointmentProvider extends ChangeNotifier {
   AppointmentProvider({BookingRepository? repository})
-      : _repository = repository ?? LocalBookingRepository.instance;
+      : _repository = repository ?? FirestoreBookingRepository.instance;
 
   final BookingRepository _repository;
+
+  BookingRepository get repository => _repository;
 
   List<Appointment> _appointments = [];
   User? currentUser;
 
   List<Appointment> get appointments => _appointments;
 
-  Future<void> loadAppointments() async {
-    _appointments = await _repository.getAppointments();
+  bool _isLoading = false;
+  String? _error;
+
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  void _beginLoading() {
+    _isLoading = true;
+    _error = null;
     notifyListeners();
   }
 
+  void _endLoading([String? error]) {
+    _isLoading = false;
+    _error = error;
+    notifyListeners();
+  }
+
+  Future<void> loadAppointments() async {
+    _beginLoading();
+    try {
+      _appointments = await _repository.getAppointments();
+      _endLoading();
+    } on AppException catch (e) {
+      _endLoading(e.message);
+    } catch (e) {
+      _endLoading('Unexpected error loading appointments');
+    }
+  }
+
   Future<void> addAppointment(Appointment appt) async {
-    await _repository.insertAppointment(appt);
-    await loadAppointments();
+    _beginLoading();
+    try {
+      await _repository.insertAppointment(appt);
+      _appointments = await _repository.getAppointments();
+      _endLoading();
+    } on AppException catch (e) {
+      _endLoading(e.message);
+    } catch (e) {
+      _endLoading('Unexpected error creating booking');
+    }
   }
 
   Future<void> updateAppointment(Appointment appt) async {
-    await _repository.updateAppointment(appt);
-    await loadAppointments();
+    _beginLoading();
+    try {
+      await _repository.updateAppointment(appt);
+      _appointments = await _repository.getAppointments();
+      _endLoading();
+    } on AppException catch (e) {
+      _endLoading(e.message);
+    } catch (e) {
+      _endLoading('Unexpected error updating booking');
+    }
   }
 
-  Future<void> deleteAppointment(int id) async {
-    await _repository.deleteAppointment(id);
-    await loadAppointments();
+  Future<void> deleteAppointment(String id) async {
+    _beginLoading();
+    try {
+      await _repository.deleteAppointment(id);
+      _appointments = await _repository.getAppointments();
+      _endLoading();
+    } on AppException catch (e) {
+      _endLoading(e.message);
+    } catch (e) {
+      _endLoading('Unexpected error cancelling booking');
+    }
   }
 
   void setCurrentUser(User user) {
     currentUser = user;
     loadAppointments();
-    notifyListeners();
   }
 
   bool isSlotAvailable({
     required DateTime slotStart,
     required int slotDuration,
-    required int professionalId,
-    int? excludeAppointmentId,
+    required String professionalId,
+    String? excludeAppointmentId,
   }) {
     return ScheduleHelper.isSlotAvailable(
       slotStart: slotStart,
@@ -58,9 +109,8 @@ class AppointmentProvider extends ChangeNotifier {
     );
   }
 
-  Future<String?> cancelAppointment(int id) async {
-    await _repository.deleteAppointment(id);
-    await loadAppointments();
+  Future<String?> cancelAppointment(String id) async {
+    await deleteAppointment(id);
     return null;
   }
 
@@ -84,8 +134,7 @@ class AppointmentProvider extends ChangeNotifier {
     }
 
     final updated = appointment.copyWith(dateTime: newDateTime);
-    await _repository.updateAppointment(updated);
-    await loadAppointments();
+    await updateAppointment(updated);
     return null;
   }
 

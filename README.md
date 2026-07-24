@@ -8,22 +8,23 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 - **Professional accounts** — choose a profession at registration, set working hours and slot length in profile
 - **Role locking** — account type (customer vs professional) is fixed after registration
 - **Profile editing** — update name, email, phone, password; professionals also edit specialty and schedule
-- **Local-first storage** — SQLite on device with a repository layer ready for future API sync
-- **Session persistence** — stay logged in across restarts; theme preference is saved
+- **Password recovery** — reset password via Firebase email link
+- **Theme selection** — teal, dark, rose, or indigo; preference is saved locally
 
 ## Tech stack
 
 - Flutter / Dart
 - Provider (state management)
-- SQLite (`sqflite` + `sqflite_common_ffi` for desktop)
-- `shared_preferences` for session and theme
+- Firebase Auth (authentication)
+- Cloud Firestore (users and appointments)
+- `shared_preferences` for theme preference
 - `intl` for date formatting
 
 ## Getting started
 
 ```bash
 flutter pub get
-flutter run -d windows   # or android, ios, chrome
+flutter run -d windows   # or android, web
 ```
 
 ### Run tests
@@ -39,9 +40,7 @@ flutter test
 1. Open **Register** → choose **Professional**
 2. Select a **profession** (Massage, Haircut, Spa, Facial, Manicure)
 3. Complete personal details and register
-4. Open **Settings → Edit profile** to set:
-   - Work day start / end
-   - Appointment slot length (15–120 minutes)
+4. Open **Settings → Edit profile** to set work hours and slot length
 
 ### Register as a customer
 
@@ -59,13 +58,13 @@ flutter test
 
 ```
 lib/
-  constants/       # Service catalog, colors, slot options
-  helpers/         # Database, validation, scheduling, formatting
+  constants/       # Service catalog and scheduling options
+  helpers/         # Validation, scheduling, formatting, theme prefs
   models/          # User, Appointment, BookingSummary
   pages/           # UI screens
-  providers/       # Auth and appointment state
-  repositories/    # Local data access (swap for remote later)
-  services/        # SyncService stub for future API integration
+  providers/       # Auth, appointments, and theme state
+  repositories/    # Firestore data access
+  widgets/         # Shared UI components
 test/              # Unit tests
 ```
 
@@ -78,10 +77,4 @@ test/              # Unit tests
 | `workStartTime` / `workEndTime` | defaults | editable in profile |
 | `slotDurationMinutes` | defaults | editable in profile |
 
-## Future backend sync
-
-`lib/services/sync_service.dart` exposes `pullRemoteChanges()` and `pushPendingChanges()`. Wire these to your REST API when ready; the UI **Sync data** action in Settings already calls the service.
-
-## License
-
-Private project — not published to pub.dev.
+Credentials are stored in **Firebase Auth**. Profile and booking data live in **Firestore** (`users` and `appointments` collections).

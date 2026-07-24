@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'repositories/firestore_booking_repository.dart';
 
-import 'helpers/database_helper.dart';
 import 'models/user.dart';
 import 'providers/appointment_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
 
+import 'pages/forgot_password_page.dart';
 import 'pages/login_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/professional_booking_management_page.dart';
@@ -19,17 +21,21 @@ import 'pages/user_home_page.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-  await DatabaseHelper.instance.database;
-
-  final authProvider = AuthProvider();
-  final appointmentProvider = AppointmentProvider();
+  final firestoreRepo = FirestoreBookingRepository.instance;
+  final authProvider = AuthProvider(repository: firestoreRepo);
+  final appointmentProvider = AppointmentProvider(repository: firestoreRepo);
   final themeProvider = ThemeProvider();
 
   await themeProvider.loadTheme();
   await appointmentProvider.loadAppointments();
+
+  if (appointmentProvider.error != null) {
+    debugPrint('Warning: initial appointments load failed: ${appointmentProvider.error}');
+  }
 
   final hasSession = await authProvider.restoreSession();
   if (hasSession && authProvider.currentUser != null) {
@@ -87,6 +93,7 @@ class MyApp extends StatelessWidget {
             routes: {
               '/login': (_) => const LoginPage(),
               '/register': (_) => const RegistrationPage(),
+              '/forgot-password': (_) => const ForgotPasswordPage(),
               '/user_home': (_) => const UserHomePage(),
               '/professional_home': (_) =>
                   const ProfessionalBookingManagementPage(),

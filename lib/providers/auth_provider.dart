@@ -1,60 +1,159 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 
-import '../helpers/password_helper.dart';
 import '../helpers/schedule_helper.dart';
-import '../helpers/session_helper.dart';
 import '../helpers/validation_helper.dart';
 import '../models/user.dart';
 import '../repositories/booking_repository.dart';
-import '../repositories/local_booking_repository.dart';
+import '../repositories/firestore_booking_repository.dart';
+
+enum LoginResult {
+  success,
+  needsProfile,
+  invalidCredentials,
+}
 
 class AuthProvider extends ChangeNotifier {
   AuthProvider({BookingRepository? repository})
-      : _repository = repository ?? LocalBookingRepository.instance;
+      : _repository = repository ?? FirestoreBookingRepository.instance;
 
   final BookingRepository _repository;
 
   User? currentUser;
 
-  Future<bool> restoreSession() async {
-    final userId = await SessionHelper.getUserId();
-    if (userId == null) return false;
+  fb.FirebaseAuth get _auth => fb.FirebaseAuth.instance;
 
-    final user = await _repository.getUserById(userId);
-    if (user == null) {
-      await SessionHelper.clearUserId();
-      return false;
+  Future<LoginResult> login(String email, String password) async {
+    try {
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+
+      final user = await _repository.getUserById(cred.user!.uid);
+      if (user == null) {
+        return LoginResult.needsProfile;
+      }
+
+      currentUser = user;
+      notifyListeners();
+
+      return LoginResult.success;
+    } catch (e, stack) {
+      debugPrint('Login error: $e\n$stack');
+      return LoginResult.invalidCredentials;
     }
-
-    currentUser = user;
-    notifyListeners();
-    return true;
   }
 
-  Future<bool> login(String email, String password) async {
-    final user = await _repository.getUserByEmail(email);
-    if (user == null) return false;
-    if (!PasswordHelper.verify(password, user.password)) return false;
+  Future<bool> createProfile({
+    required String name,
+    required String phone,
+    required String role,
+    required String specialty,
+  }) async {
+    try {
+      final fbUser = _auth.currentUser;
+      if (fbUser == null) return false;
 
-    if (!PasswordHelper.isHashed(user.password)) {
-      final upgraded = user.copyWith(
-        password: PasswordHelper.hash(password),
+      final newUser = User(
+        id: fbUser.uid,
+        name: name.trim(),
+        email: fbUser.email!,
+        phone: phone.trim(),
+        role: role,
+        specialty: role == 'professional' ? specialty.trim() : '',
       );
-      await _repository.updateUser(upgraded);
-      currentUser = upgraded;
-    } else {
-      currentUser = user;
-    }
 
-    await SessionHelper.saveUserId(currentUser!.id!);
-    notifyListeners();
-    return true;
+      final insertResult = await _repository.insertUser(newUser);
+      if (insertResult <= 0) return false;
+
+      currentUser = newUser;
+      notifyListeners();
+      return true;
+    } catch (e, stack) {
+      debugPrint('Create profile error: $e\n$stack');
+      return false;
+    }
+  }
+
+  Future<bool> register({
+    required String email,
+    required String password,
+    required String role,
+    required String name,
+    required String phone,
+    required String specialty,
+  }) async {
+    try {
+      if (await _repository.isEmailTaken(email.trim())) {
+        return false;
+      }
+
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+
+      final newUser = User(
+        id: cred.user!.uid,
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        role: role,
+        specialty: specialty,
+      );
+
+      final insertResult = await _repository.insertUser(newUser);
+      if (insertResult <= 0) {
+        await cred.user?.delete();
+        return false;
+      }
+
+      currentUser = newUser;
+      notifyListeners();
+
+      return true;
+    } catch (e, stack) {
+      debugPrint('Registration error: $e\n$stack');
+      return false;
+    }
   }
 
   Future<void> logout() async {
-    await SessionHelper.clearUserId();
+    await _auth.signOut();
+
     currentUser = null;
     notifyListeners();
+  }
+
+  Future<bool> restoreSession() async {
+    try {
+      final fbUser = _auth.currentUser;
+      if (fbUser == null) return false;
+
+      final user = await _repository.getUserById(fbUser.uid);
+      if (user == null) return false;
+
+      currentUser = user;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<String?> sendPasswordResetEmail(String email) async {
+    final emailError = ValidationHelper.validateEmail(email);
+    if (emailError != null) return emailError;
+
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      return null;
+    } on fb.FirebaseAuthException catch (e) {
+      return e.message ?? 'Failed to send reset email';
+    } catch (_) {
+      return 'Failed to send reset email';
+    }
   }
 
   Future<String?> updateProfile({
@@ -70,6 +169,9 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     final user = currentUser;
     if (user == null) return 'User not logged in';
+
+    final fbUser = _auth.currentUser;
+    if (fbUser == null) return 'User not logged in';
 
     final nameError = ValidationHelper.validateName(name);
     if (nameError != null) return nameError;
@@ -93,6 +195,7 @@ class AuthProvider extends ChangeNotifier {
       if (specialty == null || specialty.trim().isEmpty) {
         return 'Profession is required';
       }
+
       if (workStart == null || workEnd == null || slotDurationMinutes == null) {
         return 'Working hours and slot length are required';
       }
@@ -102,10 +205,12 @@ class AuthProvider extends ChangeNotifier {
         workEnd: workEnd,
         slotDurationMinutes: slotDurationMinutes,
       );
+
       if (scheduleError != null) return scheduleError;
     }
 
     final trimmedEmail = email.trim();
+
     if (await _repository.isEmailTaken(
       trimmedEmail,
       excludeUserId: user.id,
@@ -113,13 +218,29 @@ class AuthProvider extends ChangeNotifier {
       return 'Email is already in use';
     }
 
+    if (wantsPasswordChange) {
+      try {
+        await fbUser.updatePassword(newPassword.trim());
+      } on fb.FirebaseAuthException catch (e) {
+        if (e.code == 'requires-recent-login') {
+          return 'Please sign out and sign in again before changing your password';
+        }
+        return e.message ?? 'Failed to update password';
+      }
+    }
+
+    if (trimmedEmail != user.email) {
+      try {
+        await fbUser.verifyBeforeUpdateEmail(trimmedEmail);
+      } on fb.FirebaseAuthException catch (e) {
+        return e.message ?? 'Failed to update email';
+      }
+    }
+
     final updatedUser = user.copyWith(
       name: name.trim(),
       email: trimmedEmail,
       phone: phone.trim(),
-      password: wantsPasswordChange
-          ? PasswordHelper.hash(newPassword.trim())
-          : user.password,
       role: user.role,
       specialty: user.isProfessional ? specialty!.trim() : user.specialty,
       workStartTime: user.isProfessional
@@ -127,9 +248,8 @@ class AuthProvider extends ChangeNotifier {
           : user.workStartTime,
       workEndTime:
           user.isProfessional ? User.formatTime(workEnd!) : user.workEndTime,
-      slotDurationMinutes: user.isProfessional
-          ? slotDurationMinutes!
-          : user.slotDurationMinutes,
+      slotDurationMinutes:
+          user.isProfessional ? slotDurationMinutes! : user.slotDurationMinutes,
     );
 
     final result = await _repository.updateUser(updatedUser);
@@ -138,13 +258,8 @@ class AuthProvider extends ChangeNotifier {
     await _repository.syncUserInAppointments(updatedUser);
 
     currentUser = updatedUser;
-    await SessionHelper.saveUserId(updatedUser.id!);
     notifyListeners();
-    return null;
-  }
 
-  void setCurrentUser(User user) {
-    currentUser = user;
-    notifyListeners();
+    return null;
   }
 }

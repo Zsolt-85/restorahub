@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../helpers/session_helper.dart';
+import '../helpers/theme_preferences.dart';
 
 enum AppTheme { teal, dark, rose, indigo }
 
@@ -10,7 +10,7 @@ class ThemeProvider extends ChangeNotifier {
   AppTheme get currentTheme => _currentTheme;
 
   Future<void> loadTheme() async {
-    final savedTheme = await SessionHelper.getTheme();
+    final savedTheme = await ThemePreferences.getTheme();
     if (savedTheme == null) return;
 
     _currentTheme = AppTheme.values.firstWhere(
@@ -92,7 +92,7 @@ class ThemeProvider extends ChangeNotifier {
 
   void setTheme(AppTheme theme) {
     _currentTheme = theme;
-    SessionHelper.saveTheme(theme.name);
+    ThemePreferences.saveTheme(theme.name);
     notifyListeners();
   }
 }

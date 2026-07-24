@@ -50,9 +50,9 @@ class ScheduleHelper {
   static bool isSlotAvailable({
     required DateTime slotStart,
     required int slotDuration,
-    required int professionalId,
+    required String professionalId,
     required List<Appointment> appointments,
-    int? excludeAppointmentId,
+    String? excludeAppointmentId,
   }) {
     for (final appointment in appointments) {
       if (appointment.id == excludeAppointmentId) continue;

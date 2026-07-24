@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
-import '../services/sync_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -13,25 +12,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final _syncService = SyncService();
-  bool _syncing = false;
-  String? _syncMessage;
 
-  Future<void> _runSync() async {
-    setState(() {
-      _syncing = true;
-      _syncMessage = null;
-    });
-
-    final result = await _syncService.syncAll();
-
-    if (!mounted) return;
-
-    setState(() {
-      _syncing = false;
-      _syncMessage = result.message;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,28 +59,7 @@ class _SettingsPageState extends State<SettingsPage> {
             iconColor: Colors.indigo,
             selected: theme.currentTheme == AppTheme.indigo,
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.cloud_sync_outlined),
-            title: const Text('Sync data'),
-            subtitle: const Text('Prepare local data for future cloud sync'),
-            trailing: _syncing
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.chevron_right),
-            onTap: _syncing ? null : _runSync,
-          ),
-          if (_syncMessage != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                _syncMessage!,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
+
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout),

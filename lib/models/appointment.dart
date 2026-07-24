@@ -1,15 +1,15 @@
 class Appointment {
-  int? id;
+  String? id;
   String service;
   DateTime dateTime;
   int durationMinutes;
 
-  int? customerId;
+  String? customerId;
   String? customerName;
   String? customerPhone;
   String? customerEmail;
 
-  int? professionalId;
+  String? professionalId;
   String? professionalName;
   String? professionalPhone;
   String? professionalEmail;
@@ -51,16 +51,26 @@ class Appointment {
   }
 
   factory Appointment.fromMap(Map<String, dynamic> map) {
+    final rawService = map['service'] as String;
+    final type = map['type'] as String?;
+    final service = (type != null &&
+            type.isNotEmpty &&
+            type != 'Default' &&
+            type != 'Standard' &&
+            !rawService.contains('—'))
+        ? '$rawService — $type'
+        : rawService;
+
     return Appointment(
-      id: map['id'] as int?,
-      service: map['service'] as String,
+      id: map['id']?.toString(),
+      service: service,
       dateTime: DateTime.parse(map['dateTime'] as String),
       durationMinutes: map['durationMinutes'] as int? ?? 60,
-      customerId: map['customerId'] as int?,
+      customerId: map['customerId']?.toString(),
       customerName: map['customerName'] as String?,
       customerPhone: map['customerPhone'] as String?,
       customerEmail: map['customerEmail'] as String?,
-      professionalId: map['professionalId'] as int?,
+      professionalId: map['professionalId']?.toString(),
       professionalName: map['professionalName'] as String?,
       professionalPhone: map['professionalPhone'] as String?,
       professionalEmail: map['professionalEmail'] as String?,
@@ -68,15 +78,15 @@ class Appointment {
   }
 
   Appointment copyWith({
-    int? id,
+    String? id,
     String? service,
     DateTime? dateTime,
     int? durationMinutes,
-    int? customerId,
+    String? customerId,
     String? customerName,
     String? customerPhone,
     String? customerEmail,
-    int? professionalId,
+    String? professionalId,
     String? professionalName,
     String? professionalPhone,
     String? professionalEmail,

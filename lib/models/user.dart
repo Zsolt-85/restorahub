@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
 class User {
-  final int? id;
+  final String? id;
   final String name;
   final String email;
   final String phone;
-  final String password;
   final String role;
   final String specialty;
   final String workStartTime;
@@ -17,7 +16,6 @@ class User {
     required this.name,
     required this.email,
     required this.phone,
-    required this.password,
     required this.role,
     this.specialty = '',
     this.workStartTime = '09:00',
@@ -35,15 +33,14 @@ class User {
 
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
-      id: map['id'] as int?,
-      name: map['name'] as String,
-      email: map['email'] as String,
-      phone: map['phone'] as String? ?? '',
-      password: map['password'] as String,
-      role: map['role'] as String,
-      specialty: map['specialty'] as String? ?? '',
-      workStartTime: map['workStartTime'] as String? ?? '09:00',
-      workEndTime: map['workEndTime'] as String? ?? '17:00',
+      id: map['id']?.toString(),
+      name: map['name']?.toString() ?? '',
+      email: map['email']?.toString() ?? '',
+      phone: map['phone']?.toString() ?? '',
+      role: map['role']?.toString() ?? 'customer',
+      specialty: map['specialty']?.toString() ?? '',
+      workStartTime: map['workStartTime']?.toString() ?? '09:00',
+      workEndTime: map['workEndTime']?.toString() ?? '17:00',
       slotDurationMinutes: map['slotDurationMinutes'] as int? ?? 60,
     );
   }
@@ -54,7 +51,6 @@ class User {
       'name': name,
       'email': email,
       'phone': phone,
-      'password': password,
       'role': role,
       'specialty': specialty,
       'workStartTime': workStartTime,
@@ -64,11 +60,10 @@ class User {
   }
 
   User copyWith({
-    int? id,
+    String? id,
     String? name,
     String? email,
     String? phone,
-    String? password,
     String? role,
     String? specialty,
     String? workStartTime,
@@ -80,7 +75,6 @@ class User {
       name: name ?? this.name,
       email: email ?? this.email,
       phone: phone ?? this.phone,
-      password: password ?? this.password,
       role: role ?? this.role,
       specialty: specialty ?? this.specialty,
       workStartTime: workStartTime ?? this.workStartTime,
