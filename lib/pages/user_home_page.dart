@@ -162,7 +162,7 @@ class _UserHomePageState extends State<UserHomePage> {
         return AppointmentCard(
           appointment: appt,
           viewerIsCustomer: isCustomer,
-          onEdit: () => AppointmentActions.openReschedule(context, appt),
+          onEdit: () => AppointmentActions.confirmReschedule(context, appt),
           onCancel: () => AppointmentActions.confirmCancel(context, appt),
         );
       },
@@ -194,25 +194,49 @@ class _AppDrawer extends StatelessWidget {
               ),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Edit profile'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/profile');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings_outlined),
-            title: const Text('Settings'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              );
-            },
-          ),
+ListTile(
+              leading: const Icon(Icons.notifications_outlined),
+              title: const Text('Notifications'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/notifications');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bar_chart_outlined),
+              title: const Text('Analytics'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/analytics');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('Edit profile'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/profile');
+              },
+            ),
+ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Past appointments'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/past_appointments');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                );
+              },
+            ),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),

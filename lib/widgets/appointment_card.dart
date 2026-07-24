@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../helpers/format_helper.dart';
+import '../helpers/appointment_actions.dart';
 import '../models/appointment.dart';
 
 class AppointmentCard extends StatelessWidget {
@@ -30,6 +31,10 @@ class AppointmentCard extends StatelessWidget {
         : appointment.customerEmail;
     final counterpartyLabel =
         viewerIsCustomer ? 'Professional' : 'Customer';
+    final statusColor = _statusColor(appointment.status);
+    final canManage = viewerIsCustomer == false &&
+        appointment.status != AppointmentStatus.completed &&
+        appointment.status != AppointmentStatus.cancelled;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -61,6 +66,15 @@ class AppointmentCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(FormatHelper.formatDateTime(appointment.dateTime)),
                       Text('Duration: ${appointment.durationMinutes} min'),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${appointment.status.name.toUpperCase()}',
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -90,24 +104,45 @@ class AppointmentCard extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: appointment.isPast ? null : onEdit,
-                    icon: const Icon(Icons.edit_calendar),
-                    label: const Text('Reschedule'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onCancel,
-                    icon: const Icon(Icons.cancel_outlined, color: Colors.red),
-                    label: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.red),
+                if (canManage) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: appointment.isPast ? null : onEdit,
+                      icon: const Icon(Icons.edit_calendar),
+                      label: const Text('Reschedule'),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                ],
+                if (canManage) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onCancel,
+                      icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+                      label: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ),
+                ],
+                if (appointment.status == AppointmentStatus.pending && viewerIsCustomer) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => AppointmentActions.confirmStatusChange(
+                        context,
+                        appointment,
+                        AppointmentStatus.cancelled,
+                      ),
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      label: const Text(
+                        'Remove',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
@@ -119,6 +154,19 @@ class AppointmentCard extends StatelessWidget {
   String _displayValue(String? value) {
     if (value == null || value.trim().isEmpty) return 'N/A';
     return value;
+  }
+}
+
+Color _statusColor(AppointmentStatus status) {
+  switch (status) {
+    case AppointmentStatus.pending:
+      return Colors.orange;
+    case AppointmentStatus.confirmed:
+      return Colors.green;
+    case AppointmentStatus.completed:
+      return Colors.blue;
+    case AppointmentStatus.cancelled:
+      return Colors.red;
   }
 }
 

@@ -13,4 +13,7 @@ abstract class BookingRepository {
   Future<int> insertAppointment(Appointment appointment);
   Future<int> updateAppointment(Appointment appointment);
   Future<int> deleteAppointment(String id);
+
+  Future<List<Appointment>> getAppointmentsByStatus(AppointmentStatus status);
+  Future<List<Appointment>> getPastAppointments();
 }

@@ -1,8 +1,11 @@
+enum AppointmentStatus { pending, confirmed, completed, cancelled }
+
 class Appointment {
   String? id;
   String service;
   DateTime dateTime;
   int durationMinutes;
+  AppointmentStatus status;
 
   String? customerId;
   String? customerName;
@@ -19,6 +22,7 @@ class Appointment {
     required this.service,
     required this.dateTime,
     this.durationMinutes = 60,
+    this.status = AppointmentStatus.pending,
     this.customerId,
     this.customerName,
     this.customerPhone,
@@ -39,6 +43,7 @@ class Appointment {
       'service': service,
       'dateTime': dateTime.toIso8601String(),
       'durationMinutes': durationMinutes,
+      'status': status.name,
       'customerId': customerId,
       'customerName': customerName,
       'customerPhone': customerPhone,
@@ -61,11 +66,20 @@ class Appointment {
         ? '$rawService — $type'
         : rawService;
 
+    final statusRaw = map['status'] as String?;
+    final status = statusRaw != null
+        ? AppointmentStatus.values.firstWhere(
+            (s) => s.name == statusRaw,
+            orElse: () => AppointmentStatus.pending,
+          )
+        : AppointmentStatus.pending;
+
     return Appointment(
       id: map['id']?.toString(),
       service: service,
       dateTime: DateTime.parse(map['dateTime'] as String),
       durationMinutes: map['durationMinutes'] as int? ?? 60,
+      status: status,
       customerId: map['customerId']?.toString(),
       customerName: map['customerName'] as String?,
       customerPhone: map['customerPhone'] as String?,
@@ -82,6 +96,7 @@ class Appointment {
     String? service,
     DateTime? dateTime,
     int? durationMinutes,
+    AppointmentStatus? status,
     String? customerId,
     String? customerName,
     String? customerPhone,
@@ -96,6 +111,7 @@ class Appointment {
       service: service ?? this.service,
       dateTime: dateTime ?? this.dateTime,
       durationMinutes: durationMinutes ?? this.durationMinutes,
+      status: status ?? this.status,
       customerId: customerId ?? this.customerId,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,

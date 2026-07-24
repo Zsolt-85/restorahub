@@ -59,7 +59,7 @@ class AppointmentActions {
     }
   }
 
-  static Future<void> openReschedule(
+  static Future<void> confirmReschedule(
     BuildContext context,
     Appointment appointment,
   ) async {
@@ -85,6 +85,81 @@ class AppointmentActions {
           const SnackBar(content: Text('Failed to refresh bookings')),
         );
       }
+    }
+  }
+
+  static Future<void> confirmStatusChange(
+    BuildContext context,
+    Appointment appointment,
+    AppointmentStatus newStatus,
+  ) async {
+    final String actionLabel;
+    final String confirmMessage;
+
+    switch (newStatus) {
+      case AppointmentStatus.confirmed:
+        actionLabel = 'Confirm booking';
+        confirmMessage = 'Confirm this booking?';
+        break;
+      case AppointmentStatus.completed:
+        actionLabel = 'Mark as completed';
+        confirmMessage = 'Mark this appointment as completed?';
+        break;
+      case AppointmentStatus.cancelled:
+        actionLabel = 'Cancel booking';
+        confirmMessage = 'Cancel this booking?';
+        break;
+      default:
+        return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(actionLabel),
+        content: Text(confirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep as is'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              actionLabel,
+              style: TextStyle(
+                color: newStatus == AppointmentStatus.cancelled
+                    ? Colors.red
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await Provider.of<AppointmentProvider>(context, listen: false)
+          .updateAppointmentStatus(appointment.id!, newStatus);
+
+      if (!context.mounted) return;
+
+      final label = newStatus.name.toUpperCase();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Booking $label')),
+      );
+    } on AppException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update booking: ${e.message}')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update booking')),
+      );
     }
   }
 }

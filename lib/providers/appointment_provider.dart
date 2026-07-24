@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../helpers/app_exception.dart';
+import '../helpers/notification_schedule_helper.dart';
 import '../helpers/schedule_helper.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
@@ -89,6 +90,109 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateAppointmentStatus(
+    String id,
+    AppointmentStatus newStatus,
+  ) async {
+    _beginLoading();
+    try {
+      final appt = _appointments.firstWhere((a) => a.id == id);
+      final updated = appt.copyWith(status: newStatus);
+      await _repository.updateAppointment(updated);
+      _appointments = await _repository.getAppointments();
+      _endLoading();
+    } on AppException catch (e) {
+      _endLoading(e.message);
+    } catch (e) {
+      _endLoading('Unexpected error updating appointment status');
+    }
+  }
+
+  List<Appointment> get pendingAppointments {
+    return _appointments
+        .where((a) => a.status == AppointmentStatus.pending)
+        .toList();
+  }
+
+  List<Appointment> get confirmedAppointments {
+    return _appointments
+        .where((a) => a.status == AppointmentStatus.confirmed)
+        .toList();
+  }
+
+  List<Appointment> get completedAppointments {
+    return _appointments
+        .where((a) => a.status == AppointmentStatus.completed)
+        .toList();
+  }
+
+  List<Appointment> get cancelledAppointments {
+    return _appointments
+        .where((a) => a.status == AppointmentStatus.cancelled)
+        .toList();
+  }
+
+  List<Appointment> get pastAppointments {
+    final now = DateTime.now();
+    return _appointments
+        .where(
+          (a) =>
+              a.dateTime.isBefore(now) &&
+              a.status != AppointmentStatus.pending &&
+              a.status != AppointmentStatus.confirmed,
+        )
+        .toList();
+  }
+
+  List<Appointment> get currentAppointments {
+    final now = DateTime.now();
+    return _appointments
+        .where(
+          (a) =>
+              a.dateTime.isAfter(now) &&
+              a.status != AppointmentStatus.cancelled,
+        )
+        .toList();
+  }
+
+  double getMonthlyRevenue(int year, int month) {
+    final start = DateTime(year, month, 1);
+    final end = DateTime(year, month + 1, 1);
+    final relevant = _appointments
+        .where(
+          (a) =>
+              a.dateTime.isAfter(start) &&
+              a.dateTime.isBefore(end) &&
+              a.status == AppointmentStatus.completed,
+        )
+        .toList();
+    return relevant.length * 50.0;
+  }
+
+  int getAppointmentCountForMonth(int year, int month) {
+    final start = DateTime(year, month, 1);
+    final end = DateTime(year, month + 1, 1);
+    return _appointments
+        .where(
+          (a) =>
+              a.dateTime.isAfter(start) &&
+              a.dateTime.isBefore(end),
+        )
+        .length;
+  }
+
+  int getYearToDateAppointmentCount(int year) {
+    final start = DateTime(year);
+    final now = DateTime.now();
+    return _appointments
+        .where(
+          (a) =>
+              a.dateTime.isAfter(start) &&
+              a.dateTime.isBefore(now.add(const Duration(days: 1))),
+        )
+        .length;
+  }
+
   void setCurrentUser(User user) {
     currentUser = user;
     loadAppointments();
@@ -154,5 +258,25 @@ class AppointmentProvider extends ChangeNotifier {
     }
 
     return _appointments;
+  }
+
+  Future<void> scheduleUpcomingReminders() async {
+    final now = DateTime.now();
+    for (final appt in _appointments) {
+      if (appt.status == AppointmentStatus.cancelled) continue;
+      final reminderTime = appt.dateTime.subtract(const Duration(hours: 1));
+      if (reminderTime.isAfter(now) && reminderTime.isBefore(appt.dateTime)) {
+        try {
+          await NotificationScheduleHelper.scheduleUpcomingReminder(
+            appointmentId: appt.id ?? '',
+            title: 'Appointment reminder',
+            body: '${appt.service} with ${appt.professionalName ?? "a professional"} is in 1 hour',
+            scheduledTime: reminderTime,
+          );
+        } catch (e) {
+          debugPrint('Failed to schedule reminder: $e');
+        }
+      }
+    }
   }
 }

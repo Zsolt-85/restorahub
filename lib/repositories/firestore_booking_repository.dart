@@ -201,4 +201,48 @@ class FirestoreBookingRepository implements BookingRepository {
       throw AppException('Failed to cancel booking', cause: e);
     }
   }
+
+  @override
+  Future<List<Appointment>> getAppointmentsByStatus(AppointmentStatus status) async {
+    try {
+      final query = await _appointmentsCol
+          .where('status', isEqualTo: status.name)
+          .get();
+      final appointments = <Appointment>[];
+      for (final doc in query.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        appointments.add(Appointment.fromMap(data));
+      }
+      appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      return appointments;
+    } catch (e, stack) {
+      debugPrint('FirestoreBookingRepository.getAppointmentsByStatus error: $e\n$stack');
+      throw AppException('Failed to load appointments', cause: e);
+    }
+  }
+
+  @override
+  Future<List<Appointment>> getPastAppointments() async {
+    try {
+      final now = DateTime.now();
+      final query = await _appointmentsCol
+          .where('dateTime', isLessThan: now.toIso8601String())
+          .get();
+      final appointments = <Appointment>[];
+      for (final doc in query.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        final appt = Appointment.fromMap(data);
+        if (appt.status == AppointmentStatus.completed || appt.status == AppointmentStatus.cancelled) {
+          appointments.add(appt);
+        }
+      }
+      appointments.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      return appointments;
+    } catch (e, stack) {
+      debugPrint('FirestoreBookingRepository.getPastAppointments error: $e\n$stack');
+      throw AppException('Failed to load past appointments', cause: e);
+    }
+  }
 }

@@ -7,10 +7,14 @@ import 'repositories/firestore_booking_repository.dart';
 import 'models/user.dart';
 import 'providers/appointment_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/notification_provider.dart';
 import 'providers/theme_provider.dart';
 
+import 'pages/analytics_page.dart';
 import 'pages/forgot_password_page.dart';
 import 'pages/login_page.dart';
+import 'pages/notifications_page.dart';
+import 'pages/past_appointments_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/professional_booking_management_page.dart';
 import 'pages/registration_page.dart';
@@ -42,13 +46,16 @@ Future<void> main() async {
     appointmentProvider.setCurrentUser(authProvider.currentUser!);
   }
 
-  final initialRoute = _resolveInitialRoute(authProvider.currentUser);
+final initialRoute = _resolveInitialRoute(authProvider.currentUser);
+
+  final notificationProvider = NotificationProvider();
 
   runApp(
     MyApp(
       authProvider: authProvider,
       appointmentProvider: appointmentProvider,
       themeProvider: themeProvider,
+      notificationProvider: notificationProvider,
       initialRoute: initialRoute,
     ),
   );
@@ -65,12 +72,14 @@ class MyApp extends StatelessWidget {
     required this.authProvider,
     required this.appointmentProvider,
     required this.themeProvider,
+    required this.notificationProvider,
     required this.initialRoute,
   });
 
   final AuthProvider authProvider;
   final AppointmentProvider appointmentProvider;
   final ThemeProvider themeProvider;
+  final NotificationProvider notificationProvider;
   final String initialRoute;
 
   @override
@@ -82,6 +91,9 @@ class MyApp extends StatelessWidget {
           value: appointmentProvider,
         ),
         ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
+        ChangeNotifierProvider<NotificationProvider>.value(
+          value: notificationProvider,
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, _) {
@@ -103,6 +115,9 @@ class MyApp extends StatelessWidget {
                 return SuccessPage(summary: summary);
               },
               '/profile': (_) => const ProfilePage(),
+              '/notifications': (_) => const NotificationsPage(),
+              '/analytics': (_) => const AnalyticsPage(),
+              '/past_appointments': (_) => const PastAppointmentsPage(),
             },
           );
         },
