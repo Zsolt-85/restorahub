@@ -68,7 +68,7 @@ class AppointmentCard extends StatelessWidget {
                       Text('Duration: ${appointment.durationMinutes} min'),
                       const SizedBox(height: 4),
                       Text(
-                        '${appointment.status.name.toUpperCase()}',
+                        appointment.status.name.toUpperCase(),
                         style: TextStyle(
                           color: statusColor,
                           fontWeight: FontWeight.w600,

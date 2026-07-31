@@ -6,6 +6,7 @@ class Appointment {
   DateTime dateTime;
   int durationMinutes;
   AppointmentStatus status;
+  String? paymentId;
 
   String? customerId;
   String? customerName;
@@ -19,6 +20,7 @@ class Appointment {
 
   Appointment({
     this.id,
+    this.paymentId,
     required this.service,
     required this.dateTime,
     this.durationMinutes = 60,
@@ -40,6 +42,7 @@ class Appointment {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'paymentId': paymentId,
       'service': service,
       'dateTime': dateTime.toIso8601String(),
       'durationMinutes': durationMinutes,
@@ -58,13 +61,12 @@ class Appointment {
   factory Appointment.fromMap(Map<String, dynamic> map) {
     final rawService = map['service'] as String;
     final type = map['type'] as String?;
-    final service = (type != null &&
-            type.isNotEmpty &&
-            type != 'Default' &&
-            type != 'Standard' &&
-            !rawService.contains('—'))
-        ? '$rawService — $type'
-        : rawService;
+    String service;
+    if (type != null && type.isNotEmpty && type != 'Default' && type != 'Standard') {
+      service = '$rawService \u2014 $type';
+    } else {
+      service = rawService;
+    }
 
     final statusRaw = map['status'] as String?;
     final status = statusRaw != null
@@ -76,6 +78,7 @@ class Appointment {
 
     return Appointment(
       id: map['id']?.toString(),
+      paymentId: map['paymentId']?.toString(),
       service: service,
       dateTime: DateTime.parse(map['dateTime'] as String),
       durationMinutes: map['durationMinutes'] as int? ?? 60,
@@ -93,6 +96,7 @@ class Appointment {
 
   Appointment copyWith({
     String? id,
+    String? paymentId,
     String? service,
     DateTime? dateTime,
     int? durationMinutes,
@@ -108,6 +112,7 @@ class Appointment {
   }) {
     return Appointment(
       id: id ?? this.id,
+      paymentId: paymentId ?? this.paymentId,
       service: service ?? this.service,
       dateTime: dateTime ?? this.dateTime,
       durationMinutes: durationMinutes ?? this.durationMinutes,

@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'repositories/firestore_booking_repository.dart';
+import 'helpers/notification_schedule_helper.dart';
 
 import 'models/user.dart';
 import 'providers/appointment_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/payment_provider.dart';
 
 import 'pages/analytics_page.dart';
 import 'pages/forgot_password_page.dart';
@@ -29,6 +31,8 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  await NotificationScheduleHelper.initialize();
+
   final firestoreRepo = FirestoreBookingRepository.instance;
   final authProvider = AuthProvider(repository: firestoreRepo);
   final appointmentProvider = AppointmentProvider(repository: firestoreRepo);
@@ -46,9 +50,10 @@ Future<void> main() async {
     appointmentProvider.setCurrentUser(authProvider.currentUser!);
   }
 
-final initialRoute = _resolveInitialRoute(authProvider.currentUser);
+  final initialRoute = _resolveInitialRoute(authProvider.currentUser);
 
   final notificationProvider = NotificationProvider();
+  final paymentProvider = PaymentProvider();
 
   runApp(
     MyApp(
@@ -56,6 +61,7 @@ final initialRoute = _resolveInitialRoute(authProvider.currentUser);
       appointmentProvider: appointmentProvider,
       themeProvider: themeProvider,
       notificationProvider: notificationProvider,
+      paymentProvider: paymentProvider,
       initialRoute: initialRoute,
     ),
   );
@@ -73,6 +79,7 @@ class MyApp extends StatelessWidget {
     required this.appointmentProvider,
     required this.themeProvider,
     required this.notificationProvider,
+    required this.paymentProvider,
     required this.initialRoute,
   });
 
@@ -80,6 +87,7 @@ class MyApp extends StatelessWidget {
   final AppointmentProvider appointmentProvider;
   final ThemeProvider themeProvider;
   final NotificationProvider notificationProvider;
+  final PaymentProvider paymentProvider;
   final String initialRoute;
 
   @override
@@ -94,6 +102,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<NotificationProvider>.value(
           value: notificationProvider,
         ),
+        ChangeNotifierProvider<PaymentProvider>.value(value: paymentProvider),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, _) {

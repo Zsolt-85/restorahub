@@ -107,10 +107,10 @@ class _LoginPageState extends State<LoginPage> {
                         _error = null;
                       });
 
-                      final result = await auth.login(
-                        _emailController.text.trim(),
-                        _passwordController.text.trim(),
-                      );
+                       final result = await auth.login(
+                         _emailController.text.trim().toLowerCase(),
+                         _passwordController.text.trim(),
+                       );
 
                       if (!context.mounted) return;
 

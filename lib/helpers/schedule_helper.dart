@@ -4,7 +4,7 @@ import '../models/appointment.dart';
 
 class ScheduleHelper {
   static String parseServiceCategory(String serviceLabel) {
-    return serviceLabel.split('—').first.trim();
+    return serviceLabel.split('\u2014').first.trim();
   }
 
   static int timeToMinutes(TimeOfDay time) => time.hour * 60 + time.minute;

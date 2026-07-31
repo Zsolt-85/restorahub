@@ -26,7 +26,7 @@ class AuthProvider extends ChangeNotifier {
   Future<LoginResult> login(String email, String password) async {
     try {
       final cred = await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password: password,
       );
 
@@ -58,7 +58,7 @@ class AuthProvider extends ChangeNotifier {
       final newUser = User(
         id: fbUser.uid,
         name: name.trim(),
-        email: fbUser.email!,
+        email: fbUser.email!.toLowerCase(),
         phone: phone.trim(),
         role: role,
         specialty: role == 'professional' ? specialty.trim() : '',
@@ -76,7 +76,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> register({
+  Future<String?> register({
     required String email,
     required String password,
     required String role,
@@ -85,37 +85,55 @@ class AuthProvider extends ChangeNotifier {
     required String specialty,
   }) async {
     try {
-      if (await _repository.isEmailTaken(email.trim())) {
-        return false;
+      final normalizedEmail = email.trim().toLowerCase();
+      if (await _repository.isEmailTaken(normalizedEmail)) {
+        return 'Email is already in use';
       }
 
       final cred = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
+        email: normalizedEmail,
         password: password,
       );
 
       final newUser = User(
         id: cred.user!.uid,
         name: name.trim(),
-        email: email.trim(),
+        email: normalizedEmail,
         phone: phone.trim(),
         role: role,
         specialty: specialty,
       );
 
-      final insertResult = await _repository.insertUser(newUser);
-      if (insertResult <= 0) {
+      try {
+        final insertResult = await _repository.insertUser(newUser);
+        if (insertResult <= 0) {
+          await cred.user?.delete();
+          return 'Failed to save user profile';
+        }
+      } catch (e) {
         await cred.user?.delete();
-        return false;
+        rethrow;
       }
 
       currentUser = newUser;
       notifyListeners();
 
-      return true;
+      return null;
+    } on fb.FirebaseAuthException catch (e) {
+      debugPrint('Registration FirebaseAuthException: ${e.code} - ${e.message}');
+      if (e.code == 'email-already-in-use') {
+        return 'Email is already in use';
+      } else if (e.code == 'weak-password') {
+        return 'The password provided is too weak';
+      } else if (e.code == 'invalid-email') {
+        return 'The email address is not valid';
+      } else if (e.code == 'operation-not-allowed') {
+        return 'Email/password accounts are not enabled. Please enable them in the Firebase Console (Authentication -> Sign-in method).';
+      }
+      return e.message ?? 'Registration failed';
     } catch (e, stack) {
       debugPrint('Registration error: $e\n$stack');
-      return false;
+      return e.toString();
     }
   }
 
@@ -147,7 +165,7 @@ class AuthProvider extends ChangeNotifier {
     if (emailError != null) return emailError;
 
     try {
-      await _auth.sendPasswordResetEmail(email: email.trim());
+      await _auth.sendPasswordResetEmail(email: email.trim().toLowerCase());
       return null;
     } on fb.FirebaseAuthException catch (e) {
       return e.message ?? 'Failed to send reset email';
@@ -209,7 +227,7 @@ class AuthProvider extends ChangeNotifier {
       if (scheduleError != null) return scheduleError;
     }
 
-    final trimmedEmail = email.trim();
+    final trimmedEmail = email.trim().toLowerCase();
 
     if (await _repository.isEmailTaken(
       trimmedEmail,

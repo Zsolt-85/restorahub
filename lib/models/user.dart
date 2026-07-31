@@ -35,7 +35,7 @@ class User {
     return User(
       id: map['id']?.toString(),
       name: map['name']?.toString() ?? '',
-      email: map['email']?.toString() ?? '',
+      email: (map['email']?.toString() ?? '').toLowerCase(),
       phone: map['phone']?.toString() ?? '',
       role: map['role']?.toString() ?? 'customer',
       specialty: map['specialty']?.toString() ?? '',
@@ -49,7 +49,7 @@ class User {
     return {
       'id': id,
       'name': name,
-      'email': email,
+      'email': email.toLowerCase(),
       'phone': phone,
       'role': role,
       'specialty': specialty,

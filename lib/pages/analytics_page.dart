@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/payment_provider.dart';
 
 class AnalyticsPage extends StatefulWidget {
   const AnalyticsPage({super.key});
@@ -18,9 +19,51 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   String _selectedRange = 'month';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final professionalId = authProvider.currentUser?.id ?? '';
+      Provider.of<PaymentProvider>(context, listen: false)
+          .loadPaymentsForProfessionalInRange(
+        professionalId,
+        _startOfRange(),
+        _endOfRange(),
+      );
+    });
+  }
+
+  DateTime _startOfRange() {
+    switch (_selectedRange) {
+      case 'month':
+        return DateTime(_selectedYear, _selectedMonth);
+      case 'day':
+        return DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      case 'year':
+        return DateTime(_selectedYear);
+      default:
+        return DateTime(_selectedYear, _selectedMonth);
+    }
+  }
+
+  DateTime _endOfRange() {
+    switch (_selectedRange) {
+      case 'month':
+        return DateTime(_selectedYear, _selectedMonth + 1);
+      case 'day':
+        return DateTime.now().add(const Duration(days: 1));
+      case 'year':
+        return DateTime(_selectedYear + 1);
+      default:
+        return DateTime(_selectedYear, _selectedMonth + 1);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final apptProvider = Provider.of<AppointmentProvider>(context);
+    final paymentProvider = Provider.of<PaymentProvider>(context);
     final user = auth.currentUser;
 
     if (user == null || !user.isProfessional) {
@@ -66,8 +109,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ),
             const SizedBox(height: 24),
             _buildStatCard(
-              'Monthly Revenue',
-              _getRevenueLabel(apptProvider),
+              'Revenue',
+              _getRevenueLabel(paymentProvider),
               Icons.attach_money,
             ),
             const SizedBox(height: 16),
@@ -155,7 +198,7 @@ Widget _buildStatCard(String title, String value, IconData icon) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: CircleAvatar(
+        leading: const CircleAvatar(
           child: Icon(Icons.spa_outlined),
         ),
         title: Text(appt.service),
@@ -207,21 +250,8 @@ Widget _buildStatCard(String title, String value, IconData icon) {
     }
   }
 
-  String _getRevenueLabel(AppointmentProvider provider) {
-    switch (_selectedRange) {
-      case 'month':
-        final revenue = provider.getMonthlyRevenue(_selectedYear, _selectedMonth);
-        return '\$${revenue.toStringAsFixed(2)}';
-      case 'day':
-        return '\$0.00';
-      case 'year':
-        double total = 0;
-        for (int m = 1; m <= 12; m++) {
-          total += provider.getMonthlyRevenue(_selectedYear, m);
-        }
-        return '\$${total.toStringAsFixed(2)}';
-      default:
-        return '\$0.00';
-    }
+  String _getRevenueLabel(PaymentProvider provider) {
+    final revenue = provider.totalRevenue;
+    return '\$${revenue.toStringAsFixed(2)}';
   }
 }

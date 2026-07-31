@@ -4,7 +4,10 @@ import '../models/notification.dart';
 import '../repositories/notification_repository.dart';
 
 class NotificationProvider extends ChangeNotifier {
-  final NotificationRepository _repository = NotificationRepository.instance;
+  final NotificationRepository _repository;
+
+  NotificationProvider({NotificationRepository? repository})
+      : _repository = repository ?? FirestoreNotificationRepository.instance;
 
   List<AppNotification> _notifications = [];
   int _unreadCount = 0;
@@ -15,7 +18,8 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> loadNotifications(String userId) async {
     try {
       _notifications = await _repository.getNotificationsForUser(userId);
-      _unreadCount = _notifications.where((n) => n.status == NotificationStatus.unread).length;
+      _unreadCount =
+          _notifications.where((n) => n.status == NotificationStatus.unread).length;
       notifyListeners();
     } catch (e) {
       debugPrint('NotificationProvider.loadNotifications error: $e');
@@ -28,7 +32,9 @@ class NotificationProvider extends ChangeNotifier {
       final index = _notifications.indexWhere((n) => n.id == notificationId);
       if (index != -1) {
         _notifications[index].status = NotificationStatus.read;
-        _unreadCount = _notifications.where((n) => n.status == NotificationStatus.unread).length;
+        _unreadCount = _notifications
+            .where((n) => n.status == NotificationStatus.unread)
+            .length;
         notifyListeners();
       }
     } catch (e) {

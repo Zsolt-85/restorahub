@@ -155,20 +155,6 @@ class AppointmentProvider extends ChangeNotifier {
         .toList();
   }
 
-  double getMonthlyRevenue(int year, int month) {
-    final start = DateTime(year, month, 1);
-    final end = DateTime(year, month + 1, 1);
-    final relevant = _appointments
-        .where(
-          (a) =>
-              a.dateTime.isAfter(start) &&
-              a.dateTime.isBefore(end) &&
-              a.status == AppointmentStatus.completed,
-        )
-        .toList();
-    return relevant.length * 50.0;
-  }
-
   int getAppointmentCountForMonth(int year, int month) {
     final start = DateTime(year, month, 1);
     final end = DateTime(year, month + 1, 1);
@@ -211,6 +197,29 @@ class AppointmentProvider extends ChangeNotifier {
       appointments: _appointments,
       excludeAppointmentId: excludeAppointmentId,
     );
+  }
+
+  Future<void> linkPaymentToAppointment(
+    String appointmentId,
+    String paymentId,
+  ) async {
+    _beginLoading();
+    try {
+      final apptIndex = _appointments.indexWhere((a) => a.id == appointmentId);
+      if (apptIndex != -1) {
+        final updated = _appointments[apptIndex].copyWith(
+          paymentId: paymentId,
+          status: AppointmentStatus.completed,
+        );
+        await _repository.updateAppointment(updated);
+        _appointments = await _repository.getAppointments();
+      }
+      _endLoading();
+    } on AppException catch (e) {
+      _endLoading(e.message);
+    } catch (e) {
+      _endLoading('Unexpected error linking payment to appointment');
+    }
   }
 
   Future<String?> cancelAppointment(String id) async {

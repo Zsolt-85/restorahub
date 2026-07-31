@@ -59,7 +59,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       _error = null;
     });
 
-    final email = _emailController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text.trim();
 
     try {
@@ -80,7 +80,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
       if (!mounted) return;
 
-      if (success && auth.currentUser != null) {
+      if (success == null && auth.currentUser != null) {
         final appointmentProvider =
             Provider.of<AppointmentProvider>(context, listen: false);
         appointmentProvider.setCurrentUser(auth.currentUser!);

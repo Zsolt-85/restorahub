@@ -87,7 +87,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         });
 
                         final result = await auth.sendPasswordResetEmail(
-                          _emailController.text.trim(),
+                          _emailController.text.trim().toLowerCase(),
                         );
 
                         if (!mounted) return;

@@ -37,7 +37,7 @@ class FirestoreBookingRepository implements BookingRepository {
   @override
   Future<bool> isEmailTaken(String email, {String? excludeUserId}) async {
     try {
-      var query = _usersCol.where('email', isEqualTo: email.trim());
+      var query = _usersCol.where('email', isEqualTo: email.trim().toLowerCase());
       final snapshot = await query.get();
       if (snapshot.docs.isEmpty) return false;
       if (excludeUserId != null) {
