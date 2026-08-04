@@ -191,20 +191,12 @@ class _BookingPageState extends State<BookingPage> {
                   spacing: 8,
                   runSpacing: 8,
                   children: timeSlots.map((slot) {
-                    final slotDateTime = _combine(_selectedDate!, slot);
-                    final isBooked = !apptProvider.isSlotAvailable(
-                      slotStart: slotDateTime,
-                      slotDuration: professional.slotDurationMinutes,
-                      professionalId: professional.id!,
-                    );
                     final isSelected = _selectedTime == slot;
 
                     return ChoiceChip(
                       label: Text(slot.format(context)),
                       selected: isSelected,
-                      onSelected: isBooked
-                          ? null
-                          : (_) => setState(() => _selectedTime = slot),
+                      onSelected: (_) => setState(() => _selectedTime = slot),
                     );
                   }).toList(),
                 ),
@@ -233,7 +225,7 @@ class _BookingPageState extends State<BookingPage> {
                       final pro = _selectedProfessional!;
                       final dateTime = _combine(_selectedDate!, _selectedTime!);
 
-                      if (!apptProvider.isSlotAvailable(
+                      if (!await apptProvider.isSlotAvailable(
                         slotStart: dateTime,
                         slotDuration: pro.slotDurationMinutes,
                         professionalId: pro.id!,

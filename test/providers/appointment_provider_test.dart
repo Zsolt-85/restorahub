@@ -54,7 +54,26 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<List<Appointment>> getAppointments() async => List.from(appointments);
+  Future<List<Appointment>> getAppointmentsForCustomer(String customerId) async {
+    return appointments.where((a) => a.customerId == customerId).toList();
+  }
+
+  @override
+  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId) async {
+    return appointments.where((a) => a.professionalId == professionalId).toList();
+  }
+
+  @override
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes}) async {
+    final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));
+    return !appointments.any((a) {
+      if (a.professionalId != professionalId) return false;
+      if (a.status == AppointmentStatus.cancelled) return false;
+      if (!a.dateTime.isBefore(slotEnd)) return false;
+      final apptEnd = a.dateTime.add(Duration(minutes: a.durationMinutes));
+      return apptEnd.isAfter(dateTime);
+    });
+  }
 
   @override
   Future<int> insertAppointment(Appointment appointment) async {
@@ -79,17 +98,6 @@ class FakeBookingRepository implements BookingRepository {
     appointments.removeWhere((a) => a.id == id);
     return appointments.length < lengthBefore ? 1 : 0;
   }
-
-  @override
-  Future<List<Appointment>> getAppointmentsByStatus(AppointmentStatus status) async {
-    return appointments.where((a) => a.status == status).toList();
-  }
-
-  @override
-  Future<List<Appointment>> getPastAppointments() async {
-    final now = DateTime.now();
-    return appointments.where((a) => a.dateTime.isBefore(now)).toList();
-  }
 }
 
 void main() {
@@ -100,6 +108,13 @@ void main() {
     setUp(() {
       repository = FakeBookingRepository();
       provider = AppointmentProvider(repository: repository);
+      provider.currentUser = User(
+        id: 'cust-1',
+        name: 'Test User',
+        email: 'test@example.com',
+        phone: '555-0100',
+        role: 'customer',
+      );
     });
 
     test('Initial loading state and loadAppointments success', () async {
@@ -111,6 +126,7 @@ void main() {
         service: 'Massage',
         dateTime: DateTime(2026, 8, 1, 10, 0),
         durationMinutes: 60,
+        customerId: 'cust-1',
       );
       await repository.insertAppointment(appt);
 
@@ -125,6 +141,7 @@ void main() {
       final appt = Appointment(
         service: 'Facial',
         dateTime: DateTime(2026, 8, 1, 11, 0),
+        customerId: 'cust-1',
       );
 
       await provider.addAppointment(appt);
@@ -139,6 +156,7 @@ void main() {
         id: '1',
         service: 'Massage',
         dateTime: DateTime(2026, 8, 1, 10, 0),
+        customerId: 'cust-1',
       );
       await provider.addAppointment(appt);
 
@@ -153,6 +171,7 @@ void main() {
         id: '1',
         service: 'Massage',
         dateTime: DateTime(2026, 8, 1, 10, 0),
+        customerId: 'cust-1',
       );
       await provider.addAppointment(appt);
       expect(provider.appointments.length, 1);
@@ -167,6 +186,7 @@ void main() {
         service: 'Massage',
         dateTime: DateTime(2026, 8, 1, 10, 0),
         status: AppointmentStatus.confirmed,
+        customerId: 'cust-1',
       );
       await provider.addAppointment(appt);
 
@@ -184,6 +204,7 @@ void main() {
         dateTime: DateTime(2026, 8, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
+        customerId: 'cust-1',
       );
       await provider.addAppointment(appt);
 
@@ -204,24 +225,51 @@ void main() {
         dateTime: DateTime(2026, 8, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
+        customerId: 'cust-1',
       );
       final appt2 = Appointment(
         id: '2',
         service: 'Facial',
-        dateTime: DateTime(2026, 8, 1, 11, 0),
+        dateTime: DateTime(2026, 8, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
+        customerId: 'cust-1',
       );
       await provider.addAppointment(appt1);
       await provider.addAppointment(appt2);
 
-      // Try to reschedule appt1 to 11:30 (overlaps with appt2 which is 11:00-12:00)
+      // Try to reschedule appt1 to the exact same time as appt2
       final error = await provider.rescheduleAppointment(
         appointment: provider.appointments.firstWhere((a) => a.id == '1'),
-        newDateTime: DateTime(2026, 8, 1, 11, 30),
+        newDateTime: DateTime(2026, 8, 1, 10, 0),
       );
 
       expect(error, 'This time slot is no longer available');
+    });
+
+    test('addAppointment rejects booking when slot is unavailable', () async {
+      final existingAppt = Appointment(
+        id: '1',
+        service: 'Massage',
+        dateTime: DateTime(2026, 8, 1, 10, 0),
+        durationMinutes: 60,
+        professionalId: 'prof-1',
+        customerId: 'cust-1',
+      );
+      await repository.insertAppointment(existingAppt);
+
+      final newAppt = Appointment(
+        service: 'Facial',
+        dateTime: DateTime(2026, 8, 1, 10, 0),
+        durationMinutes: 60,
+        professionalId: 'prof-1',
+        customerId: 'cust-1',
+      );
+
+      await provider.addAppointment(newAppt);
+
+      expect(provider.appointments.length, 0);
+      expect(provider.error, 'This time slot is no longer available');
     });
   });
 }

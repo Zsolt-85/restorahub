@@ -9,11 +9,10 @@ abstract class BookingRepository {
   Future<void> syncUserInAppointments(User user);
 
   Future<List<User>> getProfessionalsBySpecialty(String specialty);
-  Future<List<Appointment>> getAppointments();
+  Future<List<Appointment>> getAppointmentsForCustomer(String customerId);
+  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId);
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes});
   Future<int> insertAppointment(Appointment appointment);
   Future<int> updateAppointment(Appointment appointment);
   Future<int> deleteAppointment(String id);
-
-  Future<List<Appointment>> getAppointmentsByStatus(AppointmentStatus status);
-  Future<List<Appointment>> getPastAppointments();
 }

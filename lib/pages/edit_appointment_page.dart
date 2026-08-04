@@ -140,23 +140,13 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                           spacing: 8,
                           runSpacing: 8,
                           children: _availableSlots(professional).map((slot) {
-                            final slotDateTime =
-                                _combine(_selectedDate!, slot);
-                            final isBooked = !apptProvider.isSlotAvailable(
-                              slotStart: slotDateTime,
-                              slotDuration: appointment.durationMinutes,
-                              professionalId: professional.id!,
-                              excludeAppointmentId: appointment.id,
-                            );
                             final isSelected = _selectedTime == slot;
 
                             return ChoiceChip(
                               label: Text(slot.format(context)),
                               selected: isSelected,
-                              onSelected: isBooked
-                                  ? null
-                                  : (_) =>
-                                      setState(() => _selectedTime = slot),
+                              onSelected: (_) =>
+                                  setState(() => _selectedTime = slot),
                             );
                           }).toList(),
                         ),

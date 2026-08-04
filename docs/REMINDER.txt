@@ -1,0 +1,1269 @@
+# RESTORAHUB — Continuation Checkpoint
+
+**Checkpoint Date:** 2026-07-31
+**Branch:** main
+**Latest Commit:** `3f7251af1314af286fa9dd337a61965265946c92`
+**Push Status:** Successfully pushed to GitHub
+
+---
+
+# 1. Current Project State
+
+The project has completed a major audit/documentation phase.
+
+No production refactoring has started yet.
+
+The repository is currently at the point where:
+
+* Architecture has been inspected
+* Firestore usage has been inventoried
+* Security risks have been identified
+* Technical debt has been documented
+* Provider/repository/model/navigation/testing audits have been created
+* Payment-related code has been added and checkpointed
+
+The next phase is implementation.
+
+---
+
+# 2. Completed Documentation Audits
+
+The following documents were created and committed:
+
+## Project Documentation
+
+* `PROJECT_OVERVIEW.md`
+
+## Architecture
+
+* `docs/architecture_overview.md`
+
+Covers:
+
+* Application structure
+* Provider architecture
+* Repository pattern
+* Data flow
+* Firebase integration
+
+---
+
+## Firestore Audits
+
+### `docs/firestore_audit.md`
+
+General Firestore findings.
+
+### `docs/firestore_security_audit.md`
+
+Critical security review.
+
+Main findings:
+
+* No `firestore.rules`
+* No `firestore.indexes.json`
+* No Firestore configuration in `firebase.json`
+* Current application relies on unsafe default development permissions
+
+Critical issues identified:
+
+1. Missing Firestore security rules
+2. Unrestricted appointment reads
+3. Missing ownership validation
+4. Client-side notification creation risk
+5. Payment access restrictions missing
+
+---
+
+### `docs/firestore_query_inventory.md`
+
+Complete Firestore operation inventory.
+
+25 Firestore operations identified.
+
+Collections:
+
+* users
+* appointments
+* payments
+* notifications
+
+Highest priority issue:
+
+`getAppointments()`
+
+Current behavior:
+
+```
+appointments collection
+        |
+        |
+        v
+loads ALL documents
+        |
+        |
+        v
+filters locally in Flutter
+```
+
+This must be changed before security rules are enabled.
+
+Required replacement:
+
+```
+getAppointmentsForCustomer(uid)
+
+getAppointmentsForProfessional(uid)
+```
+
+---
+
+# 3. Main Security Problems To Fix
+
+## CRITICAL — Must Fix First
+
+## SEC-001 / TD-014
+
+No Firestore security rules exist.
+
+Required:
+
+Create:
+
+```
+firestore.rules
+firestore.indexes.json
+```
+
+Add Firebase deployment configuration.
+
+---
+
+## SEC-002 / TD-009
+
+Appointments are globally readable.
+
+Current:
+
+```dart
+_firestore.collection('appointments').get()
+```
+
+Required:
+
+Customer:
+
+```dart
+where('customerId', isEqualTo: uid)
+```
+
+Professional:
+
+```dart
+where('professionalId', isEqualTo: uid)
+```
+
+---
+
+## SEC-005
+
+Notifications are created from client code.
+
+Current:
+
+```
+Flutter app
+    |
+    |
+    v
+creates notification document
+```
+
+Recommended future:
+
+```
+Appointment event
+        |
+        |
+        v
+Cloud Function
+        |
+        |
+        v
+Notification document
+```
+
+---
+
+# 4. Technical Debt Already Logged
+
+File:
+
+```
+docs/technical_debt.md
+```
+
+Contains:
+
+TD-001 through TD-016
+
+Important items:
+
+---
+
+## P1 Immediate
+
+### TD-001
+
+Full collection scan in:
+
+```
+getAppointments()
+```
+
+### TD-002
+
+No pagination.
+
+### TD-006
+
+Appointments loaded before authenticated user is known.
+
+### TD-009
+
+All users' appointments loaded.
+
+---
+
+## P2 Next Sprint
+
+### TD-003
+
+BookingRepository mixes users and appointments.
+
+Future split:
+
+```
+UserRepository
+
+BookingRepository
+```
+
+---
+
+### TD-005
+
+Denormalized user data.
+
+Current:
+
+Appointment stores:
+
+```
+customerName
+customerPhone
+customerEmail
+professionalName
+professionalPhone
+professionalEmail
+```
+
+Risk:
+
+Data synchronization failures.
+
+---
+
+### TD-007
+
+No centralized route guards.
+
+---
+
+### TD-010
+
+syncUserInAppointments creates expensive batch updates.
+
+---
+
+# 5. Latest Git Checkpoint
+
+Commit:
+
+```
+3f7251af1314af286fa9dd337a61965265946c92
+```
+
+Successfully pushed.
+
+Included:
+
+## Added
+
+22 files including:
+
+* all audit documentation
+* payment repository
+* payment provider
+* payment pages
+* payment tests
+
+---
+
+## Modified
+
+24 files including:
+
+Repositories:
+
+```
+firestore_booking_repository.dart
+notification_repository.dart
+```
+
+Providers:
+
+```
+appointment_provider.dart
+auth_provider.dart
+notification_provider.dart
+payment_provider.dart
+```
+
+Pages:
+
+```
+login_page.dart
+registration_page.dart
+analytics_page.dart
+professional_booking_management_page.dart
+user_home_page.dart
+```
+
+Models:
+
+```
+appointment.dart
+user.dart
+payment.dart
+```
+
+---
+
+# 6. Next Work Phase — Implementation Order
+
+DO NOT start random fixes.
+
+Follow this order.
+
+---
+
+# Phase 1 — Firestore Query Refactor
+
+Priority: P0/P1
+
+Goal:
+
+Make application compatible with secure Firestore rules.
+
+Tasks:
+
+## 1. Replace getAppointments()
+
+Create:
+
+```dart
+getAppointmentsForCustomer(String customerId)
+
+getAppointmentsForProfessional(String professionalId)
+```
+
+Remove:
+
+```dart
+getAppointments()
+```
+
+---
+
+Update:
+
+```
+AppointmentProvider
+```
+
+Methods affected:
+
+* loadAppointments()
+* addAppointment()
+* updateAppointment()
+* deleteAppointment()
+* updateAppointmentStatus()
+* linkPaymentToAppointment()
+
+---
+
+## 2. Remove unsafe appointment queries
+
+Review:
+
+```
+getAppointmentsByStatus()
+
+getPastAppointments()
+```
+
+Options:
+
+* add user filters
+* or remove if unused
+
+---
+
+# Phase 2 — Firestore Security Rules
+
+After queries are fixed.
+
+Create:
+
+```
+firestore.rules
+```
+
+Rules must enforce:
+
+## Users
+
+Users can:
+
+* read own profile
+* read professional profiles
+* update own allowed fields only
+
+Prevent:
+
+* role escalation
+* changing UID
+
+---
+
+## Appointments
+
+Allow:
+
+Customer:
+
+* create own appointment
+* update own appointment
+* cancel own appointment
+
+Professional:
+
+* manage own appointments
+
+Prevent:
+
+* reading other users appointments
+
+---
+
+## Payments
+
+Allow:
+
+Professional:
+
+* create payments
+* update payments
+
+Customer:
+
+* read own payments
+
+Prevent:
+
+* fake payment creation
+
+---
+
+## Notifications
+
+Move creation away from client.
+
+Temporary:
+
+deny:
+
+```javascript
+allow create: if false;
+```
+
+---
+
+# Phase 3 — Firestore Indexes
+
+Create:
+
+```
+firestore.indexes.json
+```
+
+Required indexes:
+
+Users:
+
+```
+role + specialty
+email
+```
+
+Appointments:
+
+```
+customerId + dateTime
+professionalId + dateTime
+status
+```
+
+Payments:
+
+```
+professionalId + appointmentDate
+appointmentId
+```
+
+Notifications:
+
+```
+receiverId + createdAt
+receiverId + status
+```
+
+---
+
+# Phase 4 — Dependency Injection Cleanup
+
+Fix:
+
+```
+NotificationProvider
+PaymentProvider
+```
+
+Current:
+
+They create their own repositories internally.
+
+Change to:
+
+Constructor injection only.
+
+Match:
+
+```
+AuthProvider
+AppointmentProvider
+```
+
+pattern.
+
+---
+
+# Phase 5 — Architecture Improvements
+
+Later:
+
+Split:
+
+```
+BookingRepository
+```
+
+into:
+
+```
+UserRepository
+
+BookingRepository
+```
+
+Review:
+
+```
+services/
+```
+
+Remove empty directory.
+
+---
+
+# 7. Required Testing Before Production
+
+Before release:
+
+## Firebase Rules Testing
+
+Test:
+
+* customer cannot read another customer's appointment
+* professional cannot read another professional's payments
+* customer cannot create payments
+* user cannot change role
+* notification creation blocked
+
+---
+
+## Application Testing
+
+Verify:
+
+Login:
+
+* customer loads only own appointments
+
+Professional login:
+
+* professional loads only own appointments
+
+Booking:
+
+* customer can create appointment
+
+Management:
+
+* professional can update appointment status
+
+Payments:
+
+* professional can record payment
+
+Notifications:
+
+* users receive correct notifications
+
+---
+
+# 8. Important Instruction For Next Session
+
+Before making code changes:
+
+1. Read:
+
+```
+docs/firestore_security_audit.md
+docs/firestore_query_inventory.md
+docs/technical_debt.md
+```
+
+2. Confirm audits are complete.
+
+3. Do not enable Firestore rules until query refactor is complete.
+
+4. First implementation task:
+
+```
+Refactor getAppointments() into user-scoped queries.
+```
+
+5. Keep commits small.
+
+Recommended commits:
+
+```
+refactor: scope appointment queries by user
+
+security: add firestore rules
+
+security: add firestore indexes
+
+refactor: remove unsafe repository patterns
+```
+
+---
+
+# Current Position
+
+The project is NOT ready for production security.
+
+The correct next move is:
+
+**Fix Firestore query architecture first → add security rules → test → continue cleanup.**
+
+No more audits are required before starting implementation.
+
+
+
+
+
+# RESTORAHUB Continuation Update — After Appointment Query Refactor
+
+**Date:** 2026-07-31
+**Completed by Kilo:** Firestore appointment query scoping refactor
+
+## Git Status
+
+Previous checkpoint:
+
+Commit:
+
+```
+3f7251af1314af286fa9dd337a61965265946c92
+```
+
+New changes have been made after this commit.
+
+Before continuing:
+
+* Verify Git commit hash
+* Ensure changes are committed and pushed
+
+---
+
+# Completed Work
+
+## Files Changed
+
+```
+lib/repositories/booking_repository.dart
+lib/repositories/firestore_booking_repository.dart
+lib/providers/appointment_provider.dart
+test/providers/appointment_provider_test.dart
+```
+
+---
+
+# Completed Security Improvement
+
+## Removed unsafe appointment queries
+
+Deleted:
+
+```
+getAppointments()
+getAppointmentsByStatus()
+getPastAppointments()
+```
+
+Reason:
+
+These methods performed unscoped Firestore reads.
+
+Previous behavior:
+
+```
+appointments collection
+        |
+        |
+        v
+download ALL appointments
+        |
+        |
+        v
+filter in Flutter
+```
+
+This was incompatible with secure Firestore rules.
+
+---
+
+# Added Scoped Queries
+
+Added:
+
+```dart
+getAppointmentsForCustomer(String customerId)
+```
+
+Firestore query:
+
+```dart
+appointments
+.where('customerId', isEqualTo: customerId)
+```
+
+Added:
+
+```dart
+getAppointmentsForProfessional(String professionalId)
+```
+
+Firestore query:
+
+```dart
+appointments
+.where('professionalId', isEqualTo: professionalId)
+```
+
+---
+
+# AppointmentProvider Changes
+
+Added:
+
+```
+_reloadAppointments()
+```
+
+Logic:
+
+Customer:
+
+```
+currentUser.role == customer
+
+        |
+        v
+
+getAppointmentsForCustomer(user.id)
+```
+
+Professional:
+
+```
+currentUser.role == professional
+
+        |
+        v
+
+getAppointmentsForProfessional(user.id)
+```
+
+Updated all previous reload points:
+
+* loadAppointments()
+* addAppointment()
+* updateAppointment()
+* deleteAppointment()
+* updateAppointmentStatus()
+* linkPaymentToAppointment()
+
+Added null safety:
+
+If:
+
+```
+currentUser == null
+OR
+user.id == null
+```
+
+No Firestore query is executed.
+
+---
+
+# Tests
+
+Updated:
+
+```
+test/providers/appointment_provider_test.dart
+```
+
+Changes:
+
+* FakeBookingRepository now implements scoped queries
+* Removed deleted methods
+* Test users added
+* Appointment test data now includes customerId
+
+Results:
+
+```
+flutter analyze ✅
+
+flutter test ✅
+
+25 tests passed
+```
+
+---
+
+# Important New Issue Discovered
+
+## Availability Logic Is Now Incorrect
+
+Location:
+
+```
+AppointmentProvider.isSlotAvailable()
+```
+
+Problem:
+
+Before:
+
+```
+_customer loads all appointments_
+
+```
+
+so availability checks could see everybody's bookings.
+
+After:
+
+```
+_customer loads only own appointments_
+
+```
+
+Example:
+
+Customer A:
+
+```
+appointments:
+- 10:00 booking with Professional X
+```
+
+Customer B:
+
+```
+appointments:
+(empty)
+```
+
+Customer B tries booking:
+
+```
+10:00 with Professional X
+```
+
+Local check says:
+
+```
+AVAILABLE
+```
+
+but it may already be booked.
+
+---
+
+# Required Next Decision
+
+Before enabling strict Firestore rules, availability checking needs redesign.
+
+Possible solutions:
+
+## Option A — Server-side availability check (recommended)
+
+Create repository method:
+
+```
+checkProfessionalAvailability()
+```
+
+Query:
+
+```
+appointments
+.where('professionalId', isEqualTo: professionalId)
+.where('dateTime', isEqualTo: requestedTime)
+```
+
+The server/rules validate ownership.
+
+---
+
+## Option B — Cloud Function booking validation
+
+Flow:
+
+```
+Customer requests booking
+        |
+        v
+Cloud Function checks availability
+        |
+        v
+Creates appointment
+```
+
+Best for production scale.
+
+---
+
+## Option C — Keep client check temporarily
+
+Not recommended for production because it creates race conditions.
+
+---
+
+# Next Implementation Order
+
+DO NOT create Firestore rules yet.
+
+Continue:
+
+## Step 2
+
+Fix appointment availability checking.
+
+Then:
+
+## Step 3
+
+Review remaining Firestore queries:
+
+Priority:
+
+1. updateUser()
+2. updateAppointment()
+3. deleteAppointment()
+4. recordPayment()
+5. updatePayment()
+6. sendNotification()
+
+Then:
+
+## Step 4
+
+Create:
+
+```
+firestore.rules
+firestore.indexes.json
+```
+
+Then:
+
+## Step 5
+
+Security testing.
+
+---
+
+# Current Status
+
+Completed:
+
+✅ Audit phase
+✅ Appointment query security refactor
+✅ Tests passing
+✅ Removed dangerous collection scans
+
+Remaining blocker before Firestore rules:
+
+⚠️ Appointment availability validation
+
+Next session should start by reviewing:
+
+```
+AppointmentProvider.isSlotAvailable()
+Booking flow
+Appointment creation race conditions
+```
+
+
+# RESTORAHUB — Continuation Summary (Latest Checkpoint)
+
+**Date:** 2026-07-31
+
+---
+
+# Current Status
+
+The project has moved beyond the audit phase and has started the implementation phase.
+
+All major architecture, Firestore, repository, provider, navigation, model, testing, and technical debt audits have already been completed and documented.
+
+Those audit documents are now considered the baseline and should be consulted before making additional architectural changes.
+
+---
+
+# Documentation Already Completed
+
+The following documentation exists in the repository:
+
+* PROJECT_OVERVIEW.md
+* docs/index.md
+* docs/architecture_overview.md
+* docs/firestore_audit.md
+* docs/firestore_query_inventory.md
+* docs/firestore_security_audit.md
+* docs/models_audit.md
+* docs/navigation_audit.md
+* docs/providers_audit.md
+* docs/repositories_audit.md
+* docs/refactor_candidates.md
+* docs/technical_debt.md
+* docs/testing_audit.md
+
+These audits do **not** need to be recreated.
+
+---
+
+# Git Status
+
+Latest known pushed checkpoint:
+
+Commit:
+
+```text
+3f7251af1314af286fa9dd337a61965265946c92
+```
+
+Repository was successfully pushed to GitHub.
+
+After this checkpoint, additional implementation work was completed (appointment query refactor). Before continuing, verify that this newer work has also been committed and pushed.
+
+---
+
+# Completed Implementation
+
+## Firestore Appointment Query Refactor
+
+Completed successfully.
+
+### Removed
+
+Removed the following repository methods:
+
+* getAppointments()
+* getAppointmentsByStatus()
+* getPastAppointments()
+
+Reason:
+
+These methods performed unfiltered collection reads and were incompatible with secure Firestore rules.
+
+---
+
+### Added
+
+Implemented:
+
+* getAppointmentsForCustomer(String customerId)
+* getAppointmentsForProfessional(String professionalId)
+
+These now query Firestore using user ownership instead of downloading the full appointments collection.
+
+---
+
+### AppointmentProvider Updated
+
+AppointmentProvider now reloads appointments through a private helper that selects the correct query depending on the authenticated user's role.
+
+Customer:
+
+* loads only their appointments
+
+Professional:
+
+* loads only their appointments
+
+All reload points were updated:
+
+* loadAppointments()
+* addAppointment()
+* updateAppointment()
+* deleteAppointment()
+* updateAppointmentStatus()
+* linkPaymentToAppointment()
+
+Null safety was also added so no query executes if there is no authenticated user.
+
+---
+
+### Tests
+
+All tests were updated.
+
+Results:
+
+* flutter analyze ✅
+* flutter test ✅
+
+25 tests passing.
+
+---
+
+# Important Architectural Issue Found
+
+The scoped query refactor exposed a new design problem.
+
+AppointmentProvider.isSlotAvailable() currently checks appointment availability using the locally cached appointments.
+
+This is no longer correct.
+
+Example:
+
+Customer A books Professional X at 10:00.
+
+Customer B loads only their own appointments.
+
+Customer B cannot see Customer A's booking.
+
+The local availability check incorrectly reports 10:00 as available.
+
+This means appointment availability can no longer rely on each user's private appointment cache.
+
+A new availability strategy is required.
+
+---
+
+# Next Implementation Task
+
+Before creating Firestore security rules, redesign appointment availability.
+
+Preferred direction:
+
+Create a repository method that checks a professional's availability directly in Firestore instead of using the AppointmentProvider cache.
+
+Possible method:
+
+* checkProfessionalAvailability(...)
+
+This should become the single source of truth for booking validation.
+
+---
+
+# Firestore Rules Status
+
+No Firestore rules have been implemented yet.
+
+This is intentional.
+
+Rules should **not** be added until the booking flow is compatible with scoped queries.
+
+---
+
+# Remaining High-Priority Work
+
+After fixing availability:
+
+1. Create firestore.rules
+2. Create firestore.indexes.json
+3. Validate all Firestore queries against the new rules
+4. Restrict updateUser() writable fields
+5. Review updateAppointment()
+6. Review deleteAppointment()
+7. Restrict recordPayment()
+8. Restrict updatePayment()
+9. Migrate sendNotification() away from unrestricted client-side writes (prefer Cloud Functions)
+
+---
+
+# Important Reminder
+
+Do not repeat the audit process.
+
+The audits are complete.
+
+Future work should focus on implementation and validation using the existing documentation.
+
+Always refer to:
+
+* docs/firestore_security_audit.md
+* docs/firestore_query_inventory.md
+* docs/technical_debt.md
+
+before making architecture or security decisions.
+
+---
+
+# Recommended First Prompt Next Session
+
+"Review the appointment booking flow after the scoped Firestore query refactor. Replace the local availability check with a repository-level availability query that works with future Firestore security rules. Update the provider, repository, and tests as needed."
+
+This should be completed before introducing Firestore security rules.
+

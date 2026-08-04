@@ -140,9 +140,11 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<List<Appointment>> getAppointments() async {
+  Future<List<Appointment>> getAppointmentsForCustomer(String customerId) async {
     try {
-      final query = await _appointmentsCol.get();
+      final query = await _appointmentsCol
+          .where('customerId', isEqualTo: customerId)
+          .get();
       final appointments = <Appointment>[];
       for (final doc in query.docs) {
         final data = doc.data();
@@ -152,8 +154,56 @@ class FirestoreBookingRepository implements BookingRepository {
       appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
       return appointments;
     } catch (e, stack) {
-      debugPrint('FirestoreBookingRepository.getAppointments error: $e\n$stack');
+      debugPrint('FirestoreBookingRepository.getAppointmentsForCustomer error: $e\n$stack');
       throw AppException('Failed to load appointments', cause: e);
+    }
+  }
+
+  @override
+  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId) async {
+    try {
+      final query = await _appointmentsCol
+          .where('professionalId', isEqualTo: professionalId)
+          .get();
+      final appointments = <Appointment>[];
+      for (final doc in query.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        appointments.add(Appointment.fromMap(data));
+      }
+      appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      return appointments;
+    } catch (e, stack) {
+      debugPrint('FirestoreBookingRepository.getAppointmentsForProfessional error: $e\n$stack');
+      throw AppException('Failed to load appointments', cause: e);
+    }
+  }
+
+  @override
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes}) async {
+    try {
+      final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));
+      print('AVAILABILITY CHECK: professionalId=$professionalId, dateTime=$dateTime, slotEnd=$slotEnd');
+      final query = await _appointmentsCol
+          .where('professionalId', isEqualTo: professionalId)
+          .where('dateTime', isLessThan: slotEnd.toIso8601String())
+          .where('status', isNotEqualTo: 'cancelled')
+          .get();
+      print('AVAILABILITY CHECK: ${query.docs.length} documents fetched from Firestore');
+      final isAvailable = !query.docs.any((doc) {
+        final data = doc.data();
+        final apptDateTime = DateTime.parse(data['dateTime'] as String);
+        final duration = data['durationMinutes'] as int? ?? 60;
+        final apptEnd = apptDateTime.add(Duration(minutes: duration));
+        final overlaps = apptEnd.isAfter(dateTime);
+        print('AVAILABILITY CHECK: doc=${doc.id}, apptDateTime=$apptDateTime, duration=$duration, apptEnd=$apptEnd, overlaps=$overlaps');
+        return overlaps;
+      });
+      print('AVAILABILITY CHECK: result=$isAvailable');
+      return isAvailable;
+    } catch (e, stack) {
+      print('AVAILABILITY ERROR: $e \n $stack');
+      throw AppException('Unable to check slot availability. Please check your connection and try again.', cause: e);
     }
   }
 
@@ -199,50 +249,6 @@ class FirestoreBookingRepository implements BookingRepository {
       debugPrint('FirestoreBookingRepository.deleteAppointment error: $e\n$stack');
       if (e is AppException) rethrow;
       throw AppException('Failed to cancel booking', cause: e);
-    }
-  }
-
-  @override
-  Future<List<Appointment>> getAppointmentsByStatus(AppointmentStatus status) async {
-    try {
-      final query = await _appointmentsCol
-          .where('status', isEqualTo: status.name)
-          .get();
-      final appointments = <Appointment>[];
-      for (final doc in query.docs) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        appointments.add(Appointment.fromMap(data));
-      }
-      appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-      return appointments;
-    } catch (e, stack) {
-      debugPrint('FirestoreBookingRepository.getAppointmentsByStatus error: $e\n$stack');
-      throw AppException('Failed to load appointments', cause: e);
-    }
-  }
-
-  @override
-  Future<List<Appointment>> getPastAppointments() async {
-    try {
-      final now = DateTime.now();
-      final query = await _appointmentsCol
-          .where('dateTime', isLessThan: now.toIso8601String())
-          .get();
-      final appointments = <Appointment>[];
-      for (final doc in query.docs) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        final appt = Appointment.fromMap(data);
-        if (appt.status == AppointmentStatus.completed || appt.status == AppointmentStatus.cancelled) {
-          appointments.add(appt);
-        }
-      }
-      appointments.sort((a, b) => b.dateTime.compareTo(a.dateTime));
-      return appointments;
-    } catch (e, stack) {
-      debugPrint('FirestoreBookingRepository.getPastAppointments error: $e\n$stack');
-      throw AppException('Failed to load past appointments', cause: e);
     }
   }
 }

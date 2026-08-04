@@ -85,10 +85,10 @@ class AuthProvider extends ChangeNotifier {
     required String specialty,
   }) async {
     try {
+      await _auth.signOut();
+      currentUser = null;
+
       final normalizedEmail = email.trim().toLowerCase();
-      if (await _repository.isEmailTaken(normalizedEmail)) {
-        return 'Email is already in use';
-      }
 
       final cred = await _auth.createUserWithEmailAndPassword(
         email: normalizedEmail,

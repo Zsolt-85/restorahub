@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../helpers/app_exception.dart';
 import '../helpers/notification_schedule_helper.dart';
-import '../helpers/schedule_helper.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
 import '../repositories/booking_repository.dart';
@@ -42,7 +41,7 @@ class AppointmentProvider extends ChangeNotifier {
   Future<void> loadAppointments() async {
     _beginLoading();
     try {
-      _appointments = await _repository.getAppointments();
+      await _reloadAppointments();
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
@@ -51,11 +50,33 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _reloadAppointments() async {
+    if (currentUser == null) return;
+    final userId = currentUser!.id;
+    if (userId == null) return;
+    if (currentUser!.role == 'customer') {
+      _appointments = await _repository.getAppointmentsForCustomer(userId);
+    } else if (currentUser!.isProfessional) {
+      _appointments = await _repository.getAppointmentsForProfessional(userId);
+    }
+  }
+
   Future<void> addAppointment(Appointment appt) async {
     _beginLoading();
     try {
+      if (appt.professionalId != null) {
+        final available = await isSlotAvailable(
+          slotStart: appt.dateTime,
+          slotDuration: appt.durationMinutes,
+          professionalId: appt.professionalId!,
+        );
+        if (!available) {
+          _endLoading('This time slot is no longer available');
+          return;
+        }
+      }
       await _repository.insertAppointment(appt);
-      _appointments = await _repository.getAppointments();
+      await _reloadAppointments();
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
@@ -68,7 +89,7 @@ class AppointmentProvider extends ChangeNotifier {
     _beginLoading();
     try {
       await _repository.updateAppointment(appt);
-      _appointments = await _repository.getAppointments();
+      await _reloadAppointments();
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
@@ -81,7 +102,7 @@ class AppointmentProvider extends ChangeNotifier {
     _beginLoading();
     try {
       await _repository.deleteAppointment(id);
-      _appointments = await _repository.getAppointments();
+      await _reloadAppointments();
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
@@ -99,7 +120,7 @@ class AppointmentProvider extends ChangeNotifier {
       final appt = _appointments.firstWhere((a) => a.id == id);
       final updated = appt.copyWith(status: newStatus);
       await _repository.updateAppointment(updated);
-      _appointments = await _repository.getAppointments();
+      await _reloadAppointments();
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
@@ -184,19 +205,20 @@ class AppointmentProvider extends ChangeNotifier {
     loadAppointments();
   }
 
-  bool isSlotAvailable({
+  Future<bool> isSlotAvailable({
     required DateTime slotStart,
     required int slotDuration,
     required String professionalId,
-    String? excludeAppointmentId,
-  }) {
-    return ScheduleHelper.isSlotAvailable(
-      slotStart: slotStart,
-      slotDuration: slotDuration,
-      professionalId: professionalId,
-      appointments: _appointments,
-      excludeAppointmentId: excludeAppointmentId,
-    );
+  }) async {
+    try {
+      return await _repository.checkProfessionalAvailability(
+        professionalId: professionalId,
+        dateTime: slotStart,
+        slotDurationMinutes: slotDuration,
+      );
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<void> linkPaymentToAppointment(
@@ -212,7 +234,7 @@ class AppointmentProvider extends ChangeNotifier {
           status: AppointmentStatus.completed,
         );
         await _repository.updateAppointment(updated);
-        _appointments = await _repository.getAppointments();
+        await _reloadAppointments();
       }
       _endLoading();
     } on AppException catch (e) {
@@ -235,11 +257,10 @@ class AppointmentProvider extends ChangeNotifier {
       return 'Professional not found for this booking';
     }
 
-    final available = isSlotAvailable(
+    final available = await isSlotAvailable(
       slotStart: newDateTime,
       slotDuration: appointment.durationMinutes,
       professionalId: appointment.professionalId!,
-      excludeAppointmentId: appointment.id,
     );
 
     if (!available) {

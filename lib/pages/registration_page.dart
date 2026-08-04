@@ -91,9 +91,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
               ? '/professional_home'
               : '/user_home',
         );
-      } else {
-        setState(() =>
-            _error = 'Registration failed. Email may already be registered.');
+      } else if (success != null) {
+        setState(() => _error = success);
       }
     } catch (e) {
       setState(() {
