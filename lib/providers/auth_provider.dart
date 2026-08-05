@@ -184,6 +184,9 @@ class AuthProvider extends ChangeNotifier {
     TimeOfDay? workStart,
     TimeOfDay? workEnd,
     int? slotDurationMinutes,
+    int? bufferTimeMinutes,
+    String? breakStartTime,
+    String? breakEndTime,
   }) async {
     final user = currentUser;
     if (user == null) return 'User not logged in';
@@ -268,6 +271,10 @@ class AuthProvider extends ChangeNotifier {
           user.isProfessional ? User.formatTime(workEnd!) : user.workEndTime,
       slotDurationMinutes:
           user.isProfessional ? slotDurationMinutes! : user.slotDurationMinutes,
+      bufferTimeMinutes:
+          user.isProfessional ? bufferTimeMinutes! : user.bufferTimeMinutes,
+      breakStartTime: breakStartTime,
+      breakEndTime: breakEndTime,
     );
 
     final result = await _repository.updateUser(updatedUser);

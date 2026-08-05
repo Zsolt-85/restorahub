@@ -218,17 +218,20 @@ Widget _buildStatCard(String title, String value, IconData icon) {
   }
 
   Color _statusColor(AppointmentStatus status) {
-    switch (status) {
-      case AppointmentStatus.pending:
-        return Colors.orange;
-      case AppointmentStatus.confirmed:
-        return Colors.green;
-      case AppointmentStatus.completed:
-        return Colors.blue;
-      case AppointmentStatus.cancelled:
-        return Colors.red;
-    }
+  switch (status) {
+    case AppointmentStatus.pending:
+      return Colors.orange;
+    case AppointmentStatus.confirmed:
+      return Colors.green;
+    case AppointmentStatus.completed:
+      return Colors.blue;
+    case AppointmentStatus.cancelledByCustomer:
+    case AppointmentStatus.cancelledByProfessional:
+      return Colors.red;
+    case AppointmentStatus.noShow:
+      return Colors.grey;
   }
+}
 
   int _getTotalBookings(AppointmentProvider provider) {
     switch (_selectedRange) {

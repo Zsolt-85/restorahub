@@ -1,4 +1,6 @@
-enum AppointmentStatus { pending, confirmed, completed, cancelled }
+import 'package:restorahub/helpers/app_exception.dart';
+
+enum AppointmentStatus { pending, confirmed, completed, cancelledByCustomer, cancelledByProfessional, noShow }
 
 class Appointment {
   String? id;
@@ -39,6 +41,51 @@ class Appointment {
 
   bool get isPast => dateTime.isBefore(DateTime.now());
 
+  static const _terminalStatuses = {
+    AppointmentStatus.completed,
+    AppointmentStatus.cancelledByCustomer,
+    AppointmentStatus.cancelledByProfessional,
+    AppointmentStatus.noShow,
+  };
+
+  static const _cancelledStatuses = {
+    AppointmentStatus.cancelledByCustomer,
+    AppointmentStatus.cancelledByProfessional,
+  };
+
+  bool get isTerminal => _terminalStatuses.contains(status);
+
+  bool get isCancelled => _cancelledStatuses.contains(status);
+
+  bool canTransitionTo(AppointmentStatus newStatus) {
+    if (isTerminal) return false;
+    if (newStatus == status) return false;
+    return true;
+  }
+
+  bool canBeCancelledByCustomer({Duration cancellationWindow = const Duration(hours: 2)}) {
+    if (isTerminal) return false;
+    if (isCancelled) return false;
+    final now = DateTime.now();
+    final timeUntilStart = dateTime.difference(now);
+    return timeUntilStart > cancellationWindow;
+  }
+
+  bool canBeRescheduled() {
+    if (isTerminal) return false;
+    if (isCancelled) return false;
+    return true;
+  }
+
+  Appointment withStatus(AppointmentStatus newStatus) {
+    if (!canTransitionTo(newStatus)) {
+      throw AppException(
+        'Invalid status transition from ${status.name} to ${newStatus.name}',
+      );
+    }
+    return copyWith(status: newStatus);
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -69,12 +116,17 @@ class Appointment {
     }
 
     final statusRaw = map['status'] as String?;
-    final status = statusRaw != null
-        ? AppointmentStatus.values.firstWhere(
-            (s) => s.name == statusRaw,
-            orElse: () => AppointmentStatus.pending,
-          )
-        : AppointmentStatus.pending;
+    AppointmentStatus status;
+    if (statusRaw == null) {
+      status = AppointmentStatus.pending;
+    } else if (statusRaw == 'cancelled') {
+      status = AppointmentStatus.cancelledByCustomer;
+    } else {
+      status = AppointmentStatus.values.firstWhere(
+        (s) => s.name == statusRaw,
+        orElse: () => AppointmentStatus.pending,
+      );
+    }
 
     return Appointment(
       id: map['id']?.toString(),

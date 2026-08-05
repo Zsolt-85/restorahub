@@ -124,3 +124,7 @@ Credentials are stored in **Firebase Auth**. Profile and booking data live in **
 - **State management** — Provider + ChangeNotifier. `AppointmentProvider` exposes `isLoading` and `error` for UI feedback; `AuthProvider` exposes `LoginResult` enum for first-login flows.
 - **Theme persistence** — `ThemeProvider` loads/saves the selected theme via `ThemePreferences` (shared_preferences) before the app renders.
 - **Slot availability** — `checkProfessionalAvailability` uses range-based overlap detection (`dateTime < slotEnd` + in-code `apptEnd > slotStart`) instead of exact timestamp matching, avoiding false positives from millisecond-level differences.
+
+## Current Status & Continuation
+
+For the latest project state, completed phases, test status, and next tasks, see **[CHECKPOINT.md](./CHECKPOINT.md)**.

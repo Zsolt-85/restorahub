@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/constants.dart';
+import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -23,6 +24,9 @@ class _ProfilePageState extends State<ProfilePage> {
   TimeOfDay? _workStart;
   TimeOfDay? _workEnd;
   int? _slotDurationMinutes;
+  int? _bufferTimeMinutes;
+  TimeOfDay? _breakStart;
+  TimeOfDay? _breakEnd;
 
   bool _loading = false;
   String? _error;
@@ -46,6 +50,9 @@ class _ProfilePageState extends State<ProfilePage> {
       _workStart = user.workStart;
       _workEnd = user.workEnd;
       _slotDurationMinutes = user.slotDurationMinutes;
+      _bufferTimeMinutes = user.bufferTimeMinutes;
+      _breakStart = user.breakStart;
+      _breakEnd = user.breakEnd;
     }
   }
 
@@ -71,6 +78,23 @@ class _ProfilePageState extends State<ProfilePage> {
           _workStart = picked;
         } else {
           _workEnd = picked;
+        }
+      });
+    }
+  }
+
+  Future<void> _pickBreakTime({required bool isStart}) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: (isStart ? _breakStart : _breakEnd) ?? const TimeOfDay(hour: 12, minute: 0),
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _breakStart = picked;
+        } else {
+          _breakEnd = picked;
         }
       });
     }
@@ -197,6 +221,40 @@ class _ProfilePageState extends State<ProfilePage> {
                 onChanged: (value) =>
                     setState(() => _slotDurationMinutes = value),
               ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                initialValue: _bufferTimeMinutes,
+                decoration: const InputDecoration(
+                  labelText: 'Buffer time between appointments',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.timer_outlined),
+                ),
+                items: bufferTimeOptions
+                    .map(
+                      (minutes) => DropdownMenuItem(
+                        value: minutes,
+                        child: Text('$minutes minutes'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) =>
+                    setState(() => _bufferTimeMinutes = value),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Break start'),
+                subtitle: Text(_breakStart?.format(context) ?? 'Not set'),
+                trailing: const Icon(Icons.free_breakfast),
+                onTap: () => _pickBreakTime(isStart: true),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Break end'),
+                subtitle: Text(_breakEnd?.format(context) ?? 'Not set'),
+                trailing: const Icon(Icons.free_breakfast),
+                onTap: () => _pickBreakTime(isStart: false),
+              ),
             ],
             const SizedBox(height: 24),
             Text(
@@ -252,6 +310,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         workEnd: user.isProfessional ? _workEnd : null,
                         slotDurationMinutes:
                             user.isProfessional ? _slotDurationMinutes : null,
+                        bufferTimeMinutes:
+                            user.isProfessional ? _bufferTimeMinutes : null,
+                        breakStartTime: user.isProfessional && _breakStart != null
+                            ? User.formatTime(_breakStart!)
+                            : null,
+                        breakEndTime: user.isProfessional && _breakEnd != null
+                            ? User.formatTime(_breakEnd!)
+                            : null,
                       );
 
                       if (!context.mounted) return;

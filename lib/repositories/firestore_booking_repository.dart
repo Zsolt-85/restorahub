@@ -180,23 +180,24 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes}) async {
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0}) async {
     try {
       final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));
-      print('AVAILABILITY CHECK: professionalId=$professionalId, dateTime=$dateTime, slotEnd=$slotEnd');
+      print('AVAILABILITY CHECK: professionalId=$professionalId, dateTime=$dateTime, slotEnd=$slotEnd, buffer=$bufferTimeMinutes');
       final query = await _appointmentsCol
           .where('professionalId', isEqualTo: professionalId)
           .where('dateTime', isLessThan: slotEnd.toIso8601String())
-          .where('status', isNotEqualTo: 'cancelled')
+          .where('status', whereNotIn: ['cancelledByCustomer', 'cancelledByProfessional', 'noShow'])
           .get();
       print('AVAILABILITY CHECK: ${query.docs.length} documents fetched from Firestore');
       final isAvailable = !query.docs.any((doc) {
         final data = doc.data();
         final apptDateTime = DateTime.parse(data['dateTime'] as String);
         final duration = data['durationMinutes'] as int? ?? 60;
-        final apptEnd = apptDateTime.add(Duration(minutes: duration));
+        final occupiedDuration = duration + bufferTimeMinutes;
+        final apptEnd = apptDateTime.add(Duration(minutes: occupiedDuration));
         final overlaps = apptEnd.isAfter(dateTime);
-        print('AVAILABILITY CHECK: doc=${doc.id}, apptDateTime=$apptDateTime, duration=$duration, apptEnd=$apptEnd, overlaps=$overlaps');
+        print('AVAILABILITY CHECK: doc=${doc.id}, apptDateTime=$apptDateTime, duration=$duration, buffer=$bufferTimeMinutes, apptEnd=$apptEnd, overlaps=$overlaps');
         return overlaps;
       });
       print('AVAILABILITY CHECK: result=$isAvailable');
@@ -204,6 +205,45 @@ class FirestoreBookingRepository implements BookingRepository {
     } catch (e, stack) {
       print('AVAILABILITY ERROR: $e \n $stack');
       throw AppException('Unable to check slot availability. Please check your connection and try again.', cause: e);
+    }
+  }
+
+  @override
+  Future<void> createAppointmentAtomic(Appointment appointment) async {
+    try {
+      await _firestore.runTransaction((transaction) async {
+        if (appointment.professionalId != null) {
+          final slotStart = appointment.dateTime;
+          final slotEnd = slotStart.add(Duration(minutes: appointment.durationMinutes));
+
+          final query = await _appointmentsCol
+              .where('professionalId', isEqualTo: appointment.professionalId)
+              .where('status', whereIn: ['pending', 'confirmed'])
+              .get();
+
+          for (final doc in query.docs) {
+            final data = doc.data();
+            final apptDateTime = DateTime.parse(data['dateTime'] as String);
+            final duration = data['durationMinutes'] as int? ?? 60;
+            final buffer = data['bufferTimeMinutes'] as int? ?? 0;
+            final apptEnd = apptDateTime.add(Duration(minutes: duration + buffer));
+
+            if (slotStart.isBefore(apptEnd) && slotEnd.isAfter(apptDateTime)) {
+              throw AppException('This time slot is no longer available', code: 'SLOT_TAKEN');
+            }
+          }
+        }
+
+        final docRef = appointment.id != null
+            ? _appointmentsCol.doc(appointment.id)
+            : _appointmentsCol.doc();
+        appointment.id = docRef.id;
+        transaction.set(docRef, appointment.toMap());
+      });
+    } catch (e, stack) {
+      if (e is AppException) rethrow;
+      debugPrint('FirestoreBookingRepository.createAppointmentAtomic error: $e\n$stack');
+      throw AppException('Failed to create booking', cause: e);
     }
   }
 
@@ -250,5 +290,52 @@ class FirestoreBookingRepository implements BookingRepository {
       if (e is AppException) rethrow;
       throw AppException('Failed to cancel booking', cause: e);
     }
+  }
+
+  @override
+  Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId) {
+    return _appointmentsCol
+        .where('customerId', isEqualTo: customerId)
+        .snapshots()
+        .map((snapshot) {
+          final appointments = <Appointment>[];
+          for (final doc in snapshot.docs) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            appointments.add(Appointment.fromMap(data));
+          }
+          appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+          return appointments;
+        });
+  }
+
+  @override
+  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId) {
+    return _appointmentsCol
+        .where('professionalId', isEqualTo: professionalId)
+        .snapshots()
+        .map((snapshot) {
+          final appointments = <Appointment>[];
+          for (final doc in snapshot.docs) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            appointments.add(Appointment.fromMap(data));
+          }
+          appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+          return appointments;
+        });
+  }
+
+  @override
+  Stream<Appointment?> watchAppointment(String id) {
+    return _appointmentsCol
+        .doc(id)
+        .snapshots()
+        .map((snapshot) {
+          if (!snapshot.exists) return null;
+          final data = snapshot.data()!;
+          data['id'] = snapshot.id;
+          return Appointment.fromMap(data);
+        });
   }
 }

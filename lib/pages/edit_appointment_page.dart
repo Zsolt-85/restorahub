@@ -74,6 +74,8 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
       start: professional.workStart,
       end: professional.workEnd,
       slotMinutes: widget.appointment.durationMinutes,
+      breakStart: professional.breakStart,
+      breakEnd: professional.breakEnd,
     );
   }
 

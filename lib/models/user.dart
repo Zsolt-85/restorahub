@@ -10,6 +10,9 @@ class User {
   final String workStartTime;
   final String workEndTime;
   final int slotDurationMinutes;
+  final int bufferTimeMinutes;
+  final String? breakStartTime;
+  final String? breakEndTime;
 
   User({
     this.id,
@@ -21,6 +24,9 @@ class User {
     this.workStartTime = '09:00',
     this.workEndTime = '17:00',
     this.slotDurationMinutes = 60,
+    this.bufferTimeMinutes = 0,
+    this.breakStartTime,
+    this.breakEndTime,
   });
 
   bool get isProfessional => role == 'professional';
@@ -30,6 +36,12 @@ class User {
   TimeOfDay get workStart => _parseTime(workStartTime);
 
   TimeOfDay get workEnd => _parseTime(workEndTime);
+
+  TimeOfDay? get breakStart =>
+      breakStartTime != null ? _parseTime(breakStartTime!) : null;
+
+  TimeOfDay? get breakEnd =>
+      breakEndTime != null ? _parseTime(breakEndTime!) : null;
 
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
@@ -42,6 +54,9 @@ class User {
       workStartTime: map['workStartTime']?.toString() ?? '09:00',
       workEndTime: map['workEndTime']?.toString() ?? '17:00',
       slotDurationMinutes: map['slotDurationMinutes'] as int? ?? 60,
+      bufferTimeMinutes: map['bufferTimeMinutes'] as int? ?? 0,
+      breakStartTime: map['breakStartTime']?.toString(),
+      breakEndTime: map['breakEndTime']?.toString(),
     );
   }
 
@@ -56,6 +71,9 @@ class User {
       'workStartTime': workStartTime,
       'workEndTime': workEndTime,
       'slotDurationMinutes': slotDurationMinutes,
+      'bufferTimeMinutes': bufferTimeMinutes,
+      'breakStartTime': breakStartTime,
+      'breakEndTime': breakEndTime,
     };
   }
 
@@ -69,6 +87,9 @@ class User {
     String? workStartTime,
     String? workEndTime,
     int? slotDurationMinutes,
+    int? bufferTimeMinutes,
+    String? breakStartTime,
+    String? breakEndTime,
   }) {
     return User(
       id: id ?? this.id,
@@ -80,6 +101,9 @@ class User {
       workStartTime: workStartTime ?? this.workStartTime,
       workEndTime: workEndTime ?? this.workEndTime,
       slotDurationMinutes: slotDurationMinutes ?? this.slotDurationMinutes,
+      bufferTimeMinutes: bufferTimeMinutes ?? this.bufferTimeMinutes,
+      breakStartTime: breakStartTime ?? this.breakStartTime,
+      breakEndTime: breakEndTime ?? this.breakEndTime,
     );
   }
 

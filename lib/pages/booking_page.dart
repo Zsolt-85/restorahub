@@ -97,6 +97,8 @@ class _BookingPageState extends State<BookingPage> {
       start: professional.workStart,
       end: professional.workEnd,
       slotMinutes: professional.slotDurationMinutes,
+      breakStart: professional.breakStart,
+      breakEnd: professional.breakEnd,
     );
   }
 
@@ -229,6 +231,7 @@ class _BookingPageState extends State<BookingPage> {
                         slotStart: dateTime,
                         slotDuration: pro.slotDurationMinutes,
                         professionalId: pro.id!,
+                        bufferTimeMinutes: pro.bufferTimeMinutes,
                       )) {
                         setState(() => _error =
                             'This slot was just booked. Pick another.');
@@ -267,8 +270,13 @@ class _BookingPageState extends State<BookingPage> {
                           arguments: BookingSummary(
                             service: widget.service,
                             professionalName: pro.name,
+                            professionalId: pro.id,
                             dateTime: dateTime,
                             durationMinutes: pro.slotDurationMinutes,
+                            customerName: customer.name,
+                            customerPhone: customer.phone,
+                            professionalPhone: pro.phone,
+                            professionalEmail: pro.email,
                           ),
                         );
                       } catch (e) {

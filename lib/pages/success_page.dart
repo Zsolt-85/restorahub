@@ -1,12 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../helpers/calendar_helper.dart';
 import '../helpers/format_helper.dart';
 import '../models/booking_summary.dart';
+import '../providers/appointment_provider.dart';
+import '../providers/auth_provider.dart';
 
 class SuccessPage extends StatelessWidget {
   const SuccessPage({super.key, this.summary});
 
   final BookingSummary? summary;
+
+  Future<void> _addToCalendar(BuildContext context) async {
+    if (summary == null) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final apptProvider = Provider.of<AppointmentProvider>(context, listen: false);
+
+    final professional = summary!.professionalId != null
+        ? await apptProvider.repository.getUserById(summary!.professionalId!)
+        : null;
+
+    if (professional == null) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to add to calendar: professional not found')),
+      );
+      return;
+    }
+
+    final appointment = summary!.toAppointment(
+      customerId: authProvider.currentUser?.id,
+    );
+
+    try {
+      await CalendarHelper.addToNativeCalendar(appointment, professional);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Added to calendar')),
+      );
+    } on CalendarException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add to calendar: ${e.message}')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to add to calendar')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +105,14 @@ class SuccessPage extends StatelessWidget {
                     ),
                   ),
                 ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 16),
+              if (summary != null)
+                ElevatedButton.icon(
+                  onPressed: () => _addToCalendar(context),
+                  icon: const Icon(Icons.calendar_today),
+                  label: const Text('Add to Calendar'),
+                ),
+              const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushNamedAndRemoveUntil(

@@ -17,6 +17,8 @@ class ScheduleHelper {
     required TimeOfDay start,
     required TimeOfDay end,
     required int slotMinutes,
+    TimeOfDay? breakStart,
+    TimeOfDay? breakEnd,
   }) {
     if (slotMinutes <= 0) return [];
 
@@ -25,7 +27,18 @@ class ScheduleHelper {
     final endMinutes = timeToMinutes(end);
 
     while (cursor + slotMinutes <= endMinutes) {
-      slots.add(minutesToTime(cursor));
+      final slotStartMinutes = cursor;
+      final slotEndMinutes = cursor + slotMinutes;
+
+      final overlapsBreak = breakStart != null &&
+          breakEnd != null &&
+          slotStartMinutes < timeToMinutes(breakEnd) &&
+          slotEndMinutes > timeToMinutes(breakStart);
+
+      if (!overlapsBreak) {
+        slots.add(minutesToTime(cursor));
+      }
+
       cursor += slotMinutes;
     }
 
@@ -53,17 +66,20 @@ class ScheduleHelper {
     required String professionalId,
     required List<Appointment> appointments,
     String? excludeAppointmentId,
+    int bufferTimeMinutes = 0,
   }) {
     for (final appointment in appointments) {
       if (appointment.id == excludeAppointmentId) continue;
       if (appointment.professionalId != professionalId) continue;
       if (!isSameDay(appointment.dateTime, slotStart)) continue;
 
+      final occupiedDuration = appointment.durationMinutes + bufferTimeMinutes;
+
       if (intervalsOverlap(
         startA: slotStart,
         durationA: slotDuration,
         startB: appointment.dateTime,
-        durationB: appointment.durationMinutes,
+        durationB: occupiedDuration,
       )) {
         return false;
       }

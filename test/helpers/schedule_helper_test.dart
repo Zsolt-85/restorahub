@@ -24,6 +24,20 @@ void main() {
       expect(slots.last, const TimeOfDay(hour: 10, minute: 30));
     });
 
+    test('generateSlots excludes break time slots', () {
+      final slots = ScheduleHelper.generateSlots(
+        start: const TimeOfDay(hour: 9, minute: 0),
+        end: const TimeOfDay(hour: 13, minute: 0),
+        slotMinutes: 60,
+        breakStart: const TimeOfDay(hour: 11, minute: 30),
+        breakEnd: const TimeOfDay(hour: 12, minute: 30),
+      );
+
+      expect(slots.length, 2);
+      expect(slots.first, const TimeOfDay(hour: 9, minute: 0));
+      expect(slots.last, const TimeOfDay(hour: 10, minute: 0));
+    });
+
     test('intervalsOverlap detects overlapping appointments', () {
       final start = DateTime(2026, 6, 9, 10, 0);
 
@@ -100,6 +114,41 @@ void main() {
           slotDuration: 60,
           professionalId: '7',
           appointments: appointments,
+        ),
+        isTrue,
+      );
+    });
+
+    test('isSlotAvailable respects buffer time between appointments', () {
+      final day = DateTime(2026, 6, 9, 10, 0);
+      final appointments = [
+        Appointment(
+          id: '1',
+          service: 'Massage — Full Body',
+          dateTime: day,
+          durationMinutes: 60,
+          professionalId: '7',
+        ),
+      ];
+
+      expect(
+        ScheduleHelper.isSlotAvailable(
+          slotStart: day.add(const Duration(hours: 1)),
+          slotDuration: 60,
+          professionalId: '7',
+          appointments: appointments,
+          bufferTimeMinutes: 15,
+        ),
+        isFalse,
+      );
+
+      expect(
+        ScheduleHelper.isSlotAvailable(
+          slotStart: day.add(const Duration(hours: 1, minutes: 15)),
+          slotDuration: 60,
+          professionalId: '7',
+          appointments: appointments,
+          bufferTimeMinutes: 15,
         ),
         isTrue,
       );

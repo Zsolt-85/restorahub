@@ -34,4 +34,6 @@ final Map<String, List<String>> serviceTypes = {
 
 const List<int> slotDurationOptions = [15, 30, 45, 60, 90, 120];
 
+const List<int> bufferTimeOptions = [0, 10, 15, 30];
+
 const kSecondaryColor = Color(0xFFE0F2F1);

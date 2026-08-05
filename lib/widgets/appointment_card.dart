@@ -34,7 +34,7 @@ class AppointmentCard extends StatelessWidget {
     final statusColor = _statusColor(appointment.status);
     final canManage = viewerIsCustomer == false &&
         appointment.status != AppointmentStatus.completed &&
-        appointment.status != AppointmentStatus.cancelled;
+        !appointment.isCancelled;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -133,7 +133,7 @@ class AppointmentCard extends StatelessWidget {
                       onPressed: () => AppointmentActions.confirmStatusChange(
                         context,
                         appointment,
-                        AppointmentStatus.cancelled,
+                        AppointmentStatus.cancelledByCustomer,
                       ),
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                       label: const Text(
@@ -165,8 +165,11 @@ Color _statusColor(AppointmentStatus status) {
       return Colors.green;
     case AppointmentStatus.completed:
       return Colors.blue;
-    case AppointmentStatus.cancelled:
+    case AppointmentStatus.cancelledByCustomer:
+    case AppointmentStatus.cancelledByProfessional:
       return Colors.red;
+    case AppointmentStatus.noShow:
+      return Colors.grey;
   }
 }
 

@@ -25,6 +25,8 @@ dependencies:
   firebase_auth: ^6.5.4
   cloud_firestore: ^6.6.0
 
+  add_2_calendar: ^3.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

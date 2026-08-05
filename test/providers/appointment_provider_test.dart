@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:restorahub/helpers/app_exception.dart';
 import 'package:restorahub/models/appointment.dart';
 import 'package:restorahub/models/user.dart';
 import 'package:restorahub/providers/appointment_provider.dart';
@@ -64,15 +67,38 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes}) async {
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0}) async {
     final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));
     return !appointments.any((a) {
       if (a.professionalId != professionalId) return false;
-      if (a.status == AppointmentStatus.cancelled) return false;
+      if (a.isCancelled) return false;
       if (!a.dateTime.isBefore(slotEnd)) return false;
-      final apptEnd = a.dateTime.add(Duration(minutes: a.durationMinutes));
+      final occupiedDuration = a.durationMinutes + bufferTimeMinutes;
+      final apptEnd = a.dateTime.add(Duration(minutes: occupiedDuration));
       return apptEnd.isAfter(dateTime);
     });
+  }
+
+  @override
+  Future<void> createAppointmentAtomic(Appointment appointment) async {
+    if (appointment.professionalId != null) {
+      final slotStart = appointment.dateTime;
+      final slotEnd = slotStart.add(Duration(minutes: appointment.durationMinutes));
+
+      final hasOverlap = appointments.any((a) {
+        if (a.professionalId != appointment.professionalId) return false;
+        if (a.status != AppointmentStatus.pending && a.status != AppointmentStatus.confirmed) return false;
+        final apptEnd = a.dateTime.add(Duration(minutes: a.durationMinutes));
+        return slotStart.isBefore(apptEnd) && slotEnd.isAfter(a.dateTime);
+      });
+
+      if (hasOverlap) {
+        throw AppException('This time slot is no longer available', code: 'SLOT_TAKEN');
+      }
+    }
+
+    appointment.id ??= (appointments.length + 1).toString();
+    appointments.add(appointment);
   }
 
   @override
@@ -97,6 +123,28 @@ class FakeBookingRepository implements BookingRepository {
     final lengthBefore = appointments.length;
     appointments.removeWhere((a) => a.id == id);
     return appointments.length < lengthBefore ? 1 : 0;
+  }
+
+  @override
+  Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId) {
+    final controller = StreamController<List<Appointment>>();
+    controller.add(appointments.where((a) => a.customerId == customerId).toList());
+    return controller.stream;
+  }
+
+  @override
+  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId) {
+    final controller = StreamController<List<Appointment>>();
+    controller.add(appointments.where((a) => a.professionalId == professionalId).toList());
+    return controller.stream;
+  }
+
+  @override
+  Stream<Appointment?> watchAppointment(String id) {
+    final controller = StreamController<Appointment?>();
+    final appt = appointments.where((a) => a.id == id).firstOrNull;
+    controller.add(appt);
+    return controller.stream;
   }
 }
 
@@ -270,6 +318,77 @@ void main() {
 
       expect(provider.appointments.length, 0);
       expect(provider.error, 'This time slot is no longer available');
+    });
+
+    group('Cancellation Policy', () {
+      test('cancelAppointment fails within 2-hour window', () async {
+        final appt = Appointment(
+          id: '1',
+          service: 'Massage',
+          dateTime: DateTime.now().add(const Duration(hours: 1)),
+          customerId: 'cust-1',
+        );
+        await provider.addAppointment(appt);
+
+        final error = await provider.cancelAppointment('1');
+        expect(error, 'Appointments cannot be cancelled less than 2 hours before the start time.');
+      });
+
+      test('cancelAppointment succeeds outside 2-hour window', () async {
+        final appt = Appointment(
+          id: '1',
+          service: 'Massage',
+          dateTime: DateTime.now().add(const Duration(days: 1)),
+          customerId: 'cust-1',
+        );
+        await provider.addAppointment(appt);
+
+        final error = await provider.cancelAppointment('1');
+        expect(error, isNull);
+        expect(provider.appointments.length, 1);
+        expect(provider.appointments.first.status, AppointmentStatus.cancelledByCustomer);
+      });
+    });
+
+    group('State Machine Transitions', () {
+      test('updateAppointmentStatus rejects terminal to non-terminal transition', () async {
+        final appt = Appointment(
+          id: '1',
+          service: 'Massage',
+          dateTime: DateTime.now().add(const Duration(days: 1)),
+          status: AppointmentStatus.completed,
+          customerId: 'cust-1',
+        );
+        await provider.addAppointment(appt);
+
+        await provider.updateAppointmentStatus('1', AppointmentStatus.pending);
+        expect(provider.error, contains('Invalid status transition'));
+      });
+
+      test('rescheduleAppointment rejects terminal status', () async {
+        final appt = Appointment(
+          id: '1',
+          service: 'Massage',
+          dateTime: DateTime.now().add(const Duration(days: 1)),
+          status: AppointmentStatus.completed,
+          customerId: 'cust-1',
+        );
+        await provider.addAppointment(appt);
+
+        final error = await provider.rescheduleAppointment(
+          appointment: provider.appointments.first,
+          newDateTime: DateTime.now().add(const Duration(days: 2)),
+        );
+        expect(error, 'This appointment cannot be rescheduled');
+      });
+    });
+
+    group('Real-Time Streams', () {
+      test('startRealtimeAppointments sets up stream', () async {
+        provider.startRealtimeAppointments();
+        expect(provider.appointmentsStream, isNotNull);
+        provider.stopRealtimeAppointments();
+      });
     });
   });
 }

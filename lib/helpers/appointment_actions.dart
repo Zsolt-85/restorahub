@@ -105,7 +105,7 @@ class AppointmentActions {
         actionLabel = 'Mark as completed';
         confirmMessage = 'Mark this appointment as completed?';
         break;
-      case AppointmentStatus.cancelled:
+      case AppointmentStatus.cancelledByCustomer:
         actionLabel = 'Cancel booking';
         confirmMessage = 'Cancel this booking?';
         break;
@@ -128,7 +128,7 @@ class AppointmentActions {
             child: Text(
               actionLabel,
               style: TextStyle(
-                color: newStatus == AppointmentStatus.cancelled
+                 color: newStatus == AppointmentStatus.cancelledByCustomer
                     ? Colors.red
                     : null,
               ),

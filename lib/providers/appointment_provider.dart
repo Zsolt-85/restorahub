@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../helpers/app_exception.dart';
@@ -19,6 +21,11 @@ class AppointmentProvider extends ChangeNotifier {
   User? currentUser;
 
   List<Appointment> get appointments => _appointments;
+
+  StreamSubscription<List<Appointment>>? _appointmentsSubscription;
+  Stream<List<Appointment>>? _appointmentsStream;
+
+  Stream<List<Appointment>>? get appointmentsStream => _appointmentsStream;
 
   bool _isLoading = false;
   String? _error;
@@ -61,25 +68,50 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
+  void startRealtimeAppointments() {
+    _appointmentsSubscription?.cancel();
+    if (currentUser == null) return;
+    final userId = currentUser!.id;
+    if (userId == null) return;
+
+    if (currentUser!.role == 'customer') {
+      _appointmentsStream = _repository.watchAppointmentsForCustomer(userId);
+    } else if (currentUser!.isProfessional) {
+      _appointmentsStream = _repository.watchAppointmentsForProfessional(userId);
+    } else {
+      return;
+    }
+
+    _appointmentsSubscription = _appointmentsStream!.listen(
+      (appointments) {
+        _appointments = appointments;
+        notifyListeners();
+      },
+      onError: (e) {
+        _error = e is AppException ? e.message : 'Unexpected error loading appointments';
+        notifyListeners();
+      },
+    );
+  }
+
+  void stopRealtimeAppointments() {
+    _appointmentsSubscription?.cancel();
+    _appointmentsSubscription = null;
+    _appointmentsStream = null;
+  }
+
   Future<void> addAppointment(Appointment appt) async {
     _beginLoading();
     try {
-      if (appt.professionalId != null) {
-        final available = await isSlotAvailable(
-          slotStart: appt.dateTime,
-          slotDuration: appt.durationMinutes,
-          professionalId: appt.professionalId!,
-        );
-        if (!available) {
-          _endLoading('This time slot is no longer available');
-          return;
-        }
-      }
-      await _repository.insertAppointment(appt);
+      await _repository.createAppointmentAtomic(appt);
       await _reloadAppointments();
       _endLoading();
     } on AppException catch (e) {
-      _endLoading(e.message);
+      if (e.code == 'SLOT_TAKEN') {
+        _endLoading('This time slot is no longer available');
+      } else {
+        _endLoading(e.message);
+      }
     } catch (e) {
       _endLoading('Unexpected error creating booking');
     }
@@ -118,7 +150,7 @@ class AppointmentProvider extends ChangeNotifier {
     _beginLoading();
     try {
       final appt = _appointments.firstWhere((a) => a.id == id);
-      final updated = appt.copyWith(status: newStatus);
+      final updated = appt.withStatus(newStatus);
       await _repository.updateAppointment(updated);
       await _reloadAppointments();
       _endLoading();
@@ -149,7 +181,7 @@ class AppointmentProvider extends ChangeNotifier {
 
   List<Appointment> get cancelledAppointments {
     return _appointments
-        .where((a) => a.status == AppointmentStatus.cancelled)
+        .where((a) => a.isCancelled)
         .toList();
   }
 
@@ -171,7 +203,7 @@ class AppointmentProvider extends ChangeNotifier {
         .where(
           (a) =>
               a.dateTime.isAfter(now) &&
-              a.status != AppointmentStatus.cancelled,
+              !a.isCancelled,
         )
         .toList();
   }
@@ -209,12 +241,14 @@ class AppointmentProvider extends ChangeNotifier {
     required DateTime slotStart,
     required int slotDuration,
     required String professionalId,
+    int bufferTimeMinutes = 0,
   }) async {
     try {
       return await _repository.checkProfessionalAvailability(
         professionalId: professionalId,
         dateTime: slotStart,
         slotDurationMinutes: slotDuration,
+        bufferTimeMinutes: bufferTimeMinutes,
       );
     } catch (e) {
       return false;
@@ -245,22 +279,46 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   Future<String?> cancelAppointment(String id) async {
-    await deleteAppointment(id);
-    return null;
+    final appt = _appointments.firstWhere((a) => a.id == id);
+    if (!appt.canBeCancelledByCustomer()) {
+      return 'Appointments cannot be cancelled less than 2 hours before the start time.';
+    }
+    _beginLoading();
+    try {
+      final updated = appt.withStatus(AppointmentStatus.cancelledByCustomer);
+      await _repository.updateAppointment(updated);
+      await _reloadAppointments();
+      _endLoading();
+      return null;
+    } on AppException catch (e) {
+      _endLoading(e.message);
+      return e.message;
+    } catch (e) {
+      _endLoading('Unexpected error cancelling booking');
+      return 'Unexpected error cancelling booking';
+    }
   }
 
   Future<String?> rescheduleAppointment({
     required Appointment appointment,
     required DateTime newDateTime,
   }) async {
+    if (!appointment.canBeRescheduled()) {
+      return 'This appointment cannot be rescheduled';
+    }
+
     if (appointment.professionalId == null) {
       return 'Professional not found for this booking';
     }
+
+    final professional = await _repository.getUserById(appointment.professionalId!);
+    final bufferTime = professional?.bufferTimeMinutes ?? 0;
 
     final available = await isSlotAvailable(
       slotStart: newDateTime,
       slotDuration: appointment.durationMinutes,
       professionalId: appointment.professionalId!,
+      bufferTimeMinutes: bufferTime,
     );
 
     if (!available) {
@@ -293,7 +351,7 @@ class AppointmentProvider extends ChangeNotifier {
   Future<void> scheduleUpcomingReminders() async {
     final now = DateTime.now();
     for (final appt in _appointments) {
-      if (appt.status == AppointmentStatus.cancelled) continue;
+      if (appt.isCancelled) continue;
       final reminderTime = appt.dateTime.subtract(const Duration(hours: 1));
       if (reminderTime.isAfter(now) && reminderTime.isBefore(appt.dateTime)) {
         try {
@@ -308,5 +366,11 @@ class AppointmentProvider extends ChangeNotifier {
         }
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _appointmentsSubscription?.cancel();
+    super.dispose();
   }
 }
