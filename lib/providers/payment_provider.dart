@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../models/payment.dart';
-import '../repositories/firestore_payment_repository.dart';
 import '../repositories/payment_repository.dart';
 
 class PaymentProvider extends ChangeNotifier {
-  PaymentProvider({PaymentRepository? repository})
-      : _repository = repository ?? FirestorePaymentRepository.instance;
-
   final PaymentRepository _repository;
+
+  PaymentProvider({required PaymentRepository repository})
+      : _repository = repository;
 
   List<Payment> _payments = [];
   Payment? _selectedPayment;

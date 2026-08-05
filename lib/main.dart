@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'repositories/firestore_booking_repository.dart';
+import 'repositories/notification_repository.dart';
+import 'repositories/firestore_payment_repository.dart';
+import 'repositories/payment_repository.dart';
 import 'helpers/notification_schedule_helper.dart';
 
 import 'models/user.dart';
@@ -34,6 +37,8 @@ Future<void> main() async {
   await NotificationScheduleHelper.initialize();
 
   final firestoreRepo = FirestoreBookingRepository.instance;
+  final notificationRepo = FirestoreNotificationRepository.instance;
+  final paymentRepo = FirestorePaymentRepository.instance;
   final authProvider = AuthProvider(repository: firestoreRepo);
   final appointmentProvider = AppointmentProvider(repository: firestoreRepo);
   final themeProvider = ThemeProvider();
@@ -52,17 +57,14 @@ Future<void> main() async {
 
   final initialRoute = _resolveInitialRoute(authProvider.currentUser);
 
-  final notificationProvider = NotificationProvider();
-  final paymentProvider = PaymentProvider();
-
   runApp(
     MyApp(
       authProvider: authProvider,
       appointmentProvider: appointmentProvider,
       themeProvider: themeProvider,
-      notificationProvider: notificationProvider,
-      paymentProvider: paymentProvider,
       initialRoute: initialRoute,
+      notificationRepo: notificationRepo,
+      paymentRepo: paymentRepo,
     ),
   );
 }
@@ -78,17 +80,17 @@ class MyApp extends StatelessWidget {
     required this.authProvider,
     required this.appointmentProvider,
     required this.themeProvider,
-    required this.notificationProvider,
-    required this.paymentProvider,
     required this.initialRoute,
+    required this.notificationRepo,
+    required this.paymentRepo,
   });
 
   final AuthProvider authProvider;
   final AppointmentProvider appointmentProvider;
   final ThemeProvider themeProvider;
-  final NotificationProvider notificationProvider;
-  final PaymentProvider paymentProvider;
   final String initialRoute;
+  final NotificationRepository notificationRepo;
+  final PaymentRepository paymentRepo;
 
   @override
   Widget build(BuildContext context) {
@@ -99,10 +101,30 @@ class MyApp extends StatelessWidget {
           value: appointmentProvider,
         ),
         ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
-        ChangeNotifierProvider<NotificationProvider>.value(
-          value: notificationProvider,
+        Provider<NotificationRepository>.value(value: notificationRepo),
+        ChangeNotifierProxyProvider<NotificationRepository, NotificationProvider>(
+          create: (context) => NotificationProvider(
+            repository: context.read<NotificationRepository>(),
+          ),
+          update: (context, repo, provider) {
+            if (provider == null) {
+              return NotificationProvider(repository: repo);
+            }
+            return provider;
+          },
         ),
-        ChangeNotifierProvider<PaymentProvider>.value(value: paymentProvider),
+        Provider<PaymentRepository>.value(value: paymentRepo),
+        ChangeNotifierProxyProvider<PaymentRepository, PaymentProvider>(
+          create: (context) => PaymentProvider(
+            repository: context.read<PaymentRepository>(),
+          ),
+          update: (context, repo, provider) {
+            if (provider == null) {
+              return PaymentProvider(repository: repo);
+            }
+            return provider;
+          },
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, _) {

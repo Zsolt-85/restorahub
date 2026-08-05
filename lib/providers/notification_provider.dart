@@ -6,8 +6,8 @@ import '../repositories/notification_repository.dart';
 class NotificationProvider extends ChangeNotifier {
   final NotificationRepository _repository;
 
-  NotificationProvider({NotificationRepository? repository})
-      : _repository = repository ?? FirestoreNotificationRepository.instance;
+  NotificationProvider({required NotificationRepository repository})
+      : _repository = repository;
 
   List<AppNotification> _notifications = [];
   int _unreadCount = 0;

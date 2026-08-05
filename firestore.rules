@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
+    }
+    match /appointments/{appointmentId} {
+      allow get: if isAuthenticated() && (resource.data.customerId == request.auth.uid || resource.data.professionalId == request.auth.uid);
+      allow list: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.customerId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (resource.data.customerId == request.auth.uid || resource.data.professionalId == request.auth.uid);
+    }
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() && (resource.data.customerId == request.auth.uid || resource.data.professionalId == request.auth.uid);
+      allow create, update: if isAuthenticated() && request.resource.data.professionalId == request.auth.uid;
+    }
+    match /notifications/{notificationId} {
+      allow read, update: if isAuthenticated() && resource.data.receiverId == request.auth.uid;
+      allow create: if isAuthenticated();
+    }
+  }
+}
