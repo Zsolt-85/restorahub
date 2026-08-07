@@ -11,12 +11,16 @@ class AppointmentCard extends StatelessWidget {
     required this.viewerIsCustomer,
     required this.onEdit,
     required this.onCancel,
+    this.onConfirm,
+    this.onReject,
   });
 
   final Appointment appointment;
   final bool viewerIsCustomer;
   final VoidCallback onEdit;
   final VoidCallback onCancel;
+  final VoidCallback? onConfirm;
+  final VoidCallback? onReject;
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +108,26 @@ class AppointmentCard extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                if (canManage) ...[
+                if (!viewerIsCustomer && appointment.status == AppointmentStatus.pending) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onReject,
+                      icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+                      label: const Text(
+                        'Reject',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: onConfirm,
+                      icon: const Icon(Icons.check_circle),
+                      label: const Text('Confirm'),
+                    ),
+                  ),
+                ] else if (canManage) ...[
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: appointment.isPast ? null : onEdit,
@@ -114,7 +137,8 @@ class AppointmentCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                 ],
-                if (canManage) ...[
+                if (canManage &&
+                    (!viewerIsCustomer || appointment.status == AppointmentStatus.pending)) ...[
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: onCancel,

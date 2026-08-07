@@ -88,6 +88,62 @@ class AppointmentActions {
     }
   }
 
+  static Future<void> confirmProfessionalDecision(
+    BuildContext context,
+    Appointment appointment,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('New booking request'),
+        content: Text(
+          'Accept "${appointment.service}" from ${appointment.customerName ?? 'this customer'} on '
+          '${appointment.dateTime.toLocal()}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Decline',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Accept'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == null || !context.mounted) return;
+
+    try {
+      final newStatus = confirmed
+          ? AppointmentStatus.confirmed
+          : AppointmentStatus.cancelledByProfessional;
+      await Provider.of<AppointmentProvider>(context, listen: false)
+          .updateAppointmentStatus(appointment.id!, newStatus);
+
+      if (!context.mounted) return;
+
+      final label = newStatus == AppointmentStatus.confirmed ? 'confirmed' : 'declined';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Booking $label')),
+      );
+    } on AppException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update booking: ${e.message}')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update booking')),
+      );
+    }
+  }
+
   static Future<void> confirmStatusChange(
     BuildContext context,
     Appointment appointment,

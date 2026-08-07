@@ -40,7 +40,10 @@ Future<void> main() async {
   final notificationRepo = FirestoreNotificationRepository.instance;
   final paymentRepo = FirestorePaymentRepository.instance;
   final authProvider = AuthProvider(repository: firestoreRepo);
-  final appointmentProvider = AppointmentProvider(repository: firestoreRepo);
+  final appointmentProvider = AppointmentProvider(
+    repository: firestoreRepo,
+    notificationRepository: notificationRepo,
+  );
   final themeProvider = ThemeProvider();
 
   await themeProvider.loadTheme();

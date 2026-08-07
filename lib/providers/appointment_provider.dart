@@ -3,17 +3,24 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../helpers/app_exception.dart';
+import '../helpers/format_helper.dart';
 import '../helpers/notification_schedule_helper.dart';
 import '../models/appointment.dart';
+import '../models/notification.dart';
 import '../models/user.dart';
 import '../repositories/booking_repository.dart';
 import '../repositories/firestore_booking_repository.dart';
+import '../repositories/notification_repository.dart';
 
 class AppointmentProvider extends ChangeNotifier {
-  AppointmentProvider({BookingRepository? repository})
-      : _repository = repository ?? FirestoreBookingRepository.instance;
+  AppointmentProvider({
+    BookingRepository? repository,
+    NotificationRepository? notificationRepository,
+  })  : _repository = repository ?? FirestoreBookingRepository.instance,
+        _notificationRepository = notificationRepository;
 
   final BookingRepository _repository;
+  final NotificationRepository? _notificationRepository;
 
   BookingRepository get repository => _repository;
 
@@ -100,10 +107,31 @@ class AppointmentProvider extends ChangeNotifier {
     _appointmentsStream = null;
   }
 
+  Future<void> _sendNotification(AppNotification notification) async {
+    if (_notificationRepository == null) return;
+    try {
+      await _notificationRepository!.sendNotification(notification);
+    } catch (e) {
+      debugPrint('AppointmentProvider._sendNotification error: $e');
+    }
+  }
+
   Future<void> addAppointment(Appointment appt) async {
     _beginLoading();
     try {
       await _repository.createAppointmentAtomic(appt);
+      if (appt.professionalId != null && appt.customerId != null) {
+        await _sendNotification(
+          AppNotification(
+            type: NotificationType.bookingRequested,
+            title: 'New booking request',
+            message: '${appt.customerName ?? 'A customer'} requested ${appt.service} on ${FormatHelper.formatDateTime(appt.dateTime)}',
+            appointmentId: appt.id,
+            receiverId: appt.professionalId!,
+            senderId: appt.customerId!,
+          ),
+        );
+      }
       await _reloadAppointments();
       _endLoading();
     } on AppException catch (e) {
@@ -150,8 +178,42 @@ class AppointmentProvider extends ChangeNotifier {
     _beginLoading();
     try {
       final appt = _appointments.firstWhere((a) => a.id == id);
+      final previousStatus = appt.status;
       final updated = appt.withStatus(newStatus);
       await _repository.updateAppointment(updated);
+
+      if (previousStatus == AppointmentStatus.pending &&
+          newStatus == AppointmentStatus.confirmed &&
+          appt.customerId != null &&
+          appt.professionalId != null) {
+        await _sendNotification(
+          AppNotification(
+            type: NotificationType.bookingConfirmed,
+            title: 'Booking confirmed',
+            message: '${appt.professionalName ?? 'Your professional'} confirmed ${appt.service} on ${FormatHelper.formatDateTime(appt.dateTime)}',
+            appointmentId: appt.id,
+            receiverId: appt.customerId!,
+            senderId: appt.professionalId!,
+          ),
+        );
+      }
+
+      if (previousStatus == AppointmentStatus.pending &&
+          newStatus == AppointmentStatus.cancelledByProfessional &&
+          appt.customerId != null &&
+          appt.professionalId != null) {
+        await _sendNotification(
+          AppNotification(
+            type: NotificationType.bookingCancelled,
+            title: 'Booking declined',
+            message: '${appt.professionalName ?? 'Your professional'} declined ${appt.service} on ${FormatHelper.formatDateTime(appt.dateTime)}',
+            appointmentId: appt.id,
+            receiverId: appt.customerId!,
+            senderId: appt.professionalId!,
+          ),
+        );
+      }
+
       await _reloadAppointments();
       _endLoading();
     } on AppException catch (e) {

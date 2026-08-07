@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../helpers/appointment_actions.dart';
+import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/appointment_card.dart';
@@ -131,11 +132,18 @@ class _ProfessionalBookingManagementPageState
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appt = appointments[index];
+        final isPending = appt.status == AppointmentStatus.pending;
         return AppointmentCard(
           appointment: appt,
           viewerIsCustomer: false,
           onEdit: () => AppointmentActions.confirmReschedule(context, appt),
           onCancel: () => AppointmentActions.confirmCancel(context, appt),
+          onConfirm: isPending
+              ? () => AppointmentActions.confirmProfessionalDecision(context, appt)
+              : null,
+          onReject: isPending
+              ? () => AppointmentActions.confirmProfessionalDecision(context, appt)
+              : null,
         );
       },
     );
