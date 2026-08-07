@@ -16,6 +16,7 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 - **Real-time notifications** — instant Firestore streaming for booking requests, confirmations, and cancellations with unread badge
 - **Native calendar integration** — add confirmed bookings to device calendar (Google Calendar / Apple iCal) from the success screen
 - **Upcoming / Past separation** — professionals manage upcoming bookings in a dedicated tab; past appointments are read-only
+- **Centralized route guards** — `RouteGuardHelper.evaluateRedirect` enforces auth requirements, profile completion, and role-based access on every named-route transition via `onGenerateRoute`
 
 ## Tech stack
 
@@ -72,6 +73,7 @@ flutter test
 - **Real-time Firestore streaming** — `BookingRepository` exposes `snapshots()`-based streams for customer and professional appointment lists, enabling instant UI updates without manual refresh.
 - **Real-time notifications** — `NotificationProvider` subscribes to Firestore notification streams so new alerts appear instantly in the notifications list and drawer badge.
 - **Upcoming/Past separation** — Professional management screen uses tabs to separate modifiable upcoming bookings from read-only past appointments.
+- **Centralized route guards** — `RouteGuardHelper.evaluateRedirect` replaces per-page auth checks. `AuthProvider` exposes `isAuthenticated` and `isProfileComplete` getters. Routes are defined in `lib/constants/routes.dart` and evaluated centrally in `main.dart` via `onGenerateRoute`.
 
 ## Project status
 
@@ -89,14 +91,14 @@ flutter test
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
-| Tests | 57/57 passing (`flutter test`) |
+| Tests | 67/67 passing (`flutter test`) |
 | Analysis | 0 errors (`flutter analyze`) |
 
 ## Checks
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 57/57 passing
+flutter test      # 67/67 passing
 ```
 
 ## Register as a professional
@@ -151,17 +153,28 @@ flutter test      # 57/57 passing
 
 ```
 lib/
-  constants/       # Service catalog and scheduling options
-  helpers/         # Validation, scheduling, formatting, theme prefs, typed exceptions, calendar export
+  constants/       # Service catalog, scheduling options, and route constants
+  helpers/         # Validation, scheduling, formatting, theme prefs, typed exceptions, calendar export, route guard logic
   models/          # User, Appointment, BookingSummary, Notification
   pages/           # UI screens (login, register, home, booking, profile, etc.)
   providers/       # Auth, appointments, theme, notifications, payments (ChangeNotifier)
   repositories/    # Abstract BookingRepository + Firestore implementation, UserRepository + FirestoreUserRepository
   widgets/         # Shared UI components
   firebase_options.dart
-  main.dart        # App entry point, provider setup, route resolution
+  main.dart        # App entry point, provider setup, centralized route guard, route resolution
 test/              # Unit tests
 ```
+
+## Navigation & route guards
+
+- **Route constants** — All named routes are defined as `static const` strings in `lib/constants/routes.dart` (`login`, `register`, `completeProfile`, `customerHome`, `professionalHome`, `booking`).
+- **Centralized guard** — `RouteGuardHelper.evaluateRedirect` is called on every named-route transition in `onGenerateRoute`. It returns a target route or `null` if no redirect is needed.
+- **Auth gating** — Unauthenticated users on protected routes are redirected to `/login`.
+- **Profile completion** — Authenticated users with `!isProfileComplete` are redirected to `/complete-profile`.
+- **Auth redirect from public routes** — Authenticated, profile-complete users on `/login` or `/register` are redirected to their role-appropriate home dashboard.
+- **Role boundaries** — Customers on `/professional_home` are redirected to `/user_home`; professionals on `/user_home` are redirected to `/professional_home`.
+- **`/complete-profile` page** — A minimal Scaffold with a "Go to Login" button is rendered inline in `onGenerateRoute`.
+- **Backward compatibility** — Pages pushed via `MaterialPageRoute` (e.g., `BookingPage`, `SettingsPage`) bypass the named-route guard, preserving existing behavior.
 
 ## Data model notes
 
@@ -197,4 +210,5 @@ Credentials are stored in **Firebase Auth**. Profile, booking, and notification 
 - **Theme persistence** — `ThemeProvider` loads/saves the selected theme via `ThemePreferences` (shared_preferences) before the app renders.
 - **Slot availability** — `checkProfessionalAvailability` uses range-based overlap detection (`dateTime < slotEnd` + in-code `apptEnd > slotStart`) instead of exact timestamp matching, avoiding false positives from millisecond-level differences.
 - **Real-time streams** — Appointment and notification lists use Firestore `snapshots()` so UI stays in sync across devices without pull-to-refresh.
+- **Centralized route guards** — Navigation is routed through `onGenerateRoute` in `main.dart`. `RouteGuardHelper.evaluateRedirect` enforces auth, profile completion, and role boundaries. `AuthProvider` exposes `isAuthenticated` and `isProfileComplete` getters for guard evaluation.
 - **Calendar export** — `CalendarHelper.addToNativeCalendar` builds a native event via `add_2_calendar` with booking details, contact info, and a 1-hour reminder.
