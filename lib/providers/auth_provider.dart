@@ -21,6 +21,16 @@ class AuthProvider extends ChangeNotifier {
 
   User? currentUser;
 
+  bool get isAuthenticated {
+    try {
+      return _auth.currentUser != null;
+    } on Exception {
+      return false;
+    }
+  }
+
+  bool get isProfileComplete => currentUser != null;
+
   fb.FirebaseAuth get _auth => fb.FirebaseAuth.instance;
 
   Future<LoginResult> login(String email, String password) async {
