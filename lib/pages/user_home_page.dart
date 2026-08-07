@@ -27,8 +27,16 @@ class _UserHomePageState extends State<UserHomePage> {
           Provider.of<AppointmentProvider>(context, listen: false);
       if (auth.currentUser != null) {
         apptProvider.setCurrentUser(auth.currentUser!);
+        apptProvider.startRealtimeAppointments();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    Provider.of<AppointmentProvider>(context, listen: false)
+        .stopRealtimeAppointments();
+    super.dispose();
   }
 
   @override

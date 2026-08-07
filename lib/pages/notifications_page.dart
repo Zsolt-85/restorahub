@@ -18,11 +18,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
+      final notifProvider = Provider.of<NotificationProvider>(context, listen: false);
       if (auth.currentUser != null) {
-        Provider.of<NotificationProvider>(context, listen: false)
-            .loadNotifications(auth.currentUser!.id!);
+        final userId = auth.currentUser!.id;
+        if (userId != null) {
+          notifProvider.loadNotifications(userId);
+          notifProvider.startRealtimeNotifications(userId);
+        }
       }
     });
+  }
+
+  @override
+  void dispose() {
+    Provider.of<NotificationProvider>(context, listen: false)
+        .stopRealtimeNotifications();
+    super.dispose();
   }
 
   @override

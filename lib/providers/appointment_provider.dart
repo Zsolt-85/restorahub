@@ -250,23 +250,21 @@ class AppointmentProvider extends ChangeNotifier {
   List<Appointment> get pastAppointments {
     final now = DateTime.now();
     return _appointments
-        .where(
-          (a) =>
-              a.dateTime.isBefore(now) &&
-              a.status != AppointmentStatus.pending &&
-              a.status != AppointmentStatus.confirmed,
-        )
+        .where((a) => a.dateTime.isBefore(now))
         .toList();
   }
 
   List<Appointment> get currentAppointments {
     final now = DateTime.now();
     return _appointments
-        .where(
-          (a) =>
-              a.dateTime.isAfter(now) &&
-              !a.isCancelled,
-        )
+        .where((a) => a.dateTime.isAfter(now) && !a.isCancelled)
+        .toList();
+  }
+
+  List<Appointment> get upcomingAppointments {
+    final now = DateTime.now();
+    return _appointments
+        .where((a) => a.dateTime.isAfter(now))
         .toList();
   }
 

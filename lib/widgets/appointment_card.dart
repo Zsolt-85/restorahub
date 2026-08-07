@@ -38,7 +38,12 @@ class AppointmentCard extends StatelessWidget {
     final statusColor = _statusColor(appointment.status);
     final canManage = viewerIsCustomer == false &&
         appointment.status != AppointmentStatus.completed &&
-        !appointment.isCancelled;
+        !appointment.isCancelled &&
+        !appointment.isPast;
+
+    final showCustomerRemove = viewerIsCustomer &&
+        appointment.status == AppointmentStatus.pending &&
+        !appointment.isPast;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -150,7 +155,7 @@ class AppointmentCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (appointment.status == AppointmentStatus.pending && viewerIsCustomer) ...[
+                if (showCustomerRemove) ...[
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(

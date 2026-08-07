@@ -1,13 +1,16 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../models/notification.dart';
 import '../repositories/notification_repository.dart';
 
 class NotificationProvider extends ChangeNotifier {
-  final NotificationRepository _repository;
-
   NotificationProvider({required NotificationRepository repository})
       : _repository = repository;
+
+  final NotificationRepository _repository;
 
   List<AppNotification> _notifications = [];
   int _unreadCount = 0;
@@ -15,7 +18,10 @@ class NotificationProvider extends ChangeNotifier {
   List<AppNotification> get notifications => _notifications;
   int get unreadCount => _unreadCount;
 
+  StreamSubscription<QuerySnapshot>? _subscription;
+
   Future<void> loadNotifications(String userId) async {
+    await stopRealtimeNotifications();
     try {
       _notifications = await _repository.getNotificationsForUser(userId);
       _unreadCount =
@@ -24,6 +30,33 @@ class NotificationProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('NotificationProvider.loadNotifications error: $e');
     }
+  }
+
+  void startRealtimeNotifications(String userId) {
+    stopRealtimeNotifications();
+    _subscription = _repository.getNotificationsStream(userId).listen(
+      (snapshot) {
+        final notifications = <AppNotification>[];
+        for (final doc in snapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id;
+          notifications.add(AppNotification.fromMap(data));
+        }
+        notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        _notifications = notifications;
+        _unreadCount =
+            notifications.where((n) => n.status == NotificationStatus.unread).length;
+        notifyListeners();
+      },
+      onError: (e) {
+        debugPrint('NotificationProvider.startRealtimeNotifications error: $e');
+      },
+    );
+  }
+
+  Future<void> stopRealtimeNotifications() async {
+    await _subscription?.cancel();
+    _subscription = null;
   }
 
   Future<void> markAsRead(String notificationId) async {

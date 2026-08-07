@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
+import '../providers/notification_provider.dart';
 import '../pages/settings_page.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -12,6 +14,9 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final notifProvider = Provider.of<NotificationProvider>(context);
+    final unreadCount = notifProvider.unreadCount;
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -31,6 +36,23 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.notifications_outlined),
             title: const Text('Notifications'),
+            trailing: unreadCount > 0
+                ? Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$unreadCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                : null,
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/notifications');
