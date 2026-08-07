@@ -1,7 +1,7 @@
 # RestoraHub Project Continuation Checkpoint
 
-**Date:** 2026-08-06  
-**Latest Commit:** `e46a384` (security: add firestore rules, indexes, and refactor provider dependency injection)
+**Date:** 2026-08-08  
+**Latest Commit:** `61ca12c` (refactor: split BookingRepository into BookingRepository and UserRepository)
 
 ---
 
@@ -31,6 +31,16 @@
 - `CalendarHelper.addToNativeCalendar()` builds native calendar events with title, description, times, and location
 - "Add to Calendar" button on booking confirmation screen with success/error `SnackBar` feedback
 
+### Phase 5: Dependency Injection Cleanup — Repository Split
+- Split `BookingRepository` into `BookingRepository` (appointments) and `UserRepository` (user profiles)
+- Created `FirestoreUserRepository` singleton implementing `UserRepository`
+- Moved user methods (`getUserById`, `isEmailTaken`, `insertUser`, `updateUser`, `syncUserInAppointments`, `getProfessionalsBySpecialty`) from `BookingRepository` to `UserRepository`
+- Updated `AuthProvider` to depend on `UserRepository` instead of `BookingRepository`
+- Updated `AppointmentProvider` to accept both `BookingRepository` and `UserRepository`; `rescheduleAppointment` now uses `UserRepository` for `bufferTimeMinutes`
+- Updated pages (`edit_appointment_page.dart`, `booking_page.dart`, `success_page.dart`) to read `UserRepository` directly from the Provider tree
+- Updated `main.dart` to provide `UserRepository` in `MultiProvider`
+- Split `FakeBookingRepository` in tests into `FakeBookingRepository` (appointment-only) and `FakeUserRepository` (user-only)
+
 ---
 
 ## Test & Analysis Status
@@ -44,10 +54,10 @@
 
 ## Pending / Next Immediate Tasks
 
-- **Phase 5:** Onboarding flow enhancements (welcome screens, tutorial overlays)
-- **Phase 6:** Advanced analytics and reporting for professionals
-- **Phase 7:** Push notification delivery for booking confirmations and reminders
-- **Phase 8:** Payment integration and receipt generation
+- **Phase 6:** Onboarding flow enhancements (welcome screens, tutorial overlays)
+- **Phase 7:** Advanced analytics and reporting for professionals
+- **Phase 8:** Push notification delivery for booking confirmations and reminders
+- **Phase 9:** Payment integration and receipt generation
 - Clean up existing `print` debug statements in `firestore_booking_repository.dart`
 - Add `const` constructors where flagged by analysis
 
@@ -59,7 +69,7 @@ Paste the following context into a fresh AI chat to resume:
 
 > **Project:** RestoraHub — Flutter booking app for wellness/beauty services using Firebase Auth, Cloud Firestore, and Provider state management.
 >
-> **Current State (2026-08-06, commit `e46a384`):**
+> **Current State (2026-08-08, commit `61ca12c`):**
 > - 57/57 unit tests passing, `flutter analyze` clean (0 errors)
 > - Atomic booking with range-based slot availability
 > - Professional schedule supports buffer time and break windows
@@ -67,16 +77,23 @@ Paste the following context into a fresh AI chat to resume:
 > - Terminal status invariants enforced; 2-hour cancellation window active
 > - Real-time Firestore streaming implemented for customer/professional appointment lists
 > - Native device calendar integration via `add_2_calendar` on booking confirmation screen
+> - Repository split complete: `BookingRepository` (appointments) and `UserRepository` (user profiles) with `FirestoreBookingRepository` and `FirestoreUserRepository` implementations
+> - `AuthProvider` depends on `UserRepository`; `AppointmentProvider` depends on both `BookingRepository` and `UserRepository`
+> - Pages consume `UserRepository` directly from Provider tree
 >
 > **Key files to review first:**
 > - `lib/models/appointment.dart` — state machine helpers
+> - `lib/repositories/booking_repository.dart` — appointment interface
+> - `lib/repositories/user_repository.dart` — user interface
 > - `lib/repositories/firestore_booking_repository.dart` — real-time `snapshots()` streams
-> - `lib/providers/appointment_provider.dart` — `startRealtimeAppointments()` / `stopRealtimeAppointments()`
+> - `lib/repositories/firestore_user_repository.dart` — user data operations
+> - `lib/providers/appointment_provider.dart` — `startRealtimeAppointments()` / `stopRealtimeAppointments()`, dual repository injection
+> - `lib/providers/auth_provider.dart` — `UserRepository` usage
 > - `lib/helpers/calendar_helper.dart` — calendar event builder
 > - `lib/pages/success_page.dart` — "Add to Calendar" UI
 > - `test/models/appointment_test.dart` — state machine tests
-> - `test/providers/appointment_provider_test.dart` — provider + policy tests
+> - `test/providers/appointment_provider_test.dart` — provider + policy tests with split fakes
 >
-> **Next tasks:** Continue with Phase 5 (onboarding flow), Phase 6 (advanced analytics), Phase 7 (push notifications), or Phase 8 (payment integration). Also clean up `print` statements and add missing `const` constructors.
+> **Next tasks:** Continue with Phase 6 (onboarding flow), Phase 7 (advanced analytics), Phase 8 (push notifications), or Phase 9 (payment integration). Also clean up `print` statements and add missing `const` constructors.
 >
 > **How to verify:** Run `flutter analyze` (expect 0 errors) and `flutter test` (expect 57/57 passing).

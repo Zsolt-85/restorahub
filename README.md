@@ -65,6 +65,7 @@ flutter test
 
 ## Architecture improvements
 
+- **Repository split** — `BookingRepository` is split into `BookingRepository` (appointments) and `UserRepository` (user profiles). `FirestoreBookingRepository` handles appointment data; `FirestoreUserRepository` handles user data. Both follow the singleton pattern (`._()` private constructor + `static final instance`).
 - **Range-based slot availability** — `BookingRepository.checkProfessionalAvailability` now accepts a `slotDurationMinutes` parameter and uses `isLessThan` + in-code overlap detection instead of exact `isEqualTo` on the `dateTime` string field.
 - **Debug observability** — All availability checks log query parameters, Firestore document counts, and overlap results via `print` statements for live debugging.
 - **Appointment state machine** — Explicit status enum (`pending`, `confirmed`, `completed`, `cancelledByCustomer`, `cancelledByProfessional`, `noShow`) with enforced transition rules and cancellation window logic.
@@ -76,6 +77,11 @@ flutter test
 
 | Area | Status |
 |------|--------|
+| Phase 1: Atomic Transactions & Availability Hardening | Complete |
+| Phase 2: Schedule Logic (Buffer/Break Time) | Complete |
+| Phase 3: Real-Time Availability & State Machine Hardening | Complete |
+| Phase 4: Native Device Calendar Integration | Complete |
+| Phase 5: Dependency Injection Cleanup (Repository Split) | Complete |
 | Authentication | Registration, login, password reset, first-login profile completion |
 | Booking | Slot availability check, create/cancel/reschedule appointments, 2-hour cancellation window |
 | Professional workflow | Accept/decline pending bookings, upcoming/past tabs, real-time updates |
@@ -84,22 +90,29 @@ flutter test
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
 | Tests | 57/57 passing (`flutter test`) |
-| Analysis | Clean (`flutter analyze`) |
+| Analysis | 0 errors (`flutter analyze`) |
 
-### Register as a professional
+## Checks
+
+```bash
+flutter analyze   # 0 errors
+flutter test      # 57/57 passing
+```
+
+## Register as a professional
 
 1. Open **Register** → choose **Professional**
 2. Select a **profession** (Massage, Haircut, Spa, Facial, Manicure)
 3. Complete personal details and register
 4. Open **Settings → Edit profile** to set work hours and slot length
 
-### Register as a customer
+## Register as a customer
 
 1. Open **Register** → choose **Customer**
 2. Complete personal details and register
 3. From the dashboard, tap **+** → pick a service → choose subtype → book
 
-### Login with a new account (first-time)
+## Login with a new account (first-time)
 
 1. Sign in with email and password
 2. If the account has no profile yet, a **Complete your profile** dialog appears
@@ -107,7 +120,7 @@ flutter test
 4. For professionals, select a specialty from the dropdown
 5. After saving, the app navigates to the appropriate home screen
 
-### Booking
+## Booking
 
 - Only professionals whose **specialty matches the service category** appear in the picker
 - Time slots are generated from the professional's own hours and slot length
@@ -116,20 +129,20 @@ flutter test
 - Professionals must **accept** or **decline** each pending booking
 - Customers receive a notification once the professional responds
 
-### Cancel / Reschedule
+## Cancel / Reschedule
 
 - Customers can cancel bookings from their home screen (up to 2 hours before the appointment)
 - Customers can reschedule by picking a new time slot
 - Professionals can cancel or reschedule incoming bookings from their management screen
 - Past appointments cannot be modified
 
-### Notifications
+## Notifications
 
 - Real-time notifications appear in the **Notifications** screen and drawer badge
 - Types: booking requested, confirmed, cancelled, rescheduled, completed, upcoming reminder
 - Tap a notification to mark it as read; use the drawer action to mark all as read
 
-### Add to Calendar
+## Add to Calendar
 
 - After a successful booking, the confirmation screen shows **Add to Calendar**
 - Tapping it creates a native calendar event with booking details, contact info, and a 1-hour reminder
@@ -143,7 +156,7 @@ lib/
   models/          # User, Appointment, BookingSummary, Notification
   pages/           # UI screens (login, register, home, booking, profile, etc.)
   providers/       # Auth, appointments, theme, notifications, payments (ChangeNotifier)
-  repositories/    # Abstract BookingRepository + Firestore implementation
+  repositories/    # Abstract BookingRepository + Firestore implementation, UserRepository + FirestoreUserRepository
   widgets/         # Shared UI components
   firebase_options.dart
   main.dart        # App entry point, provider setup, route resolution
@@ -178,14 +191,10 @@ Credentials are stored in **Firebase Auth**. Profile, booking, and notification 
 
 ## Architecture notes
 
-- **Repository pattern** — `BookingRepository` is an abstract interface; `FirestoreBookingRepository` is the sole concrete implementation. This allows swapping data sources in the future.
+- **Repository pattern** — `BookingRepository` and `UserRepository` are abstract interfaces; `FirestoreBookingRepository` and `FirestoreUserRepository` are the concrete implementations. This allows swapping data sources in the future.
 - **Typed exceptions** — `AppException` wraps repository errors with a message and optional cause. UI code catches `AppException` to show user-friendly messages.
 - **State management** — Provider + ChangeNotifier. `AppointmentProvider` exposes `isLoading` and `error` for UI feedback; `AuthProvider` exposes `LoginResult` enum for first-login flows.
 - **Theme persistence** — `ThemeProvider` loads/saves the selected theme via `ThemePreferences` (shared_preferences) before the app renders.
 - **Slot availability** — `checkProfessionalAvailability` uses range-based overlap detection (`dateTime < slotEnd` + in-code `apptEnd > slotStart`) instead of exact timestamp matching, avoiding false positives from millisecond-level differences.
 - **Real-time streams** — Appointment and notification lists use Firestore `snapshots()` so UI stays in sync across devices without pull-to-refresh.
 - **Calendar export** — `CalendarHelper.addToNativeCalendar` builds a native event via `add_2_calendar` with booking details, contact info, and a 1-hour reminder.
-
-## Current Status & Continuation
-
-For the latest project state, completed phases, test status, and next tasks, see **[CHECKPOINT.md](./CHECKPOINT.md)**.
