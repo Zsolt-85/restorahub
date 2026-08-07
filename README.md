@@ -63,6 +63,7 @@ flutter test
 - **Unauthenticated email check during registration** — Removed the pre-registration Firestore `isEmailTaken` query that was blocked by security rules (`request.auth != null`). Firebase Auth's `createUserWithEmailAndPassword` now handles duplicate emails natively via the `email-already-in-use` exception.
 - **Slot availability false positives** — Replaced exact `isEqualTo` timestamp matching in `checkProfessionalAvailability` with a range-based overlap query. The method now queries for appointments that start before the slot ends and filters in code for actual time overlap, avoiding false matches from millisecond-level timestamp differences.
 - **Availability check error handling** — Added comprehensive debug logging (`print`) to `checkProfessionalAvailability` showing query parameters, document count, per-document overlap results, and errors. Firestore permission/network failures now throw a descriptive `AppException` instead of silently returning `false` (which falsely reported slots as taken).
+- **Raw exception exposure in UI** — Replaced scattered `e.toString()` and `$e` interpolation in page catch blocks with `ErrorHandler.getDisplayMessage`, which maps `AppException`, `FirebaseAuthException`, `FirebaseException`, and generic exceptions to user-safe, localized strings.
 
 ## Architecture improvements
 
@@ -74,6 +75,7 @@ flutter test
 - **Real-time notifications** — `NotificationProvider` subscribes to Firestore notification streams so new alerts appear instantly in the notifications list and drawer badge.
 - **Upcoming/Past separation** — Professional management screen uses tabs to separate modifiable upcoming bookings from read-only past appointments.
 - **Centralized route guards** — `RouteGuardHelper.evaluateRedirect` replaces per-page auth checks. `AuthProvider` exposes `isAuthenticated` and `isProfileComplete` getters. Routes are defined in `lib/constants/routes.dart` and evaluated centrally in `main.dart` via `onGenerateRoute`.
+- **UI error boundaries** — `lib/exceptions/app_exception.dart` defines the exception hierarchy (`AppException`, `AuthException`, `NetworkException`, `BookingException`, `PermissionException`). `lib/utils/error_handler.dart` centralizes mapping to user-safe messages and a styled SnackBar helper. Pages in `login_page.dart`, `registration_page.dart`, `booking_page.dart`, `edit_appointment_page.dart`, and `profile_page.dart` use it to prevent raw exception leakage.
 
 ## Project status
 
@@ -84,6 +86,7 @@ flutter test
 | Phase 3: Real-Time Availability & State Machine Hardening | Complete |
 | Phase 4: Native Device Calendar Integration | Complete |
 | Phase 5: Dependency Injection Cleanup (Repository Split) | Complete |
+| Phase 6: UI Error Boundaries & Exception Handling | Complete |
 | Authentication | Registration, login, password reset, first-login profile completion |
 | Booking | Slot availability check, create/cancel/reschedule appointments, 2-hour cancellation window |
 | Professional workflow | Accept/decline pending bookings, upcoming/past tabs, real-time updates |
@@ -91,14 +94,14 @@ flutter test
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
-| Tests | 67/67 passing (`flutter test`) |
+| Tests | 75/75 passing (`flutter test`) |
 | Analysis | 0 errors (`flutter analyze`) |
 
 ## Checks
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 67/67 passing
+flutter test      # 75/75 passing
 ```
 
 ## Register as a professional
@@ -154,11 +157,13 @@ flutter test      # 67/67 passing
 ```
 lib/
   constants/       # Service catalog, scheduling options, and route constants
+  exceptions/      # AppException hierarchy (Auth, Network, Booking, Permission)
   helpers/         # Validation, scheduling, formatting, theme prefs, typed exceptions, calendar export, route guard logic
   models/          # User, Appointment, BookingSummary, Notification
   pages/           # UI screens (login, register, home, booking, profile, etc.)
   providers/       # Auth, appointments, theme, notifications, payments (ChangeNotifier)
   repositories/    # Abstract BookingRepository + Firestore implementation, UserRepository + FirestoreUserRepository
+  utils/           # Shared utilities including centralized error handling
   widgets/         # Shared UI components
   firebase_options.dart
   main.dart        # App entry point, provider setup, centralized route guard, route resolution
@@ -206,6 +211,7 @@ Credentials are stored in **Firebase Auth**. Profile, booking, and notification 
 
 - **Repository pattern** — `BookingRepository` and `UserRepository` are abstract interfaces; `FirestoreBookingRepository` and `FirestoreUserRepository` are the concrete implementations. This allows swapping data sources in the future.
 - **Typed exceptions** — `AppException` wraps repository errors with a message and optional cause. UI code catches `AppException` to show user-friendly messages.
+- **ErrorHandler** — `ErrorHandler.getDisplayMessage` maps exception types (`AppException`, `FirebaseAuthException`, `FirebaseException`, and generic exceptions) to localized, human-readable strings. `showErrorSnackBar` clears existing SnackBars and displays a styled error toast.
 - **State management** — Provider + ChangeNotifier. `AppointmentProvider` exposes `isLoading` and `error` for UI feedback; `AuthProvider` exposes `LoginResult` enum for first-login flows.
 - **Theme persistence** — `ThemeProvider` loads/saves the selected theme via `ThemePreferences` (shared_preferences) before the app renders.
 - **Slot availability** — `checkProfessionalAvailability` uses range-based overlap detection (`dateTime < slotEnd` + in-code `apptEnd > slotStart`) instead of exact timestamp matching, avoiding false positives from millisecond-level differences.
