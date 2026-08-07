@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'repositories/firestore_booking_repository.dart';
+import 'repositories/firestore_user_repository.dart';
+import 'repositories/user_repository.dart';
 import 'repositories/notification_repository.dart';
 import 'repositories/firestore_payment_repository.dart';
 import 'repositories/payment_repository.dart';
@@ -36,12 +38,14 @@ Future<void> main() async {
 
   await NotificationScheduleHelper.initialize();
 
-  final firestoreRepo = FirestoreBookingRepository.instance;
+  final bookingRepo = FirestoreBookingRepository.instance;
+  final userRepo = FirestoreUserRepository.instance;
   final notificationRepo = FirestoreNotificationRepository.instance;
   final paymentRepo = FirestorePaymentRepository.instance;
-  final authProvider = AuthProvider(repository: firestoreRepo);
+  final authProvider = AuthProvider(userRepository: userRepo);
   final appointmentProvider = AppointmentProvider(
-    repository: firestoreRepo,
+    bookingRepository: bookingRepo,
+    userRepository: userRepo,
     notificationRepository: notificationRepo,
   );
   final themeProvider = ThemeProvider();
@@ -103,6 +107,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<AppointmentProvider>.value(
           value: appointmentProvider,
         ),
+        Provider<UserRepository>.value(value: FirestoreUserRepository.instance),
         ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
         Provider<NotificationRepository>.value(value: notificationRepo),
         ChangeNotifierProxyProvider<NotificationRepository, NotificationProvider>(

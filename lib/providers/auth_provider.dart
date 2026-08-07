@@ -4,8 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import '../helpers/schedule_helper.dart';
 import '../helpers/validation_helper.dart';
 import '../models/user.dart';
-import '../repositories/booking_repository.dart';
-import '../repositories/firestore_booking_repository.dart';
+import '../repositories/user_repository.dart';
+import '../repositories/firestore_user_repository.dart';
 
 enum LoginResult {
   success,
@@ -14,10 +14,10 @@ enum LoginResult {
 }
 
 class AuthProvider extends ChangeNotifier {
-  AuthProvider({BookingRepository? repository})
-      : _repository = repository ?? FirestoreBookingRepository.instance;
+  AuthProvider({UserRepository? userRepository})
+      : _userRepository = userRepository ?? FirestoreUserRepository.instance;
 
-  final BookingRepository _repository;
+  final UserRepository _userRepository;
 
   User? currentUser;
 
@@ -30,7 +30,7 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
 
-      final user = await _repository.getUserById(cred.user!.uid);
+      final user = await _userRepository.getUserById(cred.user!.uid);
       if (user == null) {
         return LoginResult.needsProfile;
       }
@@ -64,7 +64,7 @@ class AuthProvider extends ChangeNotifier {
         specialty: role == 'professional' ? specialty.trim() : '',
       );
 
-      final insertResult = await _repository.insertUser(newUser);
+      final insertResult = await _userRepository.insertUser(newUser);
       if (insertResult <= 0) return false;
 
       currentUser = newUser;
@@ -105,7 +105,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       try {
-        final insertResult = await _repository.insertUser(newUser);
+        final insertResult = await _userRepository.insertUser(newUser);
         if (insertResult <= 0) {
           await cred.user?.delete();
           return 'Failed to save user profile';
@@ -149,7 +149,7 @@ class AuthProvider extends ChangeNotifier {
       final fbUser = _auth.currentUser;
       if (fbUser == null) return false;
 
-      final user = await _repository.getUserById(fbUser.uid);
+      final user = await _userRepository.getUserById(fbUser.uid);
       if (user == null) return false;
 
       currentUser = user;
@@ -232,7 +232,7 @@ class AuthProvider extends ChangeNotifier {
 
     final trimmedEmail = email.trim().toLowerCase();
 
-    if (await _repository.isEmailTaken(
+    if (await _userRepository.isEmailTaken(
       trimmedEmail,
       excludeUserId: user.id,
     )) {
@@ -277,10 +277,10 @@ class AuthProvider extends ChangeNotifier {
       breakEndTime: breakEndTime,
     );
 
-    final result = await _repository.updateUser(updatedUser);
+    final result = await _userRepository.updateUser(updatedUser);
     if (result <= 0) return 'Update failed';
 
-    await _repository.syncUserInAppointments(updatedUser);
+    await _userRepository.syncUserInAppointments(updatedUser);
 
     currentUser = updatedUser;
     notifyListeners();

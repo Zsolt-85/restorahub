@@ -6,6 +6,7 @@ import '../helpers/schedule_helper.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
+import '../repositories/user_repository.dart';
 
 class EditAppointmentPage extends StatefulWidget {
   const EditAppointmentPage({super.key, required this.appointment});
@@ -33,7 +34,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
   }
 
   Future<void> _loadProfessional() async {
-    final repo = Provider.of<AppointmentProvider>(context, listen: false).repository;
+    final repo = Provider.of<UserRepository>(context, listen: false);
     final professional = widget.appointment.professionalId == null
         ? null
         : await repo.getUserById(widget.appointment.professionalId!);

@@ -10,16 +10,21 @@ import '../models/notification.dart';
 import '../models/user.dart';
 import '../repositories/booking_repository.dart';
 import '../repositories/firestore_booking_repository.dart';
+import '../repositories/user_repository.dart';
+import '../repositories/firestore_user_repository.dart';
 import '../repositories/notification_repository.dart';
 
 class AppointmentProvider extends ChangeNotifier {
   AppointmentProvider({
-    BookingRepository? repository,
+    BookingRepository? bookingRepository,
+    UserRepository? userRepository,
     NotificationRepository? notificationRepository,
-  })  : _repository = repository ?? FirestoreBookingRepository.instance,
+  })  : _repository = bookingRepository ?? FirestoreBookingRepository.instance,
+        _userRepository = userRepository ?? FirestoreUserRepository.instance,
         _notificationRepository = notificationRepository;
 
   final BookingRepository _repository;
+  final UserRepository _userRepository;
   final NotificationRepository? _notificationRepository;
 
   BookingRepository get repository => _repository;
@@ -371,7 +376,7 @@ class AppointmentProvider extends ChangeNotifier {
       return 'Professional not found for this booking';
     }
 
-    final professional = await _repository.getUserById(appointment.professionalId!);
+    final professional = await _userRepository.getUserById(appointment.professionalId!);
     final bufferTime = professional?.bufferTimeMinutes ?? 0;
 
     final available = await isSlotAvailable(

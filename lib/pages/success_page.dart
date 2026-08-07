@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../helpers/calendar_helper.dart';
 import '../helpers/format_helper.dart';
 import '../models/booking_summary.dart';
-import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../repositories/user_repository.dart';
 
 class SuccessPage extends StatelessWidget {
   const SuccessPage({super.key, this.summary});
@@ -16,10 +16,9 @@ class SuccessPage extends StatelessWidget {
     if (summary == null) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final apptProvider = Provider.of<AppointmentProvider>(context, listen: false);
 
     final professional = summary!.professionalId != null
-        ? await apptProvider.repository.getUserById(summary!.professionalId!)
+        ? await Provider.of<UserRepository>(context, listen: false).getUserById(summary!.professionalId!)
         : null;
 
     if (professional == null) {

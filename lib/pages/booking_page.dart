@@ -9,6 +9,7 @@ import '../models/booking_summary.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../repositories/user_repository.dart';
 
 class BookingPage extends StatefulWidget {
   final String service;
@@ -39,7 +40,7 @@ class _BookingPageState extends State<BookingPage> {
   }
 
   Future<void> _loadProfessionals() async {
-    final repo = Provider.of<AppointmentProvider>(context, listen: false).repository;
+    final repo = Provider.of<UserRepository>(context, listen: false);
     try {
       final professionals = await repo.getProfessionalsBySpecialty(_category);
 

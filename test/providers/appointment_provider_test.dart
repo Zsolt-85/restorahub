@@ -6,55 +6,10 @@ import 'package:restorahub/models/appointment.dart';
 import 'package:restorahub/models/user.dart';
 import 'package:restorahub/providers/appointment_provider.dart';
 import 'package:restorahub/repositories/booking_repository.dart';
+import 'package:restorahub/repositories/user_repository.dart';
 
 class FakeBookingRepository implements BookingRepository {
   final List<Appointment> appointments = [];
-  final Map<String, User> users = {};
-
-  @override
-  Future<User?> getUserById(String id) async => users[id];
-
-  @override
-  Future<bool> isEmailTaken(String email, {String? excludeUserId}) async {
-    return users.values.any((u) => u.email == email && u.id != excludeUserId);
-  }
-
-  @override
-  Future<int> insertUser(User user) async {
-    users[user.id!] = user;
-    return 1;
-  }
-
-  @override
-  Future<int> updateUser(User user) async {
-    users[user.id!] = user;
-    return 1;
-  }
-
-  @override
-  Future<void> syncUserInAppointments(User user) async {
-    for (var i = 0; i < appointments.length; i++) {
-      if (appointments[i].customerId == user.id) {
-        appointments[i] = appointments[i].copyWith(
-          customerName: user.name,
-          customerPhone: user.phone,
-          customerEmail: user.email,
-        );
-      }
-      if (appointments[i].professionalId == user.id) {
-        appointments[i] = appointments[i].copyWith(
-          professionalName: user.name,
-          professionalPhone: user.phone,
-          professionalEmail: user.email,
-        );
-      }
-    }
-  }
-
-  @override
-  Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
-    return users.values.where((u) => u.role == 'professional' && u.specialty == specialty).toList();
-  }
 
   @override
   Future<List<Appointment>> getAppointmentsForCustomer(String customerId) async {
@@ -148,14 +103,51 @@ class FakeBookingRepository implements BookingRepository {
   }
 }
 
+class FakeUserRepository implements UserRepository {
+  final Map<String, User> users = {};
+
+  @override
+  Future<User?> getUserById(String id) async => users[id];
+
+  @override
+  Future<bool> isEmailTaken(String email, {String? excludeUserId}) async {
+    return users.values.any((u) => u.email == email && u.id != excludeUserId);
+  }
+
+  @override
+  Future<int> insertUser(User user) async {
+    users[user.id!] = user;
+    return 1;
+  }
+
+  @override
+  Future<int> updateUser(User user) async {
+    users[user.id!] = user;
+    return 1;
+  }
+
+  @override
+  Future<void> syncUserInAppointments(User user) async {}
+
+  @override
+  Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
+    return users.values.where((u) => u.role == 'professional' && u.specialty == specialty).toList();
+  }
+}
+
 void main() {
   group('AppointmentProvider Tests', () {
-    late FakeBookingRepository repository;
+    late FakeBookingRepository bookingRepository;
+    late FakeUserRepository userRepository;
     late AppointmentProvider provider;
 
     setUp(() {
-      repository = FakeBookingRepository();
-      provider = AppointmentProvider(repository: repository);
+      bookingRepository = FakeBookingRepository();
+      userRepository = FakeUserRepository();
+      provider = AppointmentProvider(
+        bookingRepository: bookingRepository,
+        userRepository: userRepository,
+      );
       provider.currentUser = User(
         id: 'cust-1',
         name: 'Test User',
@@ -176,7 +168,7 @@ void main() {
         durationMinutes: 60,
         customerId: 'cust-1',
       );
-      await repository.insertAppointment(appt);
+      await bookingRepository.insertAppointment(appt);
 
       await provider.loadAppointments();
 
@@ -246,6 +238,16 @@ void main() {
     });
 
     test('rescheduleAppointment works correctly if slot is available', () async {
+      final prof = User(
+        id: 'prof-1',
+        name: 'Test Professional',
+        email: 'prof@example.com',
+        phone: '555-0200',
+        role: 'professional',
+        specialty: 'massage',
+      );
+      await userRepository.insertUser(prof);
+
       final appt = Appointment(
         id: '1',
         service: 'Massage',
@@ -267,6 +269,16 @@ void main() {
     });
 
     test('rescheduleAppointment fails if slot is already taken', () async {
+      final prof = User(
+        id: 'prof-1',
+        name: 'Test Professional',
+        email: 'prof@example.com',
+        phone: '555-0200',
+        role: 'professional',
+        specialty: 'massage',
+      );
+      await userRepository.insertUser(prof);
+
       final appt1 = Appointment(
         id: '1',
         service: 'Massage',
@@ -304,7 +316,7 @@ void main() {
         professionalId: 'prof-1',
         customerId: 'cust-1',
       );
-      await repository.insertAppointment(existingAppt);
+      await bookingRepository.insertAppointment(existingAppt);
 
       final newAppt = Appointment(
         service: 'Facial',
