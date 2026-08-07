@@ -10,6 +10,7 @@ import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../repositories/user_repository.dart';
+import '../utils/error_handler.dart';
 
 class BookingPage extends StatefulWidget {
   final String service;
@@ -280,9 +281,9 @@ class _BookingPageState extends State<BookingPage> {
                             professionalEmail: pro.email,
                           ),
                         );
-                      } catch (e) {
-                        setState(() => _error = 'Booking failed: $e');
-                      }
+                       } catch (e) {
+                         setState(() => _error = ErrorHandler.getDisplayMessage(e));
+                       }
 
                       if (mounted) setState(() => _loading = false);
                     },

@@ -5,6 +5,7 @@ import '../constants/constants.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/error_handler.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -92,11 +93,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
               : '/user_home',
         );
       } else if (success != null) {
-        setState(() => _error = success);
+        setState(() => _error = ErrorHandler.getDisplayMessage(success));
       }
     } catch (e) {
       setState(() {
-        _error = 'Registration failed: ${e.toString()}';
+        _error = ErrorHandler.getDisplayMessage(e);
         _loading = false;
       });
     }

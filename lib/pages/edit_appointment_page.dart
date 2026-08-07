@@ -7,6 +7,7 @@ import '../models/appointment.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../repositories/user_repository.dart';
+import '../utils/error_handler.dart';
 
 class EditAppointmentPage extends StatefulWidget {
   const EditAppointmentPage({super.key, required this.appointment});
@@ -195,7 +196,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                                   );
                                   Navigator.pop(context, true);
                                 } else {
-                                  setState(() => _error = result);
+                                  setState(() => _error = ErrorHandler.getDisplayMessage(result));
                                 }
                               },
                         child: _saving

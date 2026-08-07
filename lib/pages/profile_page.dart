@@ -5,6 +5,7 @@ import '../constants/constants.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/error_handler.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -338,7 +339,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         );
                         Navigator.pop(context);
                       } else {
-                        setState(() => _error = result);
+                        setState(() => _error = ErrorHandler.getDisplayMessage(result));
                       }
                     },
               child: _loading
