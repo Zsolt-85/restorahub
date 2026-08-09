@@ -48,6 +48,9 @@ app.*.map.json
 node_modules/
 package-lock.json
 
+# Kilo IDE/tooling metadata
+.kilo/
+
 # Local database files
 *.db
 *.sqlite

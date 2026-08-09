@@ -6,6 +6,7 @@ import '../models/payment.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/payment_provider.dart';
 import '../helpers/schedule_helper.dart';
+import '../helpers/format_helper.dart';
 
 class AddPaymentPage extends StatefulWidget {
   final Appointment appointment;
@@ -111,7 +112,7 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${appointment.dateTime.toLocal()} · ${appointment.durationMinutes} min',
+                         '${FormatHelper.formatDateTime(appointment.dateTime)} · ${appointment.durationMinutes} min',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 4),

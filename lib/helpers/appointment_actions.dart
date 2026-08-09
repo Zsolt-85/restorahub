@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../helpers/app_exception.dart';
+import '../helpers/format_helper.dart';
 import '../models/appointment.dart';
 import '../pages/edit_appointment_page.dart';
 import '../providers/appointment_provider.dart';
@@ -17,7 +18,7 @@ class AppointmentActions {
         title: const Text('Cancel booking?'),
         content: Text(
           'Cancel "${appointment.service}" on '
-          '${appointment.dateTime.toLocal()}?\n\nThis cannot be undone.',
+          '${FormatHelper.formatDateTime(appointment.dateTime)}?\n\nThis cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -98,7 +99,7 @@ class AppointmentActions {
         title: const Text('New booking request'),
         content: Text(
           'Accept "${appointment.service}" from ${appointment.customerName ?? 'this customer'} on '
-          '${appointment.dateTime.toLocal()}?',
+          '${FormatHelper.formatDateTime(appointment.dateTime)}?',
         ),
         actions: [
           TextButton(

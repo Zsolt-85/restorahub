@@ -5,6 +5,7 @@ import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/payment_provider.dart';
+import '../helpers/format_helper.dart';
 
 class AnalyticsPage extends StatefulWidget {
   const AnalyticsPage({super.key});
@@ -203,7 +204,7 @@ Widget _buildStatCard(String title, String value, IconData icon) {
         ),
         title: Text(appt.service),
         subtitle: Text(
-          '${appt.professionalName ?? "N/A"} \u2014 ${appt.dateTime.toLocal()}',
+          '${appt.professionalName ?? "N/A"} \u2014 ${FormatHelper.formatDateTime(appt.dateTime)}',
         ),
         trailing: Text(
           appt.status.name.toUpperCase(),
