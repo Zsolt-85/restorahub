@@ -1,5 +1,6 @@
 import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/appointment.dart';
 import '../models/user.dart';
@@ -9,6 +10,8 @@ class CalendarHelper {
     Appointment appointment,
     User professional,
   ) async {
+    if (kIsWeb) return;
+
     final event = Event(
       title: 'RestoraHub: ${appointment.service} with ${professional.name}',
       description: _buildDescription(appointment, professional),
