@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import '../helpers/app_exception.dart';
 import '../models/appointment.dart';
+import '../utils/app_logger.dart';
 import 'booking_repository.dart';
 
 class FirestoreBookingRepository implements BookingRepository {
@@ -28,7 +28,7 @@ class FirestoreBookingRepository implements BookingRepository {
       appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
       return appointments;
     } catch (e, stack) {
-      debugPrint('FirestoreBookingRepository.getAppointmentsForCustomer error: $e\n$stack');
+      AppLogger.error('FirestoreBookingRepository.getAppointmentsForCustomer error: $e\n$stack');
       throw AppException('Failed to load appointments', cause: e);
     }
   }
@@ -48,7 +48,7 @@ class FirestoreBookingRepository implements BookingRepository {
       appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
       return appointments;
     } catch (e, stack) {
-      debugPrint('FirestoreBookingRepository.getAppointmentsForProfessional error: $e\n$stack');
+      AppLogger.error('FirestoreBookingRepository.getAppointmentsForProfessional error: $e\n$stack');
       throw AppException('Failed to load appointments', cause: e);
     }
   }
@@ -57,13 +57,13 @@ class FirestoreBookingRepository implements BookingRepository {
   Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0}) async {
     try {
       final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));
-      print('AVAILABILITY CHECK: professionalId=$professionalId, dateTime=$dateTime, slotEnd=$slotEnd, buffer=$bufferTimeMinutes');
+      AppLogger.debug('AVAILABILITY CHECK: professionalId=$professionalId, dateTime=$dateTime, slotEnd=$slotEnd, buffer=$bufferTimeMinutes');
       final query = await _appointmentsCol
           .where('professionalId', isEqualTo: professionalId)
           .where('dateTime', isLessThan: slotEnd.toIso8601String())
           .where('status', whereNotIn: ['cancelledByCustomer', 'cancelledByProfessional', 'noShow'])
           .get();
-      print('AVAILABILITY CHECK: ${query.docs.length} documents fetched from Firestore');
+      AppLogger.debug('AVAILABILITY CHECK: ${query.docs.length} documents fetched from Firestore');
       final isAvailable = !query.docs.any((doc) {
         final data = doc.data();
         final apptDateTime = DateTime.parse(data['dateTime'] as String);
@@ -71,13 +71,13 @@ class FirestoreBookingRepository implements BookingRepository {
         final occupiedDuration = duration + bufferTimeMinutes;
         final apptEnd = apptDateTime.add(Duration(minutes: occupiedDuration));
         final overlaps = apptEnd.isAfter(dateTime);
-        print('AVAILABILITY CHECK: doc=${doc.id}, apptDateTime=$apptDateTime, duration=$duration, buffer=$bufferTimeMinutes, apptEnd=$apptEnd, overlaps=$overlaps');
+        AppLogger.debug('AVAILABILITY CHECK: doc=${doc.id}, apptDateTime=$apptDateTime, duration=$duration, buffer=$bufferTimeMinutes, apptEnd=$apptEnd, overlaps=$overlaps');
         return overlaps;
       });
-      print('AVAILABILITY CHECK: result=$isAvailable');
+      AppLogger.debug('AVAILABILITY CHECK: result=$isAvailable');
       return isAvailable;
     } catch (e, stack) {
-      print('AVAILABILITY ERROR: $e \n $stack');
+      AppLogger.error('AVAILABILITY ERROR: $e \n $stack');
       throw AppException('Unable to check slot availability. Please check your connection and try again.', cause: e);
     }
   }
@@ -116,7 +116,7 @@ class FirestoreBookingRepository implements BookingRepository {
       });
     } catch (e, stack) {
       if (e is AppException) rethrow;
-      debugPrint('FirestoreBookingRepository.createAppointmentAtomic error: $e\n$stack');
+      AppLogger.error('FirestoreBookingRepository.createAppointmentAtomic error: $e\n$stack');
       throw AppException('Failed to create booking', cause: e);
     }
   }
@@ -131,7 +131,7 @@ class FirestoreBookingRepository implements BookingRepository {
       await docRef.set(appointment.toMap());
       return 1;
     } catch (e, stack) {
-      debugPrint('FirestoreBookingRepository.insertAppointment error: $e\n$stack');
+      AppLogger.error('FirestoreBookingRepository.insertAppointment error: $e\n$stack');
       throw AppException('Failed to create booking', cause: e);
     }
   }
@@ -145,7 +145,7 @@ class FirestoreBookingRepository implements BookingRepository {
       await _appointmentsCol.doc(appointment.id).update(appointment.toMap());
       return 1;
     } catch (e, stack) {
-      debugPrint('FirestoreBookingRepository.updateAppointment error: $e\n$stack');
+      AppLogger.error('FirestoreBookingRepository.updateAppointment error: $e\n$stack');
       if (e is AppException) rethrow;
       throw AppException('Failed to update booking', cause: e);
     }
@@ -160,7 +160,7 @@ class FirestoreBookingRepository implements BookingRepository {
       await _appointmentsCol.doc(id).delete();
       return 1;
     } catch (e, stack) {
-      debugPrint('FirestoreBookingRepository.deleteAppointment error: $e\n$stack');
+      AppLogger.error('FirestoreBookingRepository.deleteAppointment error: $e\n$stack');
       if (e is AppException) rethrow;
       throw AppException('Failed to cancel booking', cause: e);
     }

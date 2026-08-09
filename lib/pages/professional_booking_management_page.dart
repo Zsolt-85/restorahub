@@ -5,8 +5,10 @@ import '../helpers/appointment_actions.dart';
 import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/app_loading_indicator.dart';
 import '../widgets/appointment_card.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/empty_state_widget.dart';
 import 'settings_page.dart';
 
 class ProfessionalBookingManagementPage extends StatefulWidget {
@@ -91,7 +93,7 @@ class _ProfessionalBookingManagementPageState
 
   Widget _buildUpcoming(BuildContext context, AppointmentProvider apptProvider) {
     if (apptProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoadingIndicator(message: 'Loading bookings...');
     }
 
     if (apptProvider.error != null) {
@@ -126,30 +128,10 @@ class _ProfessionalBookingManagementPageState
 
     final appointments = apptProvider.upcomingAppointments;
     if (appointments.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.event_available,
-                size: 56,
-                color: Colors.green,
-              ),
-              SizedBox(height: 16),
-              Text(
-                'No upcoming bookings',
-                style: TextStyle(fontSize: 18),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'New bookings from customers will appear here',
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+      return const EmptyStateWidget(
+        icon: Icons.event_available,
+        title: 'No upcoming bookings',
+        subtitle: 'New bookings from customers will appear here',
       );
     }
 
@@ -177,7 +159,7 @@ class _ProfessionalBookingManagementPageState
 
   Widget _buildPast(BuildContext context, AppointmentProvider apptProvider) {
     if (apptProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoadingIndicator(message: 'Loading bookings...');
     }
 
     if (apptProvider.error != null) {
@@ -212,30 +194,10 @@ class _ProfessionalBookingManagementPageState
 
     final appointments = apptProvider.pastAppointments;
     if (appointments.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.history,
-                size: 56,
-                color: Colors.grey,
-              ),
-              SizedBox(height: 16),
-              Text(
-                'No past bookings',
-                style: TextStyle(fontSize: 18),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Completed and cancelled bookings will appear here',
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+      return const EmptyStateWidget(
+        icon: Icons.history,
+        title: 'No past bookings',
+        subtitle: 'Completed and cancelled bookings will appear here',
       );
     }
 

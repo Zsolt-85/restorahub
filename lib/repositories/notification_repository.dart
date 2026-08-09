@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
 import '../helpers/app_exception.dart';
 import '../models/notification.dart';
+import '../utils/app_logger.dart';
 
 abstract class NotificationRepository {
   Future<void> sendNotification(AppNotification notification);
@@ -29,8 +29,7 @@ class FirestoreNotificationRepository implements NotificationRepository {
       notification.id = docRef.id;
       await docRef.set(notification.toMap());
     } catch (e, stack) {
-      debugPrint(
-          'FirestoreNotificationRepository.sendNotification error: $e\n$stack');
+      AppLogger.error('FirestoreNotificationRepository.sendNotification error: $e\n$stack');
       throw AppException('Failed to send notification', cause: e);
     }
   }
@@ -50,8 +49,7 @@ class FirestoreNotificationRepository implements NotificationRepository {
       }
       return notifications;
     } catch (e, stack) {
-      debugPrint(
-          'FirestoreNotificationRepository.getNotificationsForUser error: $e\n$stack');
+      AppLogger.error('FirestoreNotificationRepository.getNotificationsForUser error: $e\n$stack');
       throw AppException('Failed to load notifications', cause: e);
     }
   }
@@ -64,8 +62,7 @@ class FirestoreNotificationRepository implements NotificationRepository {
       });
       return 1;
     } catch (e, stack) {
-      debugPrint(
-          'FirestoreNotificationRepository.markAsRead error: $e\n$stack');
+      AppLogger.error('FirestoreNotificationRepository.markAsRead error: $e\n$stack');
       throw AppException('Failed to mark notification as read', cause: e);
     }
   }
@@ -86,8 +83,7 @@ class FirestoreNotificationRepository implements NotificationRepository {
       await batch.commit();
       return query.docs.length;
     } catch (e, stack) {
-      debugPrint(
-          'FirestoreNotificationRepository.markAllAsRead error: $e\n$stack');
+      AppLogger.error('FirestoreNotificationRepository.markAllAsRead error: $e\n$stack');
       throw AppException('Failed to mark notifications as read', cause: e);
     }
   }

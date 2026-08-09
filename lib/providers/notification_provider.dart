@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../models/notification.dart';
 import '../repositories/notification_repository.dart';
+import '../utils/app_logger.dart';
 
 class NotificationProvider extends ChangeNotifier {
   NotificationProvider({required NotificationRepository repository})
@@ -28,7 +29,7 @@ class NotificationProvider extends ChangeNotifier {
           _notifications.where((n) => n.status == NotificationStatus.unread).length;
       notifyListeners();
     } catch (e) {
-      debugPrint('NotificationProvider.loadNotifications error: $e');
+      AppLogger.error('NotificationProvider.loadNotifications error: $e');
     }
   }
 
@@ -49,7 +50,7 @@ class NotificationProvider extends ChangeNotifier {
         notifyListeners();
       },
       onError: (e) {
-        debugPrint('NotificationProvider.startRealtimeNotifications error: $e');
+        AppLogger.error('NotificationProvider.startRealtimeNotifications error: $e');
       },
     );
   }
@@ -71,7 +72,7 @@ class NotificationProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('NotificationProvider.markAsRead error: $e');
+      AppLogger.error('NotificationProvider.markAsRead error: $e');
     }
   }
 
@@ -84,7 +85,7 @@ class NotificationProvider extends ChangeNotifier {
       _unreadCount = 0;
       notifyListeners();
     } catch (e) {
-      debugPrint('NotificationProvider.markAllAsRead error: $e');
+      AppLogger.error('NotificationProvider.markAllAsRead error: $e');
     }
   }
 

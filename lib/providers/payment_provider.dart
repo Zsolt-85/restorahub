@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/payment.dart';
 import '../repositories/payment_repository.dart';
+import '../utils/app_logger.dart';
 
 class PaymentProvider extends ChangeNotifier {
   final PaymentRepository _repository;
@@ -38,7 +39,7 @@ class PaymentProvider extends ChangeNotifier {
       _payments = await _repository.getPaymentsByProfessional(professionalId);
       notifyListeners();
     } catch (e) {
-      debugPrint('PaymentProvider.loadPaymentsForProfessional error: $e');
+      AppLogger.error('PaymentProvider.loadPaymentsForProfessional error: $e');
     }
   }
 
@@ -55,8 +56,7 @@ class PaymentProvider extends ChangeNotifier {
       );
       notifyListeners();
     } catch (e) {
-      debugPrint(
-          'PaymentProvider.loadPaymentsForProfessionalInRange error: $e');
+      AppLogger.error('PaymentProvider.loadPaymentsForProfessionalInRange error: $e');
     }
   }
 
@@ -66,7 +66,7 @@ class PaymentProvider extends ChangeNotifier {
       _payments.add(payment);
       notifyListeners();
     } catch (e) {
-      debugPrint('PaymentProvider.recordPayment error: $e');
+      AppLogger.error('PaymentProvider.recordPayment error: $e');
       rethrow;
     }
   }
@@ -80,7 +80,7 @@ class PaymentProvider extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      debugPrint('PaymentProvider.updatePayment error: $e');
+      AppLogger.error('PaymentProvider.updatePayment error: $e');
       rethrow;
     }
   }
@@ -95,7 +95,7 @@ class PaymentProvider extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      debugPrint('PaymentProvider.updatePaymentStatus error: $e');
+      AppLogger.error('PaymentProvider.updatePaymentStatus error: $e');
       rethrow;
     }
   }

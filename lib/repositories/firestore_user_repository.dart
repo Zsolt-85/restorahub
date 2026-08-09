@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import '../helpers/app_exception.dart';
 import '../models/user.dart';
+import '../utils/app_logger.dart';
 import 'user_repository.dart';
 
 class FirestoreUserRepository implements UserRepository {
@@ -18,14 +18,14 @@ class FirestoreUserRepository implements UserRepository {
     try {
       final doc = await _usersCol.doc(id).get();
       if (!doc.exists) {
-        debugPrint('FirestoreUserRepository.getUserById: doc does not exist for ID $id');
+        AppLogger.debug('FirestoreUserRepository.getUserById: doc does not exist for ID $id');
         return null;
       }
       final data = doc.data()!;
       data['id'] = doc.id;
       return User.fromMap(data);
     } catch (e, stack) {
-      debugPrint('FirestoreUserRepository.getUserById error: $e\n$stack');
+      AppLogger.error('FirestoreUserRepository.getUserById error: $e\n$stack');
       throw AppException('Failed to load user', cause: e);
     }
   }
@@ -41,7 +41,7 @@ class FirestoreUserRepository implements UserRepository {
       }
       return true;
     } catch (e, stack) {
-      debugPrint('FirestoreUserRepository.isEmailTaken error: $e\n$stack');
+      AppLogger.error('FirestoreUserRepository.isEmailTaken error: $e\n$stack');
       throw AppException('Failed to check email availability', cause: e);
     }
   }
@@ -55,7 +55,7 @@ class FirestoreUserRepository implements UserRepository {
       await docRef.set(data);
       return 1;
     } catch (e, stack) {
-      debugPrint('FirestoreUserRepository.insertUser error: $e\n$stack');
+      AppLogger.error('FirestoreUserRepository.insertUser error: $e\n$stack');
       throw AppException('Failed to create user', cause: e);
     }
   }
@@ -64,13 +64,13 @@ class FirestoreUserRepository implements UserRepository {
   Future<int> updateUser(User user) async {
     try {
       if (user.id == null) {
-        debugPrint('FirestoreUserRepository.updateUser: user.id is null');
+        AppLogger.debug('FirestoreUserRepository.updateUser: user.id is null');
         throw const AppException('User ID is required');
       }
       await _usersCol.doc(user.id).update(user.toMap());
       return 1;
     } catch (e, stack) {
-      debugPrint('FirestoreUserRepository.updateUser error: $e\n$stack');
+      AppLogger.error('FirestoreUserRepository.updateUser error: $e\n$stack');
       if (e is AppException) rethrow;
       throw AppException('Failed to update user', cause: e);
     }
@@ -108,7 +108,7 @@ class FirestoreUserRepository implements UserRepository {
 
       await batch.commit();
     } catch (e, stack) {
-      debugPrint('FirestoreUserRepository.syncUserInAppointments error: $e\n$stack');
+      AppLogger.error('FirestoreUserRepository.syncUserInAppointments error: $e\n$stack');
       throw AppException('Failed to sync user data', cause: e);
     }
   }
@@ -130,7 +130,7 @@ class FirestoreUserRepository implements UserRepository {
       professionals.sort((a, b) => a.name.compareTo(b.name));
       return professionals;
     } catch (e, stack) {
-      debugPrint('FirestoreUserRepository.getProfessionalsBySpecialty error: $e\n$stack');
+      AppLogger.error('FirestoreUserRepository.getProfessionalsBySpecialty error: $e\n$stack');
       throw AppException('Failed to load professionals', cause: e);
     }
   }

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import '../helpers/app_exception.dart';
 import '../models/payment.dart';
+import '../utils/app_logger.dart';
 import 'payment_repository.dart';
 
 class FirestorePaymentRepository implements PaymentRepository {
@@ -27,8 +27,7 @@ class FirestorePaymentRepository implements PaymentRepository {
       data['id'] = doc.id;
       return Payment.fromMap(data);
     } catch (e, stack) {
-      debugPrint(
-          'FirestorePaymentRepository.getPaymentByAppointment error: $e\n$stack');
+      AppLogger.error('FirestorePaymentRepository.getPaymentByAppointment error: $e\n$stack');
       throw AppException('Failed to load payment', cause: e);
     }
   }
@@ -49,8 +48,7 @@ class FirestorePaymentRepository implements PaymentRepository {
       payments.sort((a, b) => b.appointmentDate.compareTo(a.appointmentDate));
       return payments;
     } catch (e, stack) {
-      debugPrint(
-          'FirestorePaymentRepository.getPaymentsByProfessional error: $e\n$stack');
+      AppLogger.error('FirestorePaymentRepository.getPaymentsByProfessional error: $e\n$stack');
       throw AppException('Failed to load payments', cause: e);
     }
   }
@@ -78,8 +76,7 @@ class FirestorePaymentRepository implements PaymentRepository {
       payments.sort((a, b) => b.appointmentDate.compareTo(a.appointmentDate));
       return payments;
     } catch (e, stack) {
-      debugPrint(
-          'FirestorePaymentRepository.getPaymentsByProfessionalInRange error: $e\n$stack');
+      AppLogger.error('FirestorePaymentRepository.getPaymentsByProfessionalInRange error: $e\n$stack');
       throw AppException('Failed to load payments', cause: e);
     }
   }
@@ -94,8 +91,7 @@ class FirestorePaymentRepository implements PaymentRepository {
       await docRef.set(payment.toMap());
       return 1;
     } catch (e, stack) {
-      debugPrint(
-          'FirestorePaymentRepository.recordPayment error: $e\n$stack');
+      AppLogger.error('FirestorePaymentRepository.recordPayment error: $e\n$stack');
       throw AppException('Failed to record payment', cause: e);
     }
   }
@@ -109,8 +105,7 @@ class FirestorePaymentRepository implements PaymentRepository {
       await _paymentsCol.doc(payment.id).update(payment.toMap());
       return 1;
     } catch (e, stack) {
-      debugPrint(
-          'FirestorePaymentRepository.updatePayment error: $e\n$stack');
+      AppLogger.error('FirestorePaymentRepository.updatePayment error: $e\n$stack');
       if (e is AppException) rethrow;
       throw AppException('Failed to update payment', cause: e);
     }
@@ -126,8 +121,7 @@ class FirestorePaymentRepository implements PaymentRepository {
       await _paymentsCol.doc(paymentId).update({'status': status.name});
       return 1;
     } catch (e, stack) {
-      debugPrint(
-          'FirestorePaymentRepository.updatePaymentStatus error: $e\n$stack');
+      AppLogger.error('FirestorePaymentRepository.updatePaymentStatus error: $e\n$stack');
       if (e is AppException) rethrow;
       throw AppException('Failed to update payment status', cause: e);
     }

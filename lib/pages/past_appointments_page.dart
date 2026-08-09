@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/appointment_card.dart';
+import '../widgets/empty_state_widget.dart';
 
 class PastAppointmentsPage extends StatefulWidget {
   const PastAppointmentsPage({super.key});
@@ -30,21 +31,10 @@ class _PastAppointmentsPageState extends State<PastAppointmentsPage> {
         title: const Text('Past appointments'),
       ),
       body: pastAppointments.isEmpty
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.history, size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text(
-                      'No past appointments',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ],
-                ),
-              ),
+          ? const EmptyStateWidget(
+              icon: Icons.history,
+              title: 'No past appointments',
+              subtitle: 'Completed and cancelled appointments will appear here',
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/notification.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
+import '../widgets/empty_state_widget.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -63,21 +64,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
         ],
       ),
       body: notifications.isEmpty
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.notifications_none, size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text(
-                      'No notifications yet',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ],
-                ),
-              ),
+          ? const EmptyStateWidget(
+              icon: Icons.notifications_none,
+              title: 'No notifications yet',
+              subtitle: 'Notifications about your appointments will appear here',
             )
           : ListView.builder(
               padding: const EdgeInsets.all(8),

@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../helpers/appointment_actions.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/app_loading_indicator.dart';
 import '../widgets/appointment_card.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/empty_state_widget.dart';
 import 'professional_booking_management_page.dart';
 import 'services_page.dart';
 import 'settings_page.dart';
@@ -97,7 +99,7 @@ class _UserHomePageState extends State<UserHomePage> {
       bool isCustomer,
       ) {
     if (apptProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoadingIndicator(message: 'Loading appointments...');
     }
 
     if (apptProvider.error != null) {
@@ -133,32 +135,12 @@ class _UserHomePageState extends State<UserHomePage> {
 
     final appointments = apptProvider.filteredAppointments;
     if (appointments.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.event_busy,
-                size: 56,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                isCustomer ? 'No appointments yet' : 'No bookings yet',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isCustomer
-                    ? 'Tap + to book your first service'
-                    : 'Bookings from customers will appear here',
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateWidget(
+        icon: isCustomer ? Icons.event_busy : Icons.event_busy,
+        title: isCustomer ? 'No appointments yet' : 'No bookings yet',
+        subtitle: isCustomer
+            ? 'Tap + to book your first service'
+            : 'Bookings from customers will appear here',
       );
     }
 

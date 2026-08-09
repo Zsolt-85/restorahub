@@ -13,6 +13,7 @@ import '../repositories/firestore_booking_repository.dart';
 import '../repositories/user_repository.dart';
 import '../repositories/firestore_user_repository.dart';
 import '../repositories/notification_repository.dart';
+import '../utils/app_logger.dart';
 
 class AppointmentProvider extends ChangeNotifier {
   AppointmentProvider({
@@ -117,7 +118,7 @@ class AppointmentProvider extends ChangeNotifier {
     try {
       await _notificationRepository!.sendNotification(notification);
     } catch (e) {
-      debugPrint('AppointmentProvider._sendNotification error: $e');
+      AppLogger.error('AppointmentProvider._sendNotification error: $e');
     }
   }
 
@@ -427,7 +428,7 @@ class AppointmentProvider extends ChangeNotifier {
             scheduledTime: reminderTime,
           );
         } catch (e) {
-          debugPrint('Failed to schedule reminder: $e');
+          AppLogger.error('Failed to schedule reminder: $e');
         }
       }
     }

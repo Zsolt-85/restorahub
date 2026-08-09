@@ -77,6 +77,38 @@ flutter test
 - **Centralized route guards** — `RouteGuardHelper.evaluateRedirect` replaces per-page auth checks. `AuthProvider` exposes `isAuthenticated` and `isProfileComplete` getters. Routes are defined in `lib/constants/routes.dart` and evaluated centrally in `main.dart` via `onGenerateRoute`.
 - **UI error boundaries** — `lib/exceptions/app_exception.dart` defines the exception hierarchy (`AppException`, `AuthException`, `NetworkException`, `BookingException`, `PermissionException`). `lib/utils/error_handler.dart` centralizes mapping to user-safe messages and a styled SnackBar helper. Pages in `login_page.dart`, `registration_page.dart`, `booking_page.dart`, `edit_appointment_page.dart`, and `profile_page.dart` use it to prevent raw exception leakage.
 
+## 🚀 Project Status & Progress Tracker
+
+### Completed Phases
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 1 | Scoped Queries — User-scoped appointment queries | ✅ Completed |
+| Phase 2 | Firestore Rules — Strict document ownership rules | ✅ Completed |
+| Phase 3 | Firestore Indexes — `firestore.indexes.json` configured | ✅ Completed |
+| Phase 4 | DI Cleanup — `NotificationProvider` & `PaymentProvider` refactored | ✅ Completed |
+| Phase 5 / TD-003 | Repository Split — `UserRepository` extracted from `BookingRepository` | ✅ Completed |
+
+### Technical Debt Items
+
+| Item | Description | Status |
+|------|-------------|--------|
+| TD-007 | Route Guards — `RouteGuardHelper` + `onGenerateRoute` | ✅ Completed |
+| TD-013 | Error Boundaries — `AppException` hierarchy + `ErrorHandler` | ✅ Completed |
+| TD-011 | Console Logging — `AppLogger` using `developer.log` | ✅ Completed |
+| TD-004 | UI Loading / Empty States — `AppLoadingIndicator` + `EmptyStateWidget` | ✅ Completed |
+
+## 🔄 How to Resume Development
+
+- **Test suite:** 85/85 tests passing (`flutter test`)
+- **Static analysis:** 0 errors (`flutter analyze`)
+- **Current focus:** Pre-Production Deployment & Smoke Testing
+- **Next immediate steps:**
+  1. Review Firestore security rules against the updated `UserRepository` queries.
+  2. Run smoke tests on physical devices (Android/iOS) to validate real-time streams and calendar integration.
+  3. Prepare release build (`flutter build apk` / `flutter build ios`) and verify ProGuard / obfuscation settings if applicable.
+  4. Tag a release candidate and deploy to Firebase App Distribution or TestFlight.
+
 ## Project status
 
 | Area | Status |
@@ -94,14 +126,14 @@ flutter test
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
-| Tests | 75/75 passing (`flutter test`) |
+| Tests | 85/85 passing (`flutter test`) |
 | Analysis | 0 errors (`flutter analyze`) |
 
 ## Checks
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 75/75 passing
+flutter test      # 85/85 passing
 ```
 
 ## Register as a professional

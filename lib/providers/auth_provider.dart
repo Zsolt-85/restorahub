@@ -6,6 +6,7 @@ import '../helpers/validation_helper.dart';
 import '../models/user.dart';
 import '../repositories/user_repository.dart';
 import '../repositories/firestore_user_repository.dart';
+import '../utils/app_logger.dart';
 
 enum LoginResult {
   success,
@@ -50,7 +51,7 @@ class AuthProvider extends ChangeNotifier {
 
       return LoginResult.success;
     } catch (e, stack) {
-      debugPrint('Login error: $e\n$stack');
+      AppLogger.error('Login error: $e\n$stack');
       return LoginResult.invalidCredentials;
     }
   }
@@ -81,7 +82,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e, stack) {
-      debugPrint('Create profile error: $e\n$stack');
+      AppLogger.error('Create profile error: $e\n$stack');
       return false;
     }
   }
@@ -130,7 +131,7 @@ class AuthProvider extends ChangeNotifier {
 
       return null;
     } on fb.FirebaseAuthException catch (e) {
-      debugPrint('Registration FirebaseAuthException: ${e.code} - ${e.message}');
+      AppLogger.error('Registration FirebaseAuthException: ${e.code} - ${e.message}');
       if (e.code == 'email-already-in-use') {
         return 'Email is already in use';
       } else if (e.code == 'weak-password') {
@@ -142,7 +143,7 @@ class AuthProvider extends ChangeNotifier {
       }
       return e.message ?? 'Registration failed';
     } catch (e, stack) {
-      debugPrint('Registration error: $e\n$stack');
+      AppLogger.error('Registration error: $e\n$stack');
       return e.toString();
     }
   }
