@@ -130,10 +130,17 @@ class _ProfessionalBookingManagementPageState
 
     final appointments = apptProvider.upcomingAppointments;
     if (appointments.isEmpty) {
-      return const EmptyStateWidget(
-        icon: Icons.event_available,
-        title: 'No upcoming bookings',
-        subtitle: 'New bookings from customers will appear here',
+      return EmptyStateWidget(
+        icon: Icons.event_busy,
+        title: 'No Upcoming Requests',
+        subtitle: 'When customers book services with you, their requests will appear here.',
+        actionButton: ElevatedButton.icon(
+          onPressed: () {
+            Navigator.pushNamed(context, '/profile');
+          },
+          icon: const Icon(Icons.person_outline),
+          label: const Text('Edit Profile & Hours'),
+        ),
       );
     }
 

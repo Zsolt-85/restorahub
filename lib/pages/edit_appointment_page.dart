@@ -211,20 +211,39 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                             final isSelected = _selectedTime == slot;
                             final isUnavailable = _unavailableSlots.contains(slot);
 
-                            return ChoiceChip(
+                             return ChoiceChip(
                               label: isUnavailable
                                   ? Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(slot.format(context)),
+                                        Text(
+                                          slot.format(context),
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withOpacity(0.38),
+                                          ),
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           'Booked',
-                                          style: TextStyle(fontSize: 10),
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withOpacity(0.38),
+                                          ),
                                         ),
                                       ],
                                     )
-                                  : Text(slot.format(context)),
+                                  : isSelected
+                                      ? Text(
+                                          slot.format(context),
+                                          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+                                        )
+                                      : Text(slot.format(context)),
                               selected: isSelected,
                               onSelected: isUnavailable ? null : (_) => setState(() => _selectedTime = slot),
                             );

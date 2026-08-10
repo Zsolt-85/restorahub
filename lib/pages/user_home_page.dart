@@ -134,11 +134,19 @@ class _UserHomePageState extends State<UserHomePage> {
     final appointments = apptProvider.filteredAppointments;
     if (appointments.isEmpty) {
       return EmptyStateWidget(
-        icon: isCustomer ? Icons.event_busy : Icons.event_busy,
-        title: isCustomer ? 'No appointments yet' : 'No bookings yet',
-        subtitle: isCustomer
-            ? 'Tap + to book your first service'
-            : 'Bookings from customers will appear here',
+        icon: Icons.calendar_today_outlined,
+        title: 'No Bookings Yet',
+        subtitle: 'Explore local wellness professionals and schedule your next appointment.',
+        actionButton: ElevatedButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ServicesPage()),
+            );
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Book a Service'),
+        ),
       );
     }
 

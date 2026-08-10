@@ -23,71 +23,96 @@ class ThemeProvider extends ChangeNotifier {
   ThemeData get theme {
     switch (_currentTheme) {
       case AppTheme.dark:
-        return ThemeData.dark().copyWith(
-          primaryColor: Colors.black,
-          scaffoldBackgroundColor: const Color(0xFF121212),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          colorScheme: const ColorScheme.dark(
-            primary: Colors.white,
-            secondary: Colors.grey,
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-            ),
-          ),
+        return _buildTheme(
+          seedColor: const Color(0xFF6366F1),
+          brightness: Brightness.dark,
+          surface: const Color(0xFF121212),
+          onSurface: const Color(0xFFF3F4F6),
         );
       case AppTheme.indigo:
-        return ThemeData(
+        return _buildTheme(
+          seedColor: const Color(0xFF1E3A8A),
           brightness: Brightness.light,
-          primaryColor: Colors.indigo,
-          scaffoldBackgroundColor: const Color(0xFFF5F7FB),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.indigo,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          colorScheme: const ColorScheme.light(
-            primary: Colors.indigo,
-            secondary: Colors.indigoAccent,
-          ),
+          surface: const Color(0xFFF8FAFC),
+          onSurface: const Color(0xFF1E3A8A),
         );
       case AppTheme.rose:
-        return ThemeData(
+        return _buildTheme(
+          seedColor: const Color(0xFFBE123C),
           brightness: Brightness.light,
-          primaryColor: const Color(0xFFE91E63),
-          scaffoldBackgroundColor: const Color(0xFFFFF5F8),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFFE91E63),
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          colorScheme: const ColorScheme.light(
-            primary: Color(0xFFE91E63),
-            secondary: Color(0xFFF48FB1),
-          ),
+          surface: const Color(0xFFFFF1F2),
+          onSurface: const Color(0xFF1E293B),
         );
       case AppTheme.teal:
-        return ThemeData(
+        return _buildTheme(
+          seedColor: const Color(0xFF008080),
           brightness: Brightness.light,
-          primaryColor: const Color(0xFF4DB6AC),
-          scaffoldBackgroundColor: const Color(0xFFF2FBFA),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF4DB6AC),
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          colorScheme: const ColorScheme.light(
-            primary: Color(0xFF4DB6AC),
-            secondary: Color(0xFF80CBC4),
-          ),
         );
     }
+  }
+
+  ThemeData _buildTheme({
+    required Color seedColor,
+    required Brightness brightness,
+    Color? surface,
+    Color? onSurface,
+  }) {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: brightness,
+    ).copyWith(
+      surface: surface,
+      onSurface: onSurface,
+    );
+
+    return ThemeData(
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: colorScheme.surface,
+      chipTheme: _buildChipTheme(colorScheme),
+      elevatedButtonTheme: _buildElevatedButtonTheme(colorScheme),
+      tabBarTheme: _buildTabBarTheme(colorScheme),
+    );
+  }
+
+  ChipThemeData _buildChipTheme(ColorScheme colorScheme) {
+    final onSurface = colorScheme.onSurface;
+    return ChipThemeData(
+      selectedColor: colorScheme.primary,
+      backgroundColor: colorScheme.surface,
+      disabledColor: onSurface.withOpacity(0.12),
+      labelStyle: TextStyle(color: colorScheme.onSurface),
+      secondaryLabelStyle: TextStyle(color: colorScheme.onSurface),
+    );
+  }
+
+  ElevatedButtonThemeData _buildElevatedButtonTheme(ColorScheme colorScheme) {
+    final onSurface = colorScheme.onSurface;
+    return ElevatedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.disabled)) {
+            return onSurface.withOpacity(0.12);
+          }
+          return colorScheme.primary;
+        }),
+        foregroundColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.disabled)) {
+            return onSurface.withOpacity(0.38);
+          }
+          return colorScheme.onPrimary;
+        }),
+      ),
+    );
+  }
+
+  TabBarThemeData _buildTabBarTheme(ColorScheme colorScheme) {
+    final onSurface = colorScheme.onSurface;
+    return TabBarThemeData(
+      indicator: BoxDecoration(color: colorScheme.primary),
+      labelColor: colorScheme.onPrimary,
+      unselectedLabelColor: colorScheme.onSurface,
+      unselectedLabelStyle: TextStyle(color: onSurface.withOpacity(0.38)),
+    );
   }
 
   void setTheme(AppTheme theme) {

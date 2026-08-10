@@ -146,26 +146,26 @@ class UserProfileAvatar extends StatelessWidget {
   Color _themeColor(AppTheme theme) {
     switch (theme) {
       case AppTheme.teal:
-        return const Color(0xFF4DB6AC);
+        return const Color(0xFF008080);
       case AppTheme.dark:
-        return Colors.black87;
+        return const Color(0xFF6366F1);
       case AppTheme.rose:
-        return const Color(0xFFE91E63);
+        return const Color(0xFFBE123C);
       case AppTheme.indigo:
-        return Colors.indigo;
+        return const Color(0xFF1E3A8A);
     }
   }
 
   String _themeLabel(AppTheme theme) {
     switch (theme) {
       case AppTheme.teal:
-        return 'Teal';
+        return 'Teal Clean';
       case AppTheme.dark:
-        return 'Dark';
+        return 'Midnight Dark';
       case AppTheme.rose:
-        return 'Rose';
+        return 'Rose Gold';
       case AppTheme.indigo:
-        return 'Indigo';
+        return 'Deep Slate';
     }
   }
 }
