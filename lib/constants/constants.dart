@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-final Map<String, Color> serviceColors = {
-  'Massage': Colors.green.shade200,
-  'Haircut': Colors.blue.shade200,
-  'Spa': Colors.purple.shade200,
-  'Facial': Colors.orange.shade200,
-  'Manicure': Colors.pink.shade200,
+final Map<String, String> serviceDescriptions = {
+  'Massage': 'Therapeutic bodywork tailored to your needs',
+  'Haircut': 'Precision cuts and professional styling',
+  'Spa': 'Rejuvenating treatments for total relaxation',
+  'Facial': 'Advanced skincare for a radiant complexion',
+  'Manicure': 'Expert nail care and artistic finishing',
 };
 
 const List<String> serviceNames = [

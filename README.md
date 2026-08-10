@@ -9,6 +9,8 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 
 ## ✨ Recent Enhancements
 
+- **PWA Branding Update:** Replaced default Flutter icons with the new minimalistic `logo_minimal.png` across `web/index.html`, `web/manifest.json`, and Firebase Hosting.
+- **Service Cards Refresh:** Updated service card layouts and content in the customer booking flow for a cleaner, more modern presentation.
 - **High-Contrast Themes:** 4 world-class palettes (Teal Clean, Midnight Dark, Rose Gold, Deep Slate) with 100% visible active, inactive, and disabled states.
 - **Profile Avatar Badge:** Top-right app bar widget with user initials, role chip, theme switcher, and logout.
 - **Interactive Empty States:** Engaging CTA cards when lists or booking feeds are empty.

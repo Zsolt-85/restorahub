@@ -10,6 +10,7 @@ class ServicesPage extends StatelessWidget {
 
   void _openSubtypePicker(BuildContext context, String service) {
     final subtypes = serviceTypes[service] ?? [];
+    final colorScheme = Theme.of(context).colorScheme;
 
     showModalBottomSheet<void>(
       context: context,
@@ -31,10 +32,16 @@ class ServicesPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 ...subtypes.map(
                   (subtype) => Card(
+                    color: colorScheme.surface,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(color: colorScheme.outlineVariant),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      title: Text(subtype),
-                      trailing: const Icon(Icons.chevron_right),
+                      title: Text(subtype, style: TextStyle(color: colorScheme.onSurface)),
+                      trailing: Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
                       onTap: () {
                         Navigator.pop(context);
                         Navigator.push(
@@ -60,6 +67,7 @@ class ServicesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
     if (auth.currentUser == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -73,44 +81,68 @@ class ServicesPage extends StatelessWidget {
       body: GridView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: serviceNames.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.95,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 320,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.72,
         ),
         itemBuilder: (_, index) {
           final service = serviceNames[index];
-          final color = serviceColors[service] ?? kSecondaryColor;
           final icon = serviceIcons[service] ?? Icons.spa_outlined;
+          final description = serviceDescriptions[service] ?? '';
 
-          return Material(
-            color: color,
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
+          return Card(
+            color: colorScheme.surface,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(color: colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(16),
+            ),
+            child: InkWell(
               onTap: () => _openSubtypePicker(context, service),
+              borderRadius: BorderRadius.circular(16),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(icon, size: 36, color: Colors.black87),
-                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(icon, color: colorScheme.primary, size: 28),
+                        const Spacer(),
+                        Icon(Icons.arrow_forward, size: 18, color: colorScheme.onSurfaceVariant),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
                     Text(
                       service,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
-                      '${serviceTypes[service]?.length ?? 0} options',
+                      description,
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                        height: 1.3,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Book with a Professional',
+                        style: TextStyle(color: colorScheme.onSecondaryContainer, fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
