@@ -70,6 +70,12 @@ class _ProfessionalBookingManagementPageState
         ],
         bottom: TabBar(
           controller: _tabController,
+          indicatorSize: TabBarIndicatorSize.tab,
+          indicator: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          labelColor: Theme.of(context).colorScheme.onPrimary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           tabs: const [
             Tab(text: 'Upcoming'),
             Tab(text: 'Past'),

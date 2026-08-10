@@ -109,9 +109,10 @@ class ThemeProvider extends ChangeNotifier {
     final onSurface = colorScheme.onSurface;
     return TabBarThemeData(
       indicator: BoxDecoration(color: colorScheme.primary),
+      indicatorColor: colorScheme.primary,
       labelColor: colorScheme.onPrimary,
-      unselectedLabelColor: colorScheme.onSurface,
-      unselectedLabelStyle: TextStyle(color: onSurface.withOpacity(0.38)),
+      unselectedLabelColor: onSurface.withOpacity(0.6),
+      unselectedLabelStyle: TextStyle(color: onSurface.withOpacity(0.6)),
     );
   }
 

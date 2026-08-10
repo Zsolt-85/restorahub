@@ -117,20 +117,27 @@ class UserProfileAvatar extends StatelessWidget {
   void _showThemeSelector(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final currentTheme = themeProvider.currentTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Theme Selection'),
+        title: Text(
+          'Theme Selection',
+          style: TextStyle(color: colorScheme.onSurface),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: AppTheme.values.map((theme) {
             final isSelected = currentTheme == theme;
             return ListTile(
               leading: Icon(Icons.color_lens, color: _themeColor(theme)),
-              title: Text(_themeLabel(theme)),
+              title: Text(
+                _themeLabel(theme),
+                style: TextStyle(color: colorScheme.onSurface),
+              ),
               trailing: isSelected
-                  ? const Icon(Icons.check_circle, color: Colors.green)
+                  ? Icon(Icons.check_circle, color: colorScheme.primary)
                   : null,
               onTap: () {
                 themeProvider.setTheme(theme);

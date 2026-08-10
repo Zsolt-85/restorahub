@@ -10,7 +10,12 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 - **Profile editing** — update name, email, phone, password; professionals also edit specialty and schedule
 - **Password recovery** — reset password via Firebase email link
 - **First-login profile completion** — new users are prompted to provide name, phone, and role on first sign-in
-- **Theme selection** — teal, dark, rose, or indigo; preference is saved locally via `shared_preferences`
+- **User Profile Avatar Widget** — Top-right app bar avatar with initials, role badge (Customer / Professional), profile navigation, theme switcher dialog, and logout.
+- **World-class high-contrast themes** — Overhauled `ThemeProvider` with 4 distinct palettes (Teal Clean, Midnight Dark, Rose Gold, Deep Slate) ensuring 100% contrast visibility across active, inactive, and disabled states for chips, tabs, and buttons.
+- **Selection component contrast** — High-contrast styling for time-slot chips, category buttons, and tab bars with explicit active/inactive/disabled color states.
+- **Interactive empty states** — CTA cards with direct action buttons when appointment feeds or requests are empty.
+- **Skeleton loading shimmers** — Smooth pulsing shimmers during Firestore appointment loading.
+- **Theme selection** — 4 high-contrast themes (Teal Clean, Midnight Dark, Rose Gold, Deep Slate); preference is saved locally via `shared_preferences`
 - **Loading and error states** — all data-loading screens show progress indicators and error messages with retry
 - **Professional booking confirmation** — professionals accept or decline incoming booking requests via confirmation dialog
 - **Real-time notifications** — instant Firestore streaming for booking requests, confirmations, and cancellations with unread badge
