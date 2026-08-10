@@ -31,6 +31,8 @@ class _BookingPageState extends State<BookingPage> {
   bool _loading = false;
   String? _error;
 
+  final Set<TimeOfDay> _unavailableSlots = {};
+
   late final String _category;
 
   @override
@@ -46,7 +48,6 @@ class _BookingPageState extends State<BookingPage> {
       final professionals = await repo.getProfessionalsBySpecialty(_category);
 
       if (!mounted) return;
-
       setState(() {
         _professionals = professionals;
         _loadingProfessionals = false;
@@ -56,7 +57,11 @@ class _BookingPageState extends State<BookingPage> {
           _selectedProfessional = null;
         }
         _selectedTime = null;
+        _unavailableSlots.clear();
       });
+      if (professionals.length == 1) {
+        _loadSlotAvailability(professionals.first);
+      }
     } on AppException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -86,7 +91,11 @@ class _BookingPageState extends State<BookingPage> {
       setState(() {
         _selectedDate = date;
         _selectedTime = null;
+        _unavailableSlots.clear();
       });
+      if (_selectedProfessional != null) {
+        _loadSlotAvailability(_selectedProfessional!);
+      }
     }
   }
 
@@ -102,6 +111,55 @@ class _BookingPageState extends State<BookingPage> {
       breakStart: professional.breakStart,
       breakEnd: professional.breakEnd,
     );
+  }
+
+  Future<void> _loadSlotAvailability(User professional) async {
+    if (_selectedDate == null) {
+      setState(() => _unavailableSlots.clear());
+      return;
+    }
+
+    try {
+      final repo = Provider.of<AppointmentProvider>(context, listen: false).repository;
+      final allAppointments = await repo.getAppointmentsForProfessional(professional.id!);
+
+      final dateStr = _selectedDate!;
+      final dayAppointments = allAppointments.where((a) {
+        return a.dateTime.year == dateStr.year &&
+            a.dateTime.month == dateStr.month &&
+            a.dateTime.day == dateStr.day &&
+            !a.isTerminal;
+      }).toList();
+
+      final slots = _slotsForProfessional(professional);
+      final unavailable = <TimeOfDay>{};
+
+      for (final slot in slots) {
+        final slotStart = _combine(_selectedDate!, slot);
+        final isAvailable = ScheduleHelper.isSlotAvailable(
+          slotStart: slotStart,
+          slotDuration: professional.slotDurationMinutes,
+          professionalId: professional.id!,
+          appointments: dayAppointments,
+          bufferTimeMinutes: professional.bufferTimeMinutes,
+        );
+
+        if (!isAvailable) {
+          unavailable.add(slot);
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _unavailableSlots
+            ..clear()
+            ..addAll(unavailable);
+        });
+      }
+    } catch (e) {
+      // Keep existing unavailable slots on error;
+      // the final check before booking still protects against double booking.
+    }
   }
 
   @override
@@ -164,7 +222,11 @@ class _BookingPageState extends State<BookingPage> {
                   setState(() {
                     _selectedProfessional = value;
                     _selectedTime = null;
+                    _unavailableSlots.clear();
                   });
+                  if (value != null) {
+                    _loadSlotAvailability(value);
+                  }
                 },
               ),
             const SizedBox(height: 12),
@@ -196,11 +258,24 @@ class _BookingPageState extends State<BookingPage> {
                   runSpacing: 8,
                   children: timeSlots.map((slot) {
                     final isSelected = _selectedTime == slot;
+                    final isUnavailable = _unavailableSlots.contains(slot);
 
                     return ChoiceChip(
-                      label: Text(slot.format(context)),
+                      label: isUnavailable
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(slot.format(context)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Booked',
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                              ],
+                            )
+                          : Text(slot.format(context)),
                       selected: isSelected,
-                      onSelected: (_) => setState(() => _selectedTime = slot),
+                      onSelected: isUnavailable ? null : (_) => setState(() => _selectedTime = slot),
                     );
                   }).toList(),
                 ),

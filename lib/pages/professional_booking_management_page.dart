@@ -3,13 +3,15 @@ import 'package:provider/provider.dart';
 
 import '../helpers/appointment_actions.dart';
 import '../models/appointment.dart';
+import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/app_loading_indicator.dart';
 import '../widgets/appointment_card.dart';
+import '../widgets/appointment_card_skeleton.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/empty_state_widget.dart';
-import 'settings_page.dart';
+import '../widgets/professional_calendar_view.dart';
+import '../widgets/user_profile_avatar.dart';
 
 class ProfessionalBookingManagementPage extends StatefulWidget {
   const ProfessionalBookingManagementPage({super.key});
@@ -27,7 +29,7 @@ class _ProfessionalBookingManagementPageState
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final apptProvider =
@@ -64,19 +66,14 @@ class _ProfessionalBookingManagementPageState
       appBar: AppBar(
         title: const Text('Manage bookings'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsPage()),
-            ),
-          ),
+          const UserProfileAvatar(),
         ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
             Tab(text: 'Upcoming'),
             Tab(text: 'Past'),
+            Tab(text: 'Calendar'),
           ],
         ),
       ),
@@ -86,6 +83,7 @@ class _ProfessionalBookingManagementPageState
         children: [
           _buildUpcoming(context, apptProvider),
           _buildPast(context, apptProvider),
+          _buildCalendar(context, apptProvider, user),
         ],
       ),
     );
@@ -93,7 +91,11 @@ class _ProfessionalBookingManagementPageState
 
   Widget _buildUpcoming(BuildContext context, AppointmentProvider apptProvider) {
     if (apptProvider.isLoading) {
-      return const AppLoadingIndicator(message: 'Loading bookings...');
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 3,
+        itemBuilder: (context, index) => const AppointmentCardSkeleton(),
+      );
     }
 
     if (apptProvider.error != null) {
@@ -159,7 +161,11 @@ class _ProfessionalBookingManagementPageState
 
   Widget _buildPast(BuildContext context, AppointmentProvider apptProvider) {
     if (apptProvider.isLoading) {
-      return const AppLoadingIndicator(message: 'Loading bookings...');
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 3,
+        itemBuilder: (context, index) => const AppointmentCardSkeleton(),
+      );
     }
 
     if (apptProvider.error != null) {
@@ -214,5 +220,9 @@ class _ProfessionalBookingManagementPageState
         );
       },
     );
+  }
+
+  Widget _buildCalendar(BuildContext context, AppointmentProvider apptProvider, User user) {
+    return ProfessionalCalendarView(professional: user);
   }
 }

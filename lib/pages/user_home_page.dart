@@ -4,13 +4,13 @@ import 'package:provider/provider.dart';
 import '../helpers/appointment_actions.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/app_loading_indicator.dart';
 import '../widgets/appointment_card.dart';
+import '../widgets/appointment_card_skeleton.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/empty_state_widget.dart';
+import '../widgets/user_profile_avatar.dart';
 import 'professional_booking_management_page.dart';
 import 'services_page.dart';
-import 'settings_page.dart';
 
 class UserHomePage extends StatefulWidget {
   const UserHomePage({super.key});
@@ -60,13 +60,7 @@ class _UserHomePageState extends State<UserHomePage> {
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsPage()),
-            ),
-          ),
+          const UserProfileAvatar(),
         ],
       ),
       drawer: AppDrawer(user: user, auth: auth),
@@ -99,7 +93,11 @@ class _UserHomePageState extends State<UserHomePage> {
       bool isCustomer,
       ) {
     if (apptProvider.isLoading) {
-      return const AppLoadingIndicator(message: 'Loading appointments...');
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 3,
+        itemBuilder: (context, index) => const AppointmentCardSkeleton(),
+      );
     }
 
     if (apptProvider.error != null) {

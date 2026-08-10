@@ -203,7 +203,7 @@ class AppointmentActions {
 
       if (!context.mounted) return;
 
-      final label = newStatus.name.toUpperCase();
+      final label = newStatus.displayLabel;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Booking $label')),
       );

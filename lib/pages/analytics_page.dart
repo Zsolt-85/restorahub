@@ -207,7 +207,7 @@ Widget _buildStatCard(String title, String value, IconData icon) {
           '${appt.professionalName ?? "N/A"} \u2014 ${FormatHelper.formatDateTime(appt.dateTime)}',
         ),
         trailing: Text(
-          appt.status.name.toUpperCase(),
+          appt.status.displayLabel,
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,

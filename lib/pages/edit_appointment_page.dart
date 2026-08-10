@@ -26,6 +26,8 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
   bool _saving = false;
   String? _error;
 
+  final Set<TimeOfDay> _unavailableSlots = {};
+
   @override
   void initState() {
     super.initState();
@@ -45,7 +47,11 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
     setState(() {
       _professional = professional;
       _loadingProfessional = false;
+      _unavailableSlots.clear();
     });
+    if (professional != null) {
+      _loadSlotAvailability(professional);
+    }
   }
 
   Future<void> _pickDate() async {
@@ -61,7 +67,11 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
       setState(() {
         _selectedDate = date;
         _selectedTime = null;
+        _unavailableSlots.clear();
       });
+      if (_professional != null) {
+        _loadSlotAvailability(_professional!);
+      }
     }
   }
 
@@ -79,6 +89,60 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
       breakStart: professional.breakStart,
       breakEnd: professional.breakEnd,
     );
+  }
+
+  Future<void> _loadSlotAvailability(User professional) async {
+    if (_selectedDate == null) {
+      setState(() => _unavailableSlots.clear());
+      return;
+    }
+
+    try {
+      final repo = Provider.of<AppointmentProvider>(context, listen: false).repository;
+      final allAppointments = await repo.getAppointmentsForProfessional(professional.id!);
+
+      final dateStr = _selectedDate!;
+      final dayAppointments = allAppointments.where((a) {
+        return a.dateTime.year == dateStr.year &&
+            a.dateTime.month == dateStr.month &&
+            a.dateTime.day == dateStr.day &&
+            !a.isTerminal &&
+            a.id != widget.appointment.id;
+      }).toList();
+
+      final slots = _availableSlots(professional);
+      final unavailable = <TimeOfDay>{};
+
+      for (final slot in slots) {
+        final slotStart = _combine(_selectedDate!, slot);
+        final isAvailable = ScheduleHelper.isSlotAvailable(
+          slotStart: slotStart,
+          slotDuration: widget.appointment.durationMinutes,
+          professionalId: professional.id!,
+          appointments: dayAppointments,
+          bufferTimeMinutes: professional.bufferTimeMinutes,
+        );
+
+        if (!isAvailable) {
+          unavailable.add(slot);
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _unavailableSlots
+            ..clear()
+            ..addAll(unavailable);
+        });
+      }
+    } catch (e) {
+      // Keep existing unavailable slots on error;
+      // the final check before booking still protects against double booking.
+    } finally {
+      if (mounted) {
+        setState(() {});
+      }
+    }
   }
 
   @override
@@ -145,12 +209,24 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                           runSpacing: 8,
                           children: _availableSlots(professional).map((slot) {
                             final isSelected = _selectedTime == slot;
+                            final isUnavailable = _unavailableSlots.contains(slot);
 
                             return ChoiceChip(
-                              label: Text(slot.format(context)),
+                              label: isUnavailable
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(slot.format(context)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Booked',
+                                          style: TextStyle(fontSize: 10),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(slot.format(context)),
                               selected: isSelected,
-                              onSelected: (_) =>
-                                  setState(() => _selectedTime = slot),
+                              onSelected: isUnavailable ? null : (_) => setState(() => _selectedTime = slot),
                             );
                           }).toList(),
                         ),

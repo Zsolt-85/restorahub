@@ -26,6 +26,8 @@ dependencies:
   cloud_firestore: ^6.6.0
 
   add_2_calendar: ^3.0.1
+  table_calendar: ^3.1.4
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

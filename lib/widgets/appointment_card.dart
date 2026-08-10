@@ -76,14 +76,14 @@ class AppointmentCard extends StatelessWidget {
                       Text(FormatHelper.formatDateTime(appointment.dateTime)),
                       Text('Duration: ${appointment.durationMinutes} min'),
                       const SizedBox(height: 4),
-                      Text(
-                        appointment.status.name.toUpperCase(),
-                        style: TextStyle(
-                          color: statusColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
+                       Text(
+                         appointment.status.displayLabel,
+                         style: TextStyle(
+                           color: statusColor,
+                           fontWeight: FontWeight.w600,
+                           fontSize: 12,
+                         ),
+                       ),
                     ],
                   ),
                 ),

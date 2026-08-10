@@ -2,6 +2,25 @@ import 'package:restorahub/helpers/app_exception.dart';
 
 enum AppointmentStatus { pending, confirmed, completed, cancelledByCustomer, cancelledByProfessional, noShow }
 
+extension AppointmentStatusLabel on AppointmentStatus {
+  String get displayLabel {
+    switch (this) {
+      case AppointmentStatus.pending:
+        return 'Pending';
+      case AppointmentStatus.confirmed:
+        return 'Confirmed';
+      case AppointmentStatus.completed:
+        return 'Completed';
+      case AppointmentStatus.cancelledByCustomer:
+        return 'Cancelled by Customer';
+      case AppointmentStatus.cancelledByProfessional:
+        return 'Declined';
+      case AppointmentStatus.noShow:
+        return 'No Show';
+    }
+  }
+}
+
 class Appointment {
   String? id;
   String service;
