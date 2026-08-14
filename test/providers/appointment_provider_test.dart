@@ -133,6 +133,11 @@ class FakeUserRepository implements UserRepository {
   Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
     return users.values.where((u) => u.role == 'professional' && u.specialty == specialty).toList();
   }
+
+  @override
+  Future<List<User>> getCustomers() async {
+    return users.values.where((u) => u.role == 'customer').toList();
+  }
 }
 
 void main() {

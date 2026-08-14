@@ -16,4 +16,5 @@ class Routes {
   static const analytics = '/analytics';
   static const pastAppointments = '/past_appointments';
   static const settings = '/settings';
+  static const professionalManualBooking = '/professional_manual_booking';
 }

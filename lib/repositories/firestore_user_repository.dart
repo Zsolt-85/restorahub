@@ -134,4 +134,23 @@ class FirestoreUserRepository implements UserRepository {
       throw AppException('Failed to load professionals', cause: e);
     }
   }
+
+  @override
+  Future<List<User>> getCustomers() async {
+    try {
+      final query = await _usersCol.where('role', isEqualTo: 'customer').get();
+
+      final customers = <User>[];
+      for (final doc in query.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        customers.add(User.fromMap(data));
+      }
+      customers.sort((a, b) => a.name.compareTo(b.name));
+      return customers;
+    } catch (e, stack) {
+      AppLogger.error('FirestoreUserRepository.getCustomers error: $e\n$stack');
+      throw AppException('Failed to load customers', cause: e);
+    }
+  }
 }

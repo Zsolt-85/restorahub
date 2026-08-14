@@ -37,6 +37,10 @@ class FakeUserRepository implements UserRepository {
         .where((u) => u.role == 'professional' && u.specialty == specialty)
         .toList();
   }
+
+  @override
+  Future<List<User>> getCustomers() async =>
+      users.values.where((u) => u.role == 'customer').toList();
 }
 
 AuthProvider _authProviderWithUser(User? user) {

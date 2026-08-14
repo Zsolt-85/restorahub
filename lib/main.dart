@@ -33,6 +33,7 @@ import 'pages/notifications_page.dart';
 import 'pages/past_appointments_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/professional_booking_management_page.dart';
+import 'pages/professional_manual_booking_page.dart';
 import 'pages/registration_page.dart';
 import 'pages/success_page.dart';
 import 'pages/user_home_page.dart';
@@ -195,6 +196,8 @@ class MyApp extends StatelessWidget {
                       return const UserHomePage();
                     case Routes.professionalHome:
                       return const ProfessionalBookingManagementPage();
+                    case Routes.professionalManualBooking:
+                      return const ProfessionalManualBookingPage();
                     case Routes.completeProfile:
                       return Scaffold(
                         appBar: AppBar(title: const Text('Complete Profile')),

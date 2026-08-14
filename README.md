@@ -18,14 +18,14 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 - **Production PWA Support:** HTML5 meta tags, manifest, and custom app bar theme coloring.
 - **Notification Repository Split:** `NotificationRepository` (abstraction) and `FirestoreNotificationRepository` (implementation) split into separate files, matching the standard used by bookings, users, and payments.
 - **Route Centralization & Guard Hardening:** All navigation routes are defined as constants in `lib/constants/routes.dart` and registered in `main.dart`'s `onGenerateRoute`. Parameterized pages (`booking`, `editAppointment`, `addPayment`, `receipt`, `success`) receive arguments via `settings.arguments`. Raw `MaterialPageRoute` pushes and hardcoded route strings were replaced with `Navigator.pushNamed` + route constants across the codebase.
-- **Professional Manual Booking:** Professionals can create bookings directly for customers from the management screen via `ProfessionalManualBookingPage`. The page loads registered customers (`role == 'customer'`) from Firestore, supports search/selection, service, date, and time pickers, and writes a confirmed appointment with `professionalId` set to the logged-in professional and `customerId` set to the selected customer. The booking immediately appears under the customer's **Upcoming Appointments** tab because it is stored with the customer's UID.
+- **Professional Manual Booking:** Professionals can create bookings directly for customers from the management screen via `ProfessionalManualBookingPage`. The page loads registered customers (`role == 'customer'`) from Firestore, supports search/selection by **name, email, or phone number**, displays **phone number in search result items**, and shows a **selected customer preview card** with full name, phone, and email plus a clear/change button. Services are **filtered by the logged-in professional's specialty** (e.g., Haircut services only appear for hair-cut professionals), the **professional ID is locked** to the current user, and **time slot generation uses the exact same availability checking** as the customer booking page — `ScheduleHelper.generateSlots` + `ScheduleHelper.isSlotAvailable` against the professional's appointments for the selected date, with booked slots displayed as disabled choice chips labeled "Booked".
 
 ## 🔄 Recent System Updates
 
-### Firestore Atomic Writes & Server Sync
-Atomic server writes are now verified with a synchronous server read (`GetOptions(source: Source.server)`) in `FirestoreBookingRepository.createAppointmentAtomic` and `insertAppointment` (`lib/repositories/firestore_booking_repository.dart`). After a write, the document is re-fetched directly from the Firestore server; a missing `document.exists` now throws an `AppException` ("Server write rejected: Document does not exist on Firestore server.") instead of silently trusting offline cache, eliminating false-positive booking confirmations.
+### Firestore Persistence Fix
+Atomic server writes are verified with a synchronous server read (`GetOptions(source: Source.server)`) in `FirestoreBookingRepository.createAppointmentAtomic` and `insertAppointment` (`lib/repositories/firestore_booking_repository.dart`). After a write, the document is re-fetched directly from the Firestore server; a missing `document.exists` now throws an `AppException` ("Server write rejected: Document does not exist on Firestore server.") instead of silently trusting offline cache, eliminating false-positive booking confirmations.
 
-### Customer Dashboard Categorization
+### Customer Dashboard Tabs
 The customer dashboard uses a strict dual-tab layout — **Upcoming** vs. **History** (`lib/pages/user_home_page.dart`) — backed by `AppointmentProvider` (`lib/providers/appointment_provider.dart`). `upcomingAppointments` filters to `!isTerminal && !dateTime.isBefore(now)` and sorts **ascending** (closest first); `pastAppointments` filters to `dateTime.isBefore(now) || isTerminal` and sorts **descending** (most recent first), keeping past/cancelled bookings read-only and visually segregated from upcoming ones.
 
 ### UI/UX Refinement
@@ -145,8 +145,8 @@ flutter test
 
 ## 🔄 How to Resume Development
 
-- **Test suite:** 83/83 tests passing (`flutter test`)
-- **Static analysis:** 0 errors (`flutter analyze`)
+- **Test suite:** 95/96 tests passing (`flutter test`) — 1 pre-existing failure in `appointment_provider_test.dart` (unrelated `SLOT_TAKEN` mock assertion)
+- **Static analysis:** 0 errors, 12 info-level warnings in pre-existing files (`flutter analyze`)
 - **Current focus:** Pre-Production Deployment & Smoke Testing
 - **Next immediate steps:**
   1. Review Firestore security rules against the updated `UserRepository` and `NotificationRepository` queries.
@@ -174,14 +174,14 @@ flutter test
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
-| Tests | 83/83 passing (`flutter test`) |
-| Analysis | 0 errors (`flutter analyze`) |
+| Tests | 95/96 passing (`flutter test`) |
+| Analysis | 0 errors, 12 info warnings (`flutter analyze`) |
 
 ## Checks
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 83/83 passing
+flutter test      # 95/96 passing (1 pre-existing failure)
 ```
 
 ## Register as a professional

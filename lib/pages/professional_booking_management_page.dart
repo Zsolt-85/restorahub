@@ -93,6 +93,13 @@ class _ProfessionalBookingManagementPageState
           _buildCalendar(context, apptProvider, user),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.pushNamed(context, Routes.professionalManualBooking);
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Create Manual Booking'),
+      ),
     );
   }
 
