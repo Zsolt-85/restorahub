@@ -18,6 +18,7 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 - **Production PWA Support:** HTML5 meta tags, manifest, and custom app bar theme coloring.
 - **Notification Repository Split:** `NotificationRepository` (abstraction) and `FirestoreNotificationRepository` (implementation) split into separate files, matching the standard used by bookings, users, and payments.
 - **Route Centralization & Guard Hardening:** All navigation routes are defined as constants in `lib/constants/routes.dart` and registered in `main.dart`'s `onGenerateRoute`. Parameterized pages (`booking`, `editAppointment`, `addPayment`, `receipt`, `success`) receive arguments via `settings.arguments`. Raw `MaterialPageRoute` pushes and hardcoded route strings were replaced with `Navigator.pushNamed` + route constants across the codebase.
+- **Professional Manual Booking:** Professionals can create bookings directly for customers from the management screen via `ProfessionalManualBookingPage`. The page loads registered customers (`role == 'customer'`) from Firestore, supports search/selection, service, date, and time pickers, and writes a confirmed appointment with `professionalId` set to the logged-in professional and `customerId` set to the selected customer. The booking immediately appears under the customer's **Upcoming Appointments** tab because it is stored with the customer's UID.
 
 ## 🔄 Recent System Updates
 
