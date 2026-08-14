@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/appointment_card.dart';
@@ -28,13 +29,14 @@ class _PastAppointmentsPageState extends State<PastAppointmentsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Past appointments'),
+        title: Text(AppLocalizations.of(context)?.pastAppointments ?? 'Past appointments'),
       ),
       body: pastAppointments.isEmpty
-          ? const EmptyStateWidget(
+          ? EmptyStateWidget(
               icon: Icons.history,
-              title: 'No past appointments',
-              subtitle: 'Completed and cancelled appointments will appear here',
+              title: AppLocalizations.of(context)?.noAppointments ?? 'No past appointments',
+              subtitle: AppLocalizations.of(context)?.history ??
+                  'Completed and cancelled appointments will appear here',
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),

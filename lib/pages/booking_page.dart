@@ -5,6 +5,7 @@ import '../constants/routes.dart';
 import '../exceptions/app_exception.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/schedule_helper.dart';
+import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/booking_summary.dart';
 import '../models/user.dart';
@@ -173,7 +174,9 @@ class _BookingPageState extends State<BookingPage> {
         : _slotsForProfessional(professional);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Book ${widget.service}')),
+      appBar: AppBar(
+        title: Text('${AppLocalizations.of(context)?.bookNow ?? 'Book Now'} ${widget.service}'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -187,7 +190,7 @@ class _BookingPageState extends State<BookingPage> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Text(
-                  'Showing $_category professionals only',
+                  '${AppLocalizations.of(context)?.showingProfessionalsOnly ?? 'Showing'} $_category ${AppLocalizations.of(context)?.professionalContact ?? 'professionals only'}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
@@ -197,17 +200,18 @@ class _BookingPageState extends State<BookingPage> {
               const Center(child: CircularProgressIndicator())
             else if (_professionals.isEmpty)
               Text(
-                'No $_category professionals available yet.',
+                AppLocalizations.of(context)?.noServicesAvailable ??
+                    'No services available',
                 style: const TextStyle(color: Colors.red),
               )
             else
               DropdownButtonFormField<User>(
                 key: ValueKey(professional?.id),
                 initialValue: _selectedProfessional,
-                decoration: const InputDecoration(
-                  labelText: 'Select professional',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person_search),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)?.selectCustomer ?? 'Select professional',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.person_search),
                 ),
                 items: _professionals
                     .map(
@@ -234,10 +238,10 @@ class _BookingPageState extends State<BookingPage> {
             Card(
               child: ListTile(
                 leading: const Icon(Icons.calendar_today),
-                title: const Text('Date'),
+                title: Text(AppLocalizations.of(context)?.selectDate ?? 'Date'),
                 subtitle: Text(
                   _selectedDate == null
-                      ? 'Tap to choose a date'
+                      ? AppLocalizations.of(context)?.selectDate ?? 'Tap to choose a date'
                       : FormatHelper.formatDate(_selectedDate!),
                 ),
                 trailing: const Icon(Icons.chevron_right),
@@ -247,12 +251,12 @@ class _BookingPageState extends State<BookingPage> {
             if (_selectedDate != null && professional != null) ...[
               const SizedBox(height: 16),
               Text(
-                'Available slots (${professional.slotDurationMinutes} min each)',
+                '${AppLocalizations.of(context)?.selectTimeSlot ?? 'Available slots'} (${professional.slotDurationMinutes} ${AppLocalizations.of(context)?.mins ?? 'min each'})',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
               if (timeSlots.isEmpty)
-                const Text('No slots fit this professional schedule.')
+                Text(AppLocalizations.of(context)?.noAppointments ?? 'No slots fit this professional schedule.')
               else
                 Wrap(
                   spacing: 8,
@@ -275,9 +279,9 @@ class _BookingPageState extends State<BookingPage> {
                                         .withValues(alpha: 0.38),
                                   ),
                                 ),
-                                const SizedBox(width: 4),
+                                 const SizedBox(width: 4),
                                 Text(
-                                  'Booked',
+                                  AppLocalizations.of(context)?.confirmed ?? 'Booked',
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: Theme.of(context)
@@ -311,13 +315,12 @@ class _BookingPageState extends State<BookingPage> {
                   ? null
                   : () async {
                       if (_selectedProfessional == null) {
-                        setState(() => _error = 'Please select a professional');
+                        setState(() => _error = AppLocalizations.of(context)?.selectCustomer ?? 'Please select a professional');
                         return;
                       }
 
                       if (_selectedDate == null || _selectedTime == null) {
-                        setState(() =>
-                            _error = 'Please select a date and time slot');
+                        setState(() => _error = AppLocalizations.of(context)?.selectDate ?? 'Please select a date and time slot');
                         return;
                       }
 
@@ -331,7 +334,7 @@ class _BookingPageState extends State<BookingPage> {
                         bufferTimeMinutes: pro.bufferTimeMinutes,
                       )) {
                         setState(() => _error =
-                            'This slot was just booked. Pick another.');
+                            AppLocalizations.of(context)?.confirmed ?? 'This slot was just booked. Pick another.');
                         return;
                       }
 
@@ -397,7 +400,7 @@ class _BookingPageState extends State<BookingPage> {
                         strokeWidth: 2,
                       ),
                     )
-                  : const Text('Confirm booking'),
+                  : Text(AppLocalizations.of(context)?.confirmBooking ?? 'Confirm booking'),
             ),
           ],
         ),

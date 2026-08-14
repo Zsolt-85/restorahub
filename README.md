@@ -9,16 +9,10 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 
 ## ✨ Recent Enhancements
 
+- **Complete App Localization (EN, RO, DE, HU):** Full internationalization using `flutter_localizations` and ARB translation files across 100% of screens, side navigation drawer, dialogs, status chips, calendar views, and analytics. Features live language switching in **Settings** and local persistence via `SharedPreferences`.
+- **Professional Manual Direct Booking:** Professionals can create bookings directly for customers from the management screen via `ProfessionalManualBookingPage`. The page loads registered customers (`role == 'customer'`) from Firestore, supports search/selection by **name, email, or phone number**, displays **phone number in search result items**, and shows a **selected customer preview card** with full name, phone, and email plus a clear/change button. Services are **filtered by the logged-in professional's specialty** (e.g., Haircut services only appear for hair-cut professionals), the **professional ID is locked** to the current user, and **time slot generation uses the exact same availability checking** as the customer booking page — `ScheduleHelper.generateSlots` + `ScheduleHelper.isSlotAvailable` against the professional's appointments for the selected date, with booked slots displayed as disabled choice chips labeled "Booked".
+- **Segregated Customer & Professional Dashboards:** Dual-tab layouts (Upcoming vs. History) with strict date sorting. `upcomingAppointments` filters to `!isTerminal && !dateTime.isBefore(now)` and sorts **ascending** (closest first); `pastAppointments` filters to `dateTime.isBefore(now) || isTerminal` and sorts **descending** (most recent first), keeping past/cancelled bookings read-only and visually segregated from upcoming ones.
 - **PWA Branding Update:** Replaced default Flutter icons with the new minimalistic `logo_minimal.png` across `web/index.html`, `web/manifest.json`, and Firebase Hosting.
-- **Service Cards Refresh:** Updated service card layouts and content in the customer booking flow for a cleaner, more modern presentation.
-- **High-Contrast Themes:** 4 world-class palettes (Teal Clean, Midnight Dark, Rose Gold, Deep Slate) with 100% visible active, inactive, and disabled states.
-- **Profile Avatar Badge:** Top-right app bar widget with user initials, role chip, theme switcher, and logout.
-- **Interactive Empty States:** Engaging CTA cards when lists or booking feeds are empty.
-- **Skeleton Shimmers:** Shimmer loading states for appointment cards replacing central spinners.
-- **Production PWA Support:** HTML5 meta tags, manifest, and custom app bar theme coloring.
-- **Notification Repository Split:** `NotificationRepository` (abstraction) and `FirestoreNotificationRepository` (implementation) split into separate files, matching the standard used by bookings, users, and payments.
-- **Route Centralization & Guard Hardening:** All navigation routes are defined as constants in `lib/constants/routes.dart` and registered in `main.dart`'s `onGenerateRoute`. Parameterized pages (`booking`, `editAppointment`, `addPayment`, `receipt`, `success`) receive arguments via `settings.arguments`. Raw `MaterialPageRoute` pushes and hardcoded route strings were replaced with `Navigator.pushNamed` + route constants across the codebase.
-- **Professional Manual Booking:** Professionals can create bookings directly for customers from the management screen via `ProfessionalManualBookingPage`. The page loads registered customers (`role == 'customer'`) from Firestore, supports search/selection by **name, email, or phone number**, displays **phone number in search result items**, and shows a **selected customer preview card** with full name, phone, and email plus a clear/change button. Services are **filtered by the logged-in professional's specialty** (e.g., Haircut services only appear for hair-cut professionals), the **professional ID is locked** to the current user, and **time slot generation uses the exact same availability checking** as the customer booking page — `ScheduleHelper.generateSlots` + `ScheduleHelper.isSlotAvailable` against the professional's appointments for the selected date, with booked slots displayed as disabled choice chips labeled "Booked".
 
 ## 🔄 Recent System Updates
 
@@ -26,7 +20,10 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 Atomic server writes are verified with a synchronous server read (`GetOptions(source: Source.server)`) in `FirestoreBookingRepository.createAppointmentAtomic` and `insertAppointment` (`lib/repositories/firestore_booking_repository.dart`). After a write, the document is re-fetched directly from the Firestore server; a missing `document.exists` now throws an `AppException` ("Server write rejected: Document does not exist on Firestore server.") instead of silently trusting offline cache, eliminating false-positive booking confirmations.
 
 ### Customer Dashboard Tabs
-The customer dashboard uses a strict dual-tab layout — **Upcoming** vs. **History** (`lib/pages/user_home_page.dart`) — backed by `AppointmentProvider` (`lib/providers/appointment_provider.dart`). `upcomingAppointments` filters to `!isTerminal && !dateTime.isBefore(now)` and sorts **ascending** (closest first); `pastAppointments` filters to `dateTime.isBefore(now) || isTerminal` and sorts **descending** (most recent first), keeping past/cancelled bookings read-only and visually segregated from upcoming ones.
+The customer and professional dashboards use strict dual-tab layouts — **Upcoming** vs. **History** — backed by `AppointmentProvider`. `upcomingAppointments` filters to `!isTerminal && !dateTime.isBefore(now)` and sorts **ascending** (closest first); `pastAppointments` filters to `dateTime.isBefore(now) || isTerminal` and sorts **descending** (most recent first), keeping past/cancelled bookings read-only and visually segregated from upcoming ones.
+
+### Complete App Localization
+Full internationalization across all screens, dialogs, side navigation drawer, status chips, calendar views, and analytics using `flutter_localizations` + ARB files (`lib/l10n/app_en.arb`, `app_ro.arb`, `app_de.arb`, `app_hu.arb`). Live language switching is available in **Settings**, and the selected locale is persisted locally via `SharedPreferences` (`LocaleProvider`).
 
 ### UI/UX Refinement
 The dashboard `TabBar` now uses a theme-based `UnderlineTabIndicator` (`Theme.of(context).colorScheme.primary`, width `3.0`) with `TabBarIndicatorSize.label`. Active tab text is primary-colored and unselected text is `Colors.black87` for clean contrast; the `TabBar` is wrapped in a padded `Container` with `isScrollable: false` so both tabs share equal width, with simple `Tab(text:)` labels and no forced-width backgrounds that caused clipping/overflow.
@@ -146,7 +143,7 @@ flutter test
 ## 🔄 How to Resume Development
 
 - **Test suite:** 95/96 tests passing (`flutter test`) — 1 pre-existing failure in `appointment_provider_test.dart` (unrelated `SLOT_TAKEN` mock assertion)
-- **Static analysis:** 0 errors, 12 info-level warnings in pre-existing files (`flutter analyze`)
+- **Static analysis:** 0 errors, 15 info-level warnings in pre-existing files (`flutter analyze`)
 - **Current focus:** Pre-Production Deployment & Smoke Testing
 - **Next immediate steps:**
   1. Review Firestore security rules against the updated `UserRepository` and `NotificationRepository` queries.
@@ -170,12 +167,13 @@ flutter test
 | Authentication | Registration, login, password reset, first-login profile completion |
 | Booking | Slot availability check, create/cancel/reschedule appointments, 2-hour cancellation window |
 | Professional workflow | Accept/decline pending bookings, upcoming/past tabs, real-time updates |
+| Localization | Full EN/RO/DE/HU support across all screens, drawer, dialogs, status chips, calendar, and analytics with live switching in Settings |
 | Notifications | Real-time streaming, unread badge, booking request/confirm/cancel alerts |
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
 | Tests | 95/96 passing (`flutter test`) |
-| Analysis | 0 errors, 12 info warnings (`flutter analyze`) |
+| Analysis | 0 errors, 15 info warnings (`flutter analyze`) |
 
 ## Checks
 

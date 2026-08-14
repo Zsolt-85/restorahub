@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/payment.dart';
 import '../providers/appointment_provider.dart';
@@ -92,7 +93,7 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
     final appointment = widget.appointment;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Record Payment')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.recordPayment ?? 'Record Payment')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(

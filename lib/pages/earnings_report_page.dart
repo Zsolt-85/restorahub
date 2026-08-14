@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../l10n/app_localizations.dart';
 import '../constants/routes.dart';
 import '../models/payment.dart';
 import '../providers/auth_provider.dart';
@@ -45,7 +46,7 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
         : 0.0;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Earnings Report')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.earningsReport ?? 'Earnings Report')),
       body: Column(
         children: [
           Padding(
@@ -61,7 +62,7 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
                 const SizedBox(width: 8),
                 FilledButton.icon(
                   icon: const Icon(Icons.share),
-                  label: const Text('Share'),
+                  label: Text(AppLocalizations.of(context)?.share ?? 'Share'),
                   onPressed: payments.isEmpty
                       ? null
                       : () => _shareReport(payments, totalRevenue),
@@ -72,32 +73,32 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _statColumn(
-                      'Revenue',
-                      '${payments.isEmpty ? "0.00" : payments.first.currency} ${totalRevenue.toStringAsFixed(2)}',
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _statColumn(
+                          AppLocalizations.of(context)?.revenueLabel ?? 'Revenue',
+                          '${payments.isEmpty ? "0.00" : payments.first.currency} ${totalRevenue.toStringAsFixed(2)}',
+                        ),
+                        _statColumn(
+                          AppLocalizations.of(context)?.completedLabel ?? 'Completed',
+                          '$completedCount',
+                        ),
+                        _statColumn(
+                          AppLocalizations.of(context)?.avgLabel ?? 'Avg',
+                          '${payments.isEmpty ? "0.00" : payments.first.currency} ${avgPerAppointment.toStringAsFixed(2)}',
+                        ),
+                      ],
                     ),
-                    _statColumn(
-                      'Completed',
-                      '$completedCount',
-                    ),
-                    _statColumn(
-                      'Avg',
-                      '${payments.isEmpty ? "0.00" : payments.first.currency} ${avgPerAppointment.toStringAsFixed(2)}',
-                    ),
-                  ],
-                ),
-              ),
+                  ),
             ),
           ),
           const SizedBox(height: 8),
           Expanded(
             child: payments.isEmpty
-                ? const Center(child: Text('No payments recorded'))
+                ? Center(child: Text(AppLocalizations.of(context)?.noPaymentsRecorded ?? 'No payments recorded'))
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: payments.length,

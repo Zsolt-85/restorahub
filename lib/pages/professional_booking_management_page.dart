@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
+import '../l10n/app_localizations.dart';
 import '../helpers/appointment_actions.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
@@ -65,7 +66,7 @@ class _ProfessionalBookingManagementPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage bookings'),
+        title: Text(AppLocalizations.of(context)?.manageBookings ?? 'Manage bookings'),
         actions: const [
           UserProfileAvatar(),
         ],
@@ -77,10 +78,10 @@ class _ProfessionalBookingManagementPageState
           ),
           labelColor: Theme.of(context).colorScheme.onPrimary,
           unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-          tabs: const [
-            Tab(text: 'Upcoming'),
-            Tab(text: 'Past'),
-            Tab(text: 'Calendar'),
+          tabs: [
+            Tab(text: AppLocalizations.of(context)?.upcoming ?? 'Upcoming'),
+            Tab(text: AppLocalizations.of(context)?.history ?? 'Past'),
+            Tab(text: AppLocalizations.of(context)?.calendar ?? 'Calendar'),
           ],
         ),
       ),
@@ -98,7 +99,7 @@ class _ProfessionalBookingManagementPageState
           Navigator.pushNamed(context, Routes.professionalManualBooking);
         },
         icon: const Icon(Icons.add),
-        label: const Text('Create Manual Booking'),
+        label: Text(AppLocalizations.of(context)?.createManualBooking ?? 'Create Manual Booking'),
       ),
     );
   }
@@ -121,10 +122,10 @@ class _ProfessionalBookingManagementPageState
             children: [
               const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
-              Text(
-                'Could not load bookings',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+               Text(
+                 AppLocalizations.of(context)?.failedToLoadBookings ?? 'Could not load bookings',
+                 style: Theme.of(context).textTheme.titleMedium,
+               ),
               const SizedBox(height: 8),
               Text(
                 apptProvider.error!,
@@ -134,7 +135,7 @@ class _ProfessionalBookingManagementPageState
               ElevatedButton.icon(
                 onPressed: () => apptProvider.loadAppointments(),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: Text(AppLocalizations.of(context)?.retry ?? 'Retry'),
               ),
             ],
           ),
@@ -146,14 +147,14 @@ class _ProfessionalBookingManagementPageState
     if (appointments.isEmpty) {
       return EmptyStateWidget(
         icon: Icons.event_busy,
-        title: 'No Upcoming Requests',
-        subtitle: 'When customers book services with you, their requests will appear here.',
+        title: AppLocalizations.of(context)?.noUpcomingBookings ?? 'No upcoming requests',
+        subtitle: AppLocalizations.of(context)?.upcomingBookingsSubtitle ?? 'When customers book services with you, their requests will appear here.',
         actionButton: ElevatedButton.icon(
           onPressed: () {
             Navigator.pushNamed(context, Routes.profile);
           },
           icon: const Icon(Icons.person_outline),
-          label: const Text('Edit Profile & Hours'),
+          label: Text(AppLocalizations.of(context)?.editProfileAndHours ?? 'Edit Profile & Hours'),
         ),
       );
     }
@@ -198,21 +199,21 @@ class _ProfessionalBookingManagementPageState
             children: [
               const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
-              Text(
-                'Could not load bookings',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+               Text(
+                 AppLocalizations.of(context)?.failedToLoadBookings ?? 'Could not load bookings',
+                 style: Theme.of(context).textTheme.titleMedium,
+               ),
               const SizedBox(height: 8),
               Text(
                 apptProvider.error!,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => apptProvider.loadAppointments(),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
+               ElevatedButton.icon(
+                 onPressed: () => apptProvider.loadAppointments(),
+                 icon: const Icon(Icons.refresh),
+                 label: Text(AppLocalizations.of(context)?.retry ?? 'Retry'),
+               ),
             ],
           ),
         ),
@@ -221,10 +222,10 @@ class _ProfessionalBookingManagementPageState
 
     final appointments = apptProvider.pastAppointments;
     if (appointments.isEmpty) {
-      return const EmptyStateWidget(
+      return EmptyStateWidget(
         icon: Icons.history,
-        title: 'No past bookings',
-        subtitle: 'Completed and cancelled bookings will appear here',
+        title: AppLocalizations.of(context)?.noPastBookings ?? 'No past bookings',
+        subtitle: AppLocalizations.of(context)?.pastBookingsSubtitle ?? 'Completed and cancelled bookings will appear here',
       );
     }
 

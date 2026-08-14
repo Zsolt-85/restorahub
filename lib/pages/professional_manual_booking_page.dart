@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../constants/constants.dart';
 import '../exceptions/app_exception.dart';
 import '../helpers/schedule_helper.dart';
+import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
@@ -60,7 +61,7 @@ class _ProfessionalManualBookingPageState
         _filteredCustomers = customers;
       });
     } catch (e) {
-      setState(() => _errorMessage = 'Failed to load customers');
+      setState(() => _errorMessage = AppLocalizations.of(context)?.failedToLoadCustomers ?? 'Failed to load customers');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -95,18 +96,18 @@ class _ProfessionalManualBookingPageState
           customer.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(customer.phone.isNotEmpty ? customer.phone : 'No phone'),
-            Text(customer.email),
-          ],
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.clear, color: Colors.red),
-          tooltip: 'Change customer',
-          onPressed: _clearCustomer,
-        ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(customer.phone.isNotEmpty ? customer.phone : AppLocalizations.of(context)?.noPhone ?? 'No phone'),
+              Text(customer.email),
+            ],
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.clear, color: Colors.red),
+            tooltip: AppLocalizations.of(context)?.changeCustomer ?? 'Change customer',
+            onPressed: _clearCustomer,
+          ),
       ),
     );
   }
@@ -213,19 +214,19 @@ class _ProfessionalManualBookingPageState
 
     if (_selectedCustomer == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a customer')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.pleaseSelectCustomer ?? 'Please select a customer')),
       );
       return;
     }
     if (_selectedService == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a service')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.pleaseSelectService ?? 'Please select a service')),
       );
       return;
     }
     if (_selectedDate == null || _selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select date and time')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.pleaseSelectDateTime ?? 'Please select date and time')),
       );
       return;
     }
@@ -236,7 +237,7 @@ class _ProfessionalManualBookingPageState
 
     if (professional == null || professional.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must be logged in as a professional')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.mustBeProfessional ?? 'You must be logged in as a professional')),
       );
       return;
     }
@@ -269,7 +270,7 @@ class _ProfessionalManualBookingPageState
       await apptProvider.addAppointment(newAppt);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Manual booking created successfully')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.manualBookingCreated ?? 'Manual booking created successfully')),
       );
       Navigator.pop(context);
     } on AppException catch (e) {
@@ -279,10 +280,10 @@ class _ProfessionalManualBookingPageState
         SnackBar(content: Text(e.message)),
       );
     } catch (e) {
-      setState(() => _errorMessage = 'Failed to create booking');
+      setState(() => _errorMessage = AppLocalizations.of(context)?.bookingFailed ?? 'Failed to create booking');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create booking')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.bookingFailed ?? 'Failed to create booking')),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -306,7 +307,7 @@ class _ProfessionalManualBookingPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Manual Booking'),
+        title: Text(AppLocalizations.of(context)?.createManualBooking ?? 'Create Manual Booking'),
       ),
       body: _isLoading && _customers.isEmpty
           ? const Center(child: CircularProgressIndicator())
@@ -327,26 +328,26 @@ class _ProfessionalManualBookingPageState
                           ),
                         ),
                       ),
-                    TextFormField(
+                     TextFormField(
                       readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Select Customer',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)?.selectCustomer ?? 'Select Customer',
+                        border: const OutlineInputBorder(),
                       ),
                       controller: _customerSearchController,
                       onTap: () => _showCustomerPicker(),
                       validator: (_) =>
-                          _selectedCustomer == null ? 'Select a customer' : null,
+                          _selectedCustomer == null ? AppLocalizations.of(context)?.pleaseSelectCustomer ?? 'Select a customer' : null,
                     ),
                     if (_selectedCustomer != null)
                       _buildCustomerPreviewCard(_selectedCustomer!),
                     const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
+                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
-                        labelText: 'Select Service',
+                        labelText: AppLocalizations.of(context)?.selectService ?? 'Select Service',
                         border: const OutlineInputBorder(),
                         errorText: availableServices.isEmpty
-                            ? 'No services for your specialty'
+                            ? AppLocalizations.of(context)?.noServicesForSpecialty ?? 'No services for your specialty'
                             : null,
                       ),
                       items: availableServices
@@ -354,17 +355,17 @@ class _ProfessionalManualBookingPageState
                           .toList(),
                       initialValue: _selectedService,
                       validator: (_) =>
-                          _selectedService == null ? 'Select a service' : null,
+                          _selectedService == null ? AppLocalizations.of(context)?.pleaseSelectService ?? 'Select a service' : null,
                       onChanged: availableServices.isEmpty
                           ? null
                           : (v) => setState(() => _selectedService = v),
                     ),
                     const SizedBox(height: 16),
-                    ListTile(
+                     ListTile(
                       title: Text(
                         _selectedDate == null
-                            ? 'Select Date'
-                            : 'Date: ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                            ? AppLocalizations.of(context)?.selectDate ?? 'Select Date'
+                            : '${AppLocalizations.of(context)?.selectDate ?? 'Date'}: ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
                       ),
                       trailing: const Icon(Icons.calendar_today),
                       onTap: _pickDate,
@@ -377,13 +378,13 @@ class _ProfessionalManualBookingPageState
                     ),
                     const SizedBox(height: 16),
                     if (_selectedDate != null) ...[
-                      Text(
-                        'Available slots (${professional.slotDurationMinutes} min each)',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
+                        Text(
+                         '${AppLocalizations.of(context)?.availableSlots ?? 'Available slots'} (${professional.slotDurationMinutes} ${AppLocalizations.of(context)?.minEach ?? 'min each'})',
+                         style: Theme.of(context).textTheme.titleSmall,
+                       ),
                       const SizedBox(height: 8),
-                      if (timeSlots.isEmpty)
-                        const Text('No slots fit this professional schedule.')
+                       if (timeSlots.isEmpty)
+                         Text(AppLocalizations.of(context)?.noAvailableSlots ?? 'No slots fit this professional schedule.')
                       else
                         Wrap(
                           spacing: 8,
@@ -407,17 +408,17 @@ class _ProfessionalManualBookingPageState
                                                 .withValues(alpha: 0.38),
                                           ),
                                         ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Booked',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: 0.38),
-                                          ),
-                                        ),
+                                 const SizedBox(width: 4),
+                                 Text(
+                                   AppLocalizations.of(context)?.booked ?? 'Booked',
+                                   style: TextStyle(
+                                    fontSize: 10,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.38),
+                                  ),
+                                ),
                                       ],
                                     )
                                   : isSelected
@@ -439,7 +440,7 @@ class _ProfessionalManualBookingPageState
                         ),
                     ],
                     const SizedBox(height: 24),
-                    ElevatedButton(
+                     ElevatedButton(
                       onPressed: _isLoading ? null : _submit,
                       child: _isLoading
                           ? const SizedBox(
@@ -447,7 +448,7 @@ class _ProfessionalManualBookingPageState
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Create Booking'),
+                           : Text(AppLocalizations.of(context)?.createBooking ?? 'Create Booking'),
                     ),
                   ],
                 ),
@@ -475,10 +476,10 @@ class _ProfessionalManualBookingPageState
                 child: TextField(
                  key: const Key('search_customers'),
                  controller: _searchController,
-                decoration: const InputDecoration(
-                  labelText: 'Search customers',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.search),
+                 decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)?.searchCustomer ?? 'Search customers',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.search),
                 ),
                 onChanged: _filterCustomers,
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/schedule_helper.dart';
 import '../models/appointment.dart';
@@ -151,12 +152,12 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
     final professional = _professional;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reschedule booking')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.rescheduleBooking ?? 'Reschedule booking')),
       body: _loadingProfessional
           ? const Center(child: CircularProgressIndicator())
           : professional == null
-              ? const Center(
-                  child: Text('Professional details are unavailable.'),
+              ? Center(
+                  child: Text(AppLocalizations.of(context)?.error ?? 'Professional details are unavailable.'),
                 )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -174,10 +175,8 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 8),
-                              Text('With ${appointment.professionalName}'),
-                              Text(
-                                'Current: ${FormatHelper.formatDateTime(appointment.dateTime)}',
-                              ),
+                               Text('${AppLocalizations.of(context)?.professionalContact ?? 'With'} ${appointment.professionalName}'),
+                              Text('${AppLocalizations.of(context)?.history ?? 'Current'}: ${FormatHelper.formatDateTime(appointment.dateTime)}'),
                             ],
                           ),
                         ),
@@ -186,10 +185,10 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                       Card(
                         child: ListTile(
                           leading: const Icon(Icons.calendar_today),
-                          title: const Text('New date'),
+                          title: Text(AppLocalizations.of(context)?.selectDate ?? 'New date'),
                           subtitle: Text(
                             _selectedDate == null
-                                ? 'Tap to choose a date'
+                                ? AppLocalizations.of(context)?.selectDate ?? 'Tap to choose a date'
                                 : FormatHelper.formatDate(_selectedDate!),
                           ),
                           trailing: const Icon(Icons.chevron_right),
@@ -199,7 +198,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                       if (_selectedDate != null) ...[
                         const SizedBox(height: 16),
                         Text(
-                          'Available slots (${appointment.durationMinutes} min)',
+                          '${AppLocalizations.of(context)?.selectTimeSlot ?? 'Available slots'} (${appointment.durationMinutes} ${AppLocalizations.of(context)?.mins ?? 'min'})',
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         const SizedBox(height: 8),
@@ -257,9 +256,9 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                             : () async {
                                 if (_selectedDate == null ||
                                     _selectedTime == null) {
-                                  ErrorHandler.showErrorSnackBar(
+                                      ErrorHandler.showErrorSnackBar(
                                     context,
-                                    'Please select a new date and time',
+                                    AppLocalizations.of(context)?.selectDate ?? 'Please select a new date and time',
                                   );
                                   return;
                                 }
@@ -282,9 +281,9 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
 
                                 if (result == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
+                                    SnackBar(
                                       content:
-                                          Text('Booking rescheduled successfully'),
+                                          Text(AppLocalizations.of(context)?.bookingRescheduled ?? 'Booking rescheduled successfully'),
                                     ),
                                   );
                                   Navigator.pop(context, true);
@@ -301,7 +300,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Save new time'),
+                             : Text(AppLocalizations.of(context)?.save ?? 'Save new time'),
                       ),
                     ],
                   ),

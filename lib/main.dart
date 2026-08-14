@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:restorahub/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -25,6 +27,7 @@ import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/payment_provider.dart';
+import 'providers/locale_provider.dart';
 
 import 'pages/analytics_page.dart';
 import 'pages/forgot_password_page.dart';
@@ -77,6 +80,7 @@ Future<void> main() async {
       notificationRepository: notificationRepo,
     );
     final themeProvider = ThemeProvider();
+    final localeProvider = LocaleProvider();
 
     await themeProvider.loadTheme();
     await appointmentProvider.loadAppointments();
@@ -97,6 +101,7 @@ Future<void> main() async {
         authProvider: authProvider,
         appointmentProvider: appointmentProvider,
         themeProvider: themeProvider,
+        localeProvider: localeProvider,
         initialRoute: initialRoute,
         notificationRepo: notificationRepo,
         paymentRepo: paymentRepo,
@@ -120,6 +125,7 @@ class MyApp extends StatelessWidget {
     required this.authProvider,
     required this.appointmentProvider,
     required this.themeProvider,
+    required this.localeProvider,
     required this.initialRoute,
     required this.notificationRepo,
     required this.paymentRepo,
@@ -128,6 +134,7 @@ class MyApp extends StatelessWidget {
   final AuthProvider authProvider;
   final AppointmentProvider appointmentProvider;
   final ThemeProvider themeProvider;
+  final LocaleProvider localeProvider;
   final String initialRoute;
   final NotificationRepository notificationRepo;
   final PaymentRepository paymentRepo;
@@ -166,13 +173,22 @@ class MyApp extends StatelessWidget {
             return provider;
           },
         ),
+        ChangeNotifierProvider<LocaleProvider>.value(value: localeProvider),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, theme, _) {
+      child: Consumer2<ThemeProvider, LocaleProvider>(
+        builder: (context, theme, localeProvider, _) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'RestoraHub',
             theme: theme.theme,
+            locale: localeProvider.locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             initialRoute: initialRoute,
             onGenerateRoute: (settings) {
               final route = settings.name ?? Routes.login;
@@ -200,16 +216,16 @@ class MyApp extends StatelessWidget {
                       return const ProfessionalManualBookingPage();
                     case Routes.completeProfile:
                       return Scaffold(
-                        appBar: AppBar(title: const Text('Complete Profile')),
+                        appBar: AppBar(title: Text(AppLocalizations.of(context)?.completeProfile ?? 'Complete Profile')),
                         body: Center(
                           child: Padding(
                             padding: const EdgeInsets.all(24),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text(
-                                  'Your profile is incomplete.',
-                                  style: TextStyle(fontSize: 18),
+                                Text(
+                                  AppLocalizations.of(context)?.completeProfileDialog ?? 'Your profile is incomplete.',
+                                  style: const TextStyle(fontSize: 18),
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton(
@@ -218,7 +234,7 @@ class MyApp extends StatelessWidget {
                                     Routes.login,
                                     (_) => false,
                                   ),
-                                  child: const Text('Go to Login'),
+                                  child: Text(AppLocalizations.of(context)?.goToLogin ?? 'Go to Login'),
                                 ),
                               ],
                             ),

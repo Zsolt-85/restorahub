@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
 import '../exceptions/app_exception.dart';
+import '../l10n/app_localizations.dart';
 import '../helpers/format_helper.dart';
 import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
@@ -16,21 +17,21 @@ class AppointmentActions {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cancel booking?'),
+        title: Text(AppLocalizations.of(context)?.cancelBooking ?? 'Cancel booking?'),
         content: Text(
-          'Cancel "${appointment.service}" on '
-          '${FormatHelper.formatDateTime(appointment.dateTime)}?\n\nThis cannot be undone.',
+          '${AppLocalizations.of(context)?.cancel ?? 'Cancel'} "${appointment.service}" on '
+          '${FormatHelper.formatDateTime(appointment.dateTime)}?\n\n${AppLocalizations.of(context)?.confirm ?? 'This cannot be undone.'}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep booking'),
+            child: Text(AppLocalizations.of(context)?.keepBooking ?? 'Keep booking'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Cancel booking',
-              style: TextStyle(color: Colors.red),
+            child: Text(
+              AppLocalizations.of(context)?.cancelBookingAction ?? 'Cancel booking',
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ],
@@ -46,17 +47,17 @@ class AppointmentActions {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Booking cancelled')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.bookingCancelled ?? 'Booking cancelled')),
       );
     } on AppException catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to cancel booking: ${e.message}')),
+        SnackBar(content: Text('${AppLocalizations.of(context)?.failedToUpdate ?? 'Failed to update booking'}: ${e.message}')),
       );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to cancel booking')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.failedToUpdate ?? 'Failed to update booking')),
       );
     }
   }
@@ -77,14 +78,14 @@ class AppointmentActions {
             .loadAppointments();
       } on AppException catch (e) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to refresh bookings: ${e.message}')),
-        );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${AppLocalizations.of(context)?.failedToRefresh ?? 'Failed to refresh bookings'}: ${e.message}')),
+      );
       } catch (e) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to refresh bookings')),
-        );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)?.failedToRefresh ?? 'Failed to refresh bookings')),
+      );
       }
     }
   }
@@ -100,7 +101,7 @@ class AppointmentActions {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Booking confirmed')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.bookingConfirmed ?? 'Booking confirmed')),
       );
     } on AppException catch (e) {
       if (!context.mounted) return;
@@ -125,7 +126,7 @@ class AppointmentActions {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Booking declined')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.bookingDeclined ?? 'Booking declined')),
       );
     } on AppException catch (e) {
       if (!context.mounted) return;
@@ -143,22 +144,22 @@ class AppointmentActions {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('New booking request'),
+        title: Text(AppLocalizations.of(context)?.newBookingRequest ?? 'New booking request'),
         content: Text(
-          'Accept "${appointment.service}" from ${appointment.customerName ?? 'this customer'} on '
+          '${AppLocalizations.of(context)?.accept ?? 'Accept'} "${appointment.service}" from ${appointment.customerName ?? AppLocalizations.of(context)?.customer ?? 'this customer'} on '
           '${FormatHelper.formatDateTime(appointment.dateTime)}?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              'Decline',
-              style: TextStyle(color: Colors.red),
+            child: Text(
+              AppLocalizations.of(context)?.decline ?? 'Decline',
+              style: const TextStyle(color: Colors.red),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Accept'),
+            child: Text(AppLocalizations.of(context)?.accept ?? 'Accept'),
           ),
         ],
       ),
@@ -175,9 +176,11 @@ class AppointmentActions {
 
       if (!context.mounted) return;
 
-      final label = newStatus == AppointmentStatus.confirmed ? 'confirmed' : 'declined';
+      final label = newStatus == AppointmentStatus.confirmed
+          ? AppLocalizations.of(context)?.confirmed ?? 'confirmed'
+          : AppLocalizations.of(context)?.decline ?? 'declined';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking $label')),
+        SnackBar(content: Text('${AppLocalizations.of(context)?.bookingConfirmed ?? 'Booking'} $label')),
       );
     } on AppException catch (e) {
       if (!context.mounted) return;
@@ -187,7 +190,7 @@ class AppointmentActions {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update booking')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.bookingDeclined ?? 'Booking declined')),
       );
     }
   }
@@ -202,16 +205,16 @@ class AppointmentActions {
 
     switch (newStatus) {
       case AppointmentStatus.confirmed:
-        actionLabel = 'Confirm booking';
-        confirmMessage = 'Confirm this booking?';
+        actionLabel = AppLocalizations.of(context)?.confirmBookingAction ?? 'Confirm booking';
+        confirmMessage = AppLocalizations.of(context)?.confirmThisBooking ?? 'Confirm this booking?';
         break;
       case AppointmentStatus.completed:
-        actionLabel = 'Mark as completed';
-        confirmMessage = 'Mark this appointment as completed?';
+        actionLabel = AppLocalizations.of(context)?.markAsCompleted ?? 'Mark as completed';
+        confirmMessage = AppLocalizations.of(context)?.markAsCompleted ?? 'Mark this appointment as completed?';
         break;
       case AppointmentStatus.cancelledByCustomer:
-        actionLabel = 'Cancel booking';
-        confirmMessage = 'Cancel this booking?';
+        actionLabel = AppLocalizations.of(context)?.cancelBookingAction ?? 'Cancel booking';
+        confirmMessage = AppLocalizations.of(context)?.cancelThisBooking ?? 'Cancel this booking?';
         break;
       default:
         return;
@@ -225,7 +228,7 @@ class AppointmentActions {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep as is'),
+            child: Text(AppLocalizations.of(context)?.keepAsIs ?? 'Keep as is'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -252,7 +255,7 @@ class AppointmentActions {
 
       final label = newStatus.displayLabel;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking $label')),
+        SnackBar(content: Text('${AppLocalizations.of(context)?.bookingConfirmed ?? 'Booking'} $label')),
       );
     } on AppException catch (e) {
       if (!context.mounted) return;
@@ -262,7 +265,7 @@ class AppointmentActions {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update booking')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.bookingDeclined ?? 'Booking declined')),
       );
     }
   }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
 import '../constants/constants.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 
 class ServicesPage extends StatelessWidget {
@@ -74,7 +75,7 @@ class ServicesPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Services')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.services ?? 'Services')),
       body: GridView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: serviceNames.length,
@@ -138,7 +139,7 @@ class ServicesPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'Book with a Professional',
+                        AppLocalizations.of(context)?.bookNow ?? 'Book Now',
                         style: TextStyle(color: colorScheme.onSecondaryContainer, fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ),

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../constants/routes.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/app_localizations.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -21,12 +23,12 @@ class _SettingsPageState extends State<SettingsPage> {
     final theme = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.settings ?? 'Settings')),
       body: ListView(
         children: [
           ListTile(
             leading: const Icon(Icons.person_outline),
-            title: const Text('Edit profile'),
+            title: Text(AppLocalizations.of(context)?.profile ?? 'Edit profile'),
             subtitle: Text(auth.currentUser?.email ?? ''),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.pushNamed(context, Routes.profile),
@@ -34,7 +36,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const Divider(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text('Theme', style: Theme.of(context).textTheme.titleSmall),
+            child: Text(AppLocalizations.of(context)?.theme ?? 'Theme', style: Theme.of(context).textTheme.titleSmall),
           ),
           _ThemeTile(
             title: 'Teal Clean',
@@ -62,9 +64,35 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
 
           const Divider(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text(
+              AppLocalizations.of(context)?.language ?? 'Language',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          Consumer<LocaleProvider>(
+            builder: (context, localeProvider, _) {
+              final currentLanguage = _languageOptions.firstWhere(
+                (option) => option['locale'] == localeProvider.locale,
+                orElse: () => _languageOptions.first,
+              );
+
+              return ListTile(
+                leading: Text(
+                  currentLanguage['flag'] as String,
+                  style: const TextStyle(fontSize: 24),
+                ),
+                title: Text(currentLanguage['name'] as String),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showLanguagePicker(context, localeProvider),
+              );
+            },
+          ),
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            title: Text(AppLocalizations.of(context)?.signOut ?? 'Logout'),
             onTap: () {
               auth.logout();
               Navigator.pushNamedAndRemoveUntil(
@@ -75,6 +103,43 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  static const _languageOptions = [
+    {'locale': Locale('en'), 'name': 'English', 'flag': '🇬🇧'},
+    {'locale': Locale('ro'), 'name': 'Română', 'flag': '🇷🇴'},
+    {'locale': Locale('de'), 'name': 'Deutsch', 'flag': '🇩🇪'},
+    {'locale': Locale('hu'), 'name': 'Magyar', 'flag': '🇭🇺'},
+  ];
+
+  void _showLanguagePicker(BuildContext context, LocaleProvider localeProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(AppLocalizations.of(context)?.language ?? 'Language'),
+        children: _languageOptions.map((option) {
+          final locale = option['locale'] as Locale;
+          final name = option['name'] as String;
+          final flag = option['flag'] as String;
+          final isSelected = localeProvider.locale == locale;
+
+          return SimpleDialogOption(
+            onPressed: () {
+              localeProvider.setLocale(locale);
+              Navigator.pop(context);
+            },
+            child: Row(
+              children: [
+                Text(flag, style: const TextStyle(fontSize: 24)),
+                const SizedBox(width: 16),
+                Expanded(child: Text(name)),
+                if (isSelected) const Icon(Icons.check, color: Colors.green),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }

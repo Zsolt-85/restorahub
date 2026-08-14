@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
 import '../constants/constants.dart';
+import '../l10n/app_localizations.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
@@ -107,7 +108,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.register ?? 'Register')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

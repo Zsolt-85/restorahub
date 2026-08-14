@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -61,30 +62,30 @@ class UserProfileAvatar extends StatelessWidget {
             ],
           ),
           itemBuilder: (context) => [
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'profile',
               child: ListTile(
-                leading: Icon(Icons.person_outline),
-                title: Text('Profile Settings'),
+                leading: const Icon(Icons.person_outline),
+                title: Text(AppLocalizations.of(context)?.editProfile ?? 'Profile Settings'),
                 contentPadding: EdgeInsets.zero,
                 minLeadingWidth: 0,
               ),
             ),
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'theme',
               child: ListTile(
-                leading: Icon(Icons.color_lens_outlined),
-                title: Text('Theme Selection'),
+                leading: const Icon(Icons.color_lens_outlined),
+                title: Text(AppLocalizations.of(context)?.theme ?? 'Theme Selection'),
                 contentPadding: EdgeInsets.zero,
                 minLeadingWidth: 0,
               ),
             ),
             const PopupMenuDivider(),
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'logout',
               child: ListTile(
-                leading: Icon(Icons.logout),
-                title: Text('Log Out'),
+                leading: const Icon(Icons.logout),
+                title: Text(AppLocalizations.of(context)?.menuLogout ?? 'Log Out'),
                 contentPadding: EdgeInsets.zero,
                 minLeadingWidth: 0,
               ),
@@ -124,7 +125,7 @@ class UserProfileAvatar extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Theme Selection',
+          AppLocalizations.of(context)?.theme ?? 'Theme Selection',
           style: TextStyle(color: colorScheme.onSurface),
         ),
         content: Column(

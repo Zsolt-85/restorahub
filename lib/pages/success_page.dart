@@ -5,6 +5,7 @@ import '../constants/routes.dart';
 import '../helpers/calendar_helper.dart';
 import '../helpers/format_helper.dart';
 import '../models/booking_summary.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../repositories/user_repository.dart';
 
@@ -24,9 +25,9 @@ class SuccessPage extends StatelessWidget {
 
     if (professional == null) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to add to calendar: professional not found')),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)?.error ?? 'Unable to add to calendar: professional not found')),
+        );
       return;
     }
 
@@ -38,17 +39,17 @@ class SuccessPage extends StatelessWidget {
       await CalendarHelper.addToNativeCalendar(appointment, professional);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Added to calendar')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.bookingSuccessful ?? 'Added to calendar')),
       );
     } on CalendarException catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add to calendar: ${e.message}')),
+        SnackBar(content: Text('${AppLocalizations.of(context)?.failedToUpdate ?? 'Failed to add to calendar'}: ${e.message}')),
       );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to add to calendar')),
+        SnackBar(content: Text(AppLocalizations.of(context)?.failedToUpdate ?? 'Failed to add to calendar')),
       );
     }
   }
@@ -66,7 +67,7 @@ class SuccessPage extends StatelessWidget {
               const Icon(Icons.check_circle, size: 88, color: Colors.green),
               const SizedBox(height: 20),
               Text(
-                'Booking confirmed!',
+                AppLocalizations.of(context)?.bookingConfirmed ?? 'Booking confirmed!',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
@@ -80,26 +81,26 @@ class SuccessPage extends StatelessWidget {
                       children: [
                         _SummaryRow(
                           icon: Icons.spa_outlined,
-                          label: 'Service',
+                          label: AppLocalizations.of(context)?.serviceDetails ?? 'Service',
                           value: summary!.service,
                         ),
                         const SizedBox(height: 12),
                         _SummaryRow(
                           icon: Icons.person_outline,
-                          label: 'Professional',
+                          label: AppLocalizations.of(context)?.professionalContact ?? 'Professional',
                           value: summary!.professionalName,
                         ),
                         const SizedBox(height: 12),
                         _SummaryRow(
                           icon: Icons.event,
-                          label: 'When',
+                          label: AppLocalizations.of(context)?.selectDate ?? 'When',
                           value: FormatHelper.formatDateTime(summary!.dateTime),
                         ),
                         const SizedBox(height: 12),
                         _SummaryRow(
                           icon: Icons.timelapse,
-                          label: 'Duration',
-                          value: '${summary!.durationMinutes} minutes',
+                          label: AppLocalizations.of(context)?.duration ?? 'Duration',
+                          value: '${summary!.durationMinutes} ${AppLocalizations.of(context)?.mins ?? 'minutes'}',
                         ),
                       ],
                     ),
@@ -110,7 +111,7 @@ class SuccessPage extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: () => _addToCalendar(context),
                   icon: const Icon(Icons.calendar_today),
-                  label: const Text('Add to Calendar'),
+                  label: Text(AppLocalizations.of(context)?.calendar ?? 'Add to Calendar'),
                 ),
               const SizedBox(height: 12),
               ElevatedButton(
@@ -121,7 +122,7 @@ class SuccessPage extends StatelessWidget {
                     (route) => false,
                   );
                 },
-                child: const Text('Back to dashboard'),
+                child: Text(AppLocalizations.of(context)?.dashboard ?? 'Back to dashboard'),
               ),
             ],
           ),

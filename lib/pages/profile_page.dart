@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
 import '../constants/constants.dart';
+import '../l10n/app_localizations.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
@@ -115,7 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit profile')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.profile ?? 'Edit profile')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -135,52 +136,52 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Personal information',
+              AppLocalizations.of(context)?.customerDetails ?? 'Personal information',
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Full name',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person_outline),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)?.name ?? 'Full name',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.person_outline),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email_outlined),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)?.email ?? 'Email',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.email_outlined),
               ),
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _phoneController,
-              decoration: const InputDecoration(
-                labelText: 'Phone',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.phone_outlined),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)?.phone ?? 'Phone',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.phone_outlined),
               ),
               keyboardType: TextInputType.phone,
             ),
             if (user.isProfessional) ...[
               const SizedBox(height: 24),
               Text(
-                'Professional settings',
+                AppLocalizations.of(context)?.professionalSettings ?? 'Professional settings',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _specialty,
-                decoration: const InputDecoration(
-                  labelText: 'Profession / specialty',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.work_outline),
-                ),
+               DropdownButtonFormField<String>(
+                 initialValue: _specialty,
+                 decoration: InputDecoration(
+                   labelText: AppLocalizations.of(context)?.professionSpecialty ?? 'Profession / specialty',
+                   border: const OutlineInputBorder(),
+                   prefixIcon: const Icon(Icons.work_outline),
+                 ),
                 items: serviceNames
                     .map((name) => DropdownMenuItem(
                           value: name,
@@ -192,26 +193,26 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Work day starts'),
-                subtitle: Text(_workStart?.format(context) ?? 'Not set'),
+                title: Text(AppLocalizations.of(context)?.workDayStarts ?? 'Work day starts'),
+                subtitle: Text(_workStart?.format(context) ?? AppLocalizations.of(context)?.notSet ?? 'Not set'),
                 trailing: const Icon(Icons.schedule),
                 onTap: () => _pickTime(isStart: true),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Work day ends'),
-                subtitle: Text(_workEnd?.format(context) ?? 'Not set'),
+                title: Text(AppLocalizations.of(context)?.workDayEnds ?? 'Work day ends'),
+                subtitle: Text(_workEnd?.format(context) ?? AppLocalizations.of(context)?.notSet ?? 'Not set'),
                 trailing: const Icon(Icons.schedule),
                 onTap: () => _pickTime(isStart: false),
               ),
               const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                initialValue: _slotDurationMinutes,
-                decoration: const InputDecoration(
-                  labelText: 'Appointment slot length',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.timelapse),
-                ),
+               DropdownButtonFormField<int>(
+                 initialValue: _slotDurationMinutes,
+                 decoration: InputDecoration(
+                   labelText: AppLocalizations.of(context)?.appointmentSlotLength ?? 'Appointment slot length',
+                   border: const OutlineInputBorder(),
+                   prefixIcon: const Icon(Icons.timelapse),
+                 ),
                 items: slotDurationOptions
                     .map(
                       (minutes) => DropdownMenuItem(
@@ -224,13 +225,13 @@ class _ProfilePageState extends State<ProfilePage> {
                     setState(() => _slotDurationMinutes = value),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<int>(
-                initialValue: _bufferTimeMinutes,
-                decoration: const InputDecoration(
-                  labelText: 'Buffer time between appointments',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.timer_outlined),
-                ),
+               DropdownButtonFormField<int>(
+                 initialValue: _bufferTimeMinutes,
+                 decoration: InputDecoration(
+                   labelText: AppLocalizations.of(context)?.bufferTimeBetweenAppointments ?? 'Buffer time between appointments',
+                   border: const OutlineInputBorder(),
+                   prefixIcon: const Icon(Icons.timer_outlined),
+                 ),
                 items: bufferTimeOptions
                     .map(
                       (minutes) => DropdownMenuItem(
@@ -245,41 +246,41 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Break start'),
-                subtitle: Text(_breakStart?.format(context) ?? 'Not set'),
+                title: Text(AppLocalizations.of(context)?.breakStart ?? 'Break start'),
+                subtitle: Text(_breakStart?.format(context) ?? AppLocalizations.of(context)?.notSet ?? 'Not set'),
                 trailing: const Icon(Icons.free_breakfast),
                 onTap: () => _pickBreakTime(isStart: true),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Break end'),
-                subtitle: Text(_breakEnd?.format(context) ?? 'Not set'),
+                title: Text(AppLocalizations.of(context)?.breakEnd ?? 'Break end'),
+                subtitle: Text(_breakEnd?.format(context) ?? AppLocalizations.of(context)?.notSet ?? 'Not set'),
                 trailing: const Icon(Icons.free_breakfast),
                 onTap: () => _pickBreakTime(isStart: false),
               ),
             ],
             const SizedBox(height: 24),
             Text(
-              'Change password (optional)',
+              AppLocalizations.of(context)?.changePassword ?? 'Change password (optional)',
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(
-                labelText: 'New password',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock_outline),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)?.newPassword ?? 'New password',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.lock_outline),
               ),
               obscureText: true,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _confirmPasswordController,
-              decoration: const InputDecoration(
-                labelText: 'Confirm new password',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock_outline),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)?.confirmNewPassword ?? 'Confirm new password',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.lock_outline),
               ),
               obscureText: true,
             ),
@@ -334,8 +335,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         if (!context.mounted) return;
 
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Profile updated successfully'),
+                          SnackBar(
+                            content: Text(AppLocalizations.of(context)?.profileUpdatedSuccessfully ?? 'Profile updated successfully'),
                           ),
                         );
                         Navigator.pop(context);
@@ -352,7 +353,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         strokeWidth: 2,
                       ),
                     )
-                  : const Text('Save changes'),
+                  : Text(AppLocalizations.of(context)?.save ?? 'Save changes'),
             ),
           ],
         ),

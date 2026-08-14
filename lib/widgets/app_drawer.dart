@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
+import '../l10n/app_localizations.dart';
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
@@ -35,7 +36,7 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.notifications_outlined),
-            title: const Text('Notifications'),
+            title: Text(AppLocalizations.of(context)?.menuNotifications ?? 'Notifications'),
             trailing: unreadCount > 0
                 ? Container(
                     padding: const EdgeInsets.all(4),
@@ -60,7 +61,7 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.bar_chart_outlined),
-            title: const Text('Analytics'),
+            title: Text(AppLocalizations.of(context)?.menuAnalytics ?? 'Analytics'),
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, Routes.analytics);
@@ -68,7 +69,7 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.person_outline),
-            title: const Text('Edit profile'),
+            title: Text(AppLocalizations.of(context)?.menuEditProfile ?? 'Edit profile'),
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, Routes.profile);
@@ -76,7 +77,7 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.history),
-            title: const Text('Past appointments'),
+            title: Text(AppLocalizations.of(context)?.menuPastAppointments ?? 'Past appointments'),
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, Routes.pastAppointments);
@@ -84,7 +85,7 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.settings_outlined),
-            title: const Text('Settings'),
+            title: Text(AppLocalizations.of(context)?.menuSettings ?? 'Settings'),
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, Routes.settings);
@@ -92,13 +93,32 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            title: Text(AppLocalizations.of(context)?.menuLogout ?? 'Logout'),
             onTap: () {
-              auth.logout();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                Routes.login,
-                (route) => false,
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(AppLocalizations.of(context)?.logoutConfirmation ?? 'Logout'),
+                  content: Text(AppLocalizations.of(context)?.logoutConfirmation ?? 'Are you sure you want to log out?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        auth.logout();
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          Routes.login,
+                          (route) => false,
+                        );
+                      },
+                      child: Text(AppLocalizations.of(context)?.ok ?? 'OK'),
+                    ),
+                  ],
+                ),
               );
             },
           ),

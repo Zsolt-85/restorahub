@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
 import '../constants/constants.dart';
+import '../l10n/app_localizations.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
@@ -32,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.login ?? 'Login')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -168,42 +169,42 @@ class _LoginPageState extends State<LoginPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Complete your profile'),
+             return AlertDialog(
+              title: Text(AppLocalizations.of(context)?.completeProfileDialog ?? 'Complete your profile'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('It looks like this is your first login. Please provide details to complete registration.'),
+                    Text(AppLocalizations.of(context)?.completeProfileDialog ?? 'It looks like this is your first login. Please provide details to complete registration.'),
                     const SizedBox(height: 16),
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Full name',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)?.fullName ?? 'Full name',
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone number',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)?.phone ?? 'Phone number',
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text('Account type', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(AppLocalizations.of(context)?.customer ?? 'Account type', style: const TextStyle(fontWeight: FontWeight.bold)),
                     SegmentedButton<String>(
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: 'customer',
-                          label: Text('Customer'),
+                          label: Text(AppLocalizations.of(context)?.customer ?? 'Customer'),
                         ),
                         ButtonSegment(
                           value: 'professional',
-                          label: Text('Professional'),
+                          label: Text(AppLocalizations.of(context)?.professional ?? 'Professional'),
                         ),
                       ],
                       selected: {role},
@@ -217,9 +218,9 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         initialValue: specialty,
-                        decoration: const InputDecoration(
-                          labelText: 'Specialty',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)?.professionSpecialty ?? 'Specialty',
+                          border: const OutlineInputBorder(),
                         ),
                         items: serviceNames
                             .map((name) => DropdownMenuItem(
@@ -242,19 +243,19 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: const Text('Cancel'),
+                  child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancel'),
                 ),
                 ElevatedButton(
                   onPressed: () async {
                     if (nameController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Name is required')),
+                        SnackBar(content: Text(AppLocalizations.of(context)?.name ?? 'Name is required')),
                       );
                       return;
                     }
                     if (phoneController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Phone number is required')),
+                        SnackBar(content: Text(AppLocalizations.of(context)?.phone ?? 'Phone number is required')),
                       );
                       return;
                     }
@@ -270,18 +271,18 @@ class _LoginPageState extends State<LoginPage> {
                       Provider.of<AppointmentProvider>(context, listen: false)
                           .setCurrentUser(auth.currentUser!);
                       Navigator.pop(context); // close dialog
-                      
+                       
                        final route = auth.currentUser!.isProfessional
                            ? Routes.professionalHome
                            : Routes.customerHome;
                        Navigator.pushReplacementNamed(context, route);
                     } else if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Failed to save profile')),
+                        SnackBar(content: Text(AppLocalizations.of(context)?.error ?? 'Failed to save profile')),
                       );
                     }
                   },
-                  child: const Text('Save & Continue'),
+                  child: Text(AppLocalizations.of(context)?.saveAndContinue ?? 'Save & Continue'),
                 ),
               ],
             );

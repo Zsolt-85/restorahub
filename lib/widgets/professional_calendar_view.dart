@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../helpers/format_helper.dart';
+import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
@@ -112,8 +113,8 @@ class _ProfessionalCalendarViewState extends State<ProfessionalCalendarView> {
     final timeSlots = _generateTimeSlots();
 
     if (timeSlots.isEmpty) {
-      return const Center(
-        child: Text('No working hours configured'),
+      return Center(
+        child: Text(AppLocalizations.of(context)?.noWorkingHours ?? 'No working hours configured'),
       );
     }
 
@@ -174,7 +175,7 @@ class _TimeSlotRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final timeLabel = TimeOfDay(hour: slot.hour, minute: slot.minute);
-    final formattedTime = '${timeLabel.hourOfPeriod.toString().padLeft(2, '0')}:${timeLabel.minute.toString().padLeft(2, '0')} ${timeLabel.period == DayPeriod.am ? 'AM' : 'PM'}';
+    final formattedTime = '${timeLabel.hourOfPeriod.toString().padLeft(2, '0')}:${timeLabel.minute.toString().padLeft(2, '0')} ${timeLabel.period == DayPeriod.am ? AppLocalizations.of(context)?.am ?? 'AM' : AppLocalizations.of(context)?.pm ?? 'PM'}';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,10 +275,10 @@ class _AppointmentSlot extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 4),
-            Text(
-              '${appointment.customerName ?? "Unknown"} · ${appointment.durationMinutes} min',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+             Text(
+               '${appointment.customerName ?? AppLocalizations.of(context)?.unknownValue ?? "Unknown"} · ${appointment.durationMinutes} ${AppLocalizations.of(context)?.minutesLabel ?? 'min'}',
+               style: Theme.of(context).textTheme.bodySmall,
+             ),
             Text(
               endFormatted,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -318,41 +319,41 @@ class _AppointmentSlot extends StatelessWidget {
                               ),
                         ),
                       ),
-                      _StatusChip(status: appointment.status),
+                      _StatusChip(label: _localizedStatus(context, appointment.status)),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _DetailRow(
-                    icon: Icons.person_outline,
-                    label: 'Customer',
-                    value: appointment.customerName ?? 'N/A',
-                  ),
-                  _DetailRow(
-                    icon: Icons.phone_outlined,
-                    label: 'Phone',
-                    value: appointment.customerPhone ?? 'N/A',
-                  ),
-                  _DetailRow(
-                    icon: Icons.email_outlined,
-                    label: 'Email',
-                    value: appointment.customerEmail ?? 'N/A',
-                  ),
+                   _DetailRow(
+                     icon: Icons.person_outline,
+                     label: AppLocalizations.of(context)?.counterpartyCustomer ?? 'Customer',
+                     value: appointment.customerName ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A',
+                   ),
+                   _DetailRow(
+                     icon: Icons.phone_outlined,
+                     label: AppLocalizations.of(context)?.phone ?? 'Phone',
+                     value: appointment.customerPhone ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A',
+                   ),
+                   _DetailRow(
+                     icon: Icons.email_outlined,
+                     label: AppLocalizations.of(context)?.email ?? 'Email',
+                     value: appointment.customerEmail ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A',
+                   ),
                   const SizedBox(height: 8),
-                  _DetailRow(
-                    icon: Icons.calendar_today_outlined,
-                    label: 'Date',
-                    value: FormatHelper.formatDate(appointment.dateTime),
-                  ),
-                  _DetailRow(
-                    icon: Icons.access_time_outlined,
-                    label: 'Time',
-                    value: '${FormatHelper.formatTime(appointment.dateTime)} - ${FormatHelper.formatTime(endTime)}',
-                  ),
-                  _DetailRow(
-                    icon: Icons.timer_outlined,
-                    label: 'Duration',
-                    value: '${appointment.durationMinutes} minutes',
-                  ),
+                   _DetailRow(
+                     icon: Icons.calendar_today_outlined,
+                     label: AppLocalizations.of(context)?.selectDate ?? 'Date',
+                     value: FormatHelper.formatDate(appointment.dateTime),
+                   ),
+                   _DetailRow(
+                     icon: Icons.access_time_outlined,
+                     label: AppLocalizations.of(context)?.timeLabel ?? 'Time',
+                     value: '${FormatHelper.formatTime(appointment.dateTime)} - ${FormatHelper.formatTime(endTime)}',
+                   ),
+                   _DetailRow(
+                     icon: Icons.timer_outlined,
+                     label: AppLocalizations.of(context)?.duration ?? 'Duration',
+                     value: '${appointment.durationMinutes} ${AppLocalizations.of(context)?.minutesLabel ?? 'minutes'}',
+                   ),
                 ],
               ),
             );
@@ -364,13 +365,13 @@ class _AppointmentSlot extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
+  const _StatusChip({required this.label});
 
-  final AppointmentStatus status;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final color = _statusColor(status);
+    final color = _statusColorFromLabel(label);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -378,7 +379,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        status.displayLabel,
+        label,
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.w600,
@@ -387,6 +388,15 @@ class _StatusChip extends StatelessWidget {
       ),
     );
   }
+}
+
+Color _statusColorFromLabel(String label) {
+  final l = label.toLowerCase();
+  if (l.contains('pending') || l.contains('függő') || l.contains('ausstehend') || l.contains('în așteptare')) return Colors.orange;
+  if (l.contains('confirmed') || l.contains('megerősített') || l.contains('bestätigt') || l.contains('confirmată')) return Colors.green;
+  if (l.contains('completed') || l.contains('befejezett') || l.contains('abgeschlossen') || l.contains('finalizată')) return Colors.blue;
+  if (l.contains('cancelled') || l.contains('törölve') || l.contains('storniert') || l.contains('anulată')) return Colors.red;
+  return Colors.grey;
 }
 
 class _DetailRow extends StatelessWidget {
@@ -441,5 +451,22 @@ Color _statusColor(AppointmentStatus status) {
       return Colors.red;
     case AppointmentStatus.noShow:
       return Colors.grey;
+  }
+}
+
+String _localizedStatus(BuildContext context, AppointmentStatus status) {
+  final l10n = AppLocalizations.of(context);
+  switch (status) {
+    case AppointmentStatus.pending:
+      return l10n?.statusPending ?? 'Pending';
+    case AppointmentStatus.confirmed:
+      return l10n?.statusConfirmed ?? 'Confirmed';
+    case AppointmentStatus.completed:
+      return l10n?.statusCompleted ?? 'Completed';
+    case AppointmentStatus.cancelledByCustomer:
+    case AppointmentStatus.cancelledByProfessional:
+      return l10n?.statusCancelled ?? 'Cancelled';
+    case AppointmentStatus.noShow:
+      return 'No Show';
   }
 }

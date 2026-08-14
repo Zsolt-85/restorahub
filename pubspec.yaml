@@ -11,6 +11,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  flutter_localizations:
+    sdk: flutter
+
   flutter_web_plugins:
     sdk: flutter
 
@@ -38,4 +41,5 @@ dev_dependencies:
   flutter_lints: ^2.0.3
 
 flutter:
+  generate: true
   uses-material-design: true

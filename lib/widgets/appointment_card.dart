@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../helpers/format_helper.dart';
 import '../helpers/appointment_actions.dart';
+import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 
 class AppointmentCard extends StatelessWidget {
@@ -34,7 +35,9 @@ class AppointmentCard extends StatelessWidget {
         ? appointment.professionalEmail
         : appointment.customerEmail;
     final counterpartyLabel =
-        viewerIsCustomer ? 'Professional' : 'Customer';
+        viewerIsCustomer
+            ? AppLocalizations.of(context)?.counterpartyProfessional ?? 'Professional'
+            : AppLocalizations.of(context)?.counterpartyCustomer ?? 'Customer';
     final statusColor = _statusColor(appointment.status);
     final canManage = viewerIsCustomer == false &&
         appointment.status != AppointmentStatus.completed &&
@@ -74,16 +77,16 @@ class AppointmentCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(FormatHelper.formatDateTime(appointment.dateTime)),
-                      Text('Duration: ${appointment.durationMinutes} min'),
+                      Text('${AppLocalizations.of(context)?.duration ?? 'Duration'}: ${appointment.durationMinutes} ${AppLocalizations.of(context)?.mins ?? 'min'}'),
                       const SizedBox(height: 4),
-                       Text(
-                         appointment.status.displayLabel,
-                         style: TextStyle(
-                           color: statusColor,
-                           fontWeight: FontWeight.w600,
-                           fontSize: 12,
-                         ),
-                       ),
+                        Text(
+                          _localizedStatus(context, appointment.status),
+                          style: TextStyle(
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -91,24 +94,24 @@ class AppointmentCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '$counterpartyLabel contact',
+              AppLocalizations.of(context)?.professionalContact ?? '$counterpartyLabel contact',
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
             _ContactRow(
               icon: Icons.person_outline,
-              label: 'Name',
-              value: counterpartyName ?? 'N/A',
+              label: AppLocalizations.of(context)?.name ?? 'Name',
+              value: counterpartyName ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A',
             ),
             _ContactRow(
               icon: Icons.phone_outlined,
-              label: 'Phone',
-              value: _displayValue(counterpartyPhone),
+              label: AppLocalizations.of(context)?.phone ?? 'Phone',
+              value: _displayValue(counterpartyPhone, context),
             ),
             _ContactRow(
               icon: Icons.email_outlined,
-              label: 'Email',
-              value: _displayValue(counterpartyEmail),
+              label: AppLocalizations.of(context)?.email ?? 'Email',
+              value: _displayValue(counterpartyEmail, context),
             ),
             const SizedBox(height: 16),
             Row(
@@ -118,8 +121,8 @@ class AppointmentCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: onReject,
                       icon: const Icon(Icons.cancel_outlined, color: Colors.red),
-                      label: const Text(
-                        'Decline',
+                      label: Text(
+                        AppLocalizations.of(context)?.decline ?? 'Decline',
                         style: TextStyle(color: Colors.red),
                       ),
                     ),
@@ -129,7 +132,7 @@ class AppointmentCard extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: onConfirm,
                       icon: const Icon(Icons.check_circle),
-                      label: const Text('Accept'),
+                      label: Text(AppLocalizations.of(context)?.accept ?? 'Accept'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -137,7 +140,7 @@ class AppointmentCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: appointment.isPast ? null : onEdit,
                       icon: const Icon(Icons.edit_calendar),
-                      label: const Text('Reschedule'),
+                      label: Text(AppLocalizations.of(context)?.reschedule ?? 'Reschedule'),
                     ),
                   ),
                 ] else if (canManage) ...[
@@ -145,7 +148,7 @@ class AppointmentCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: appointment.isPast ? null : onEdit,
                       icon: const Icon(Icons.edit_calendar),
-                      label: const Text('Reschedule'),
+                      label: Text(AppLocalizations.of(context)?.reschedule ?? 'Reschedule'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -156,8 +159,8 @@ class AppointmentCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: onCancel,
                       icon: const Icon(Icons.cancel_outlined, color: Colors.red),
-                      label: const Text(
-                        'Cancel',
+                      label: Text(
+                        AppLocalizations.of(context)?.cancel ?? 'Cancel',
                         style: TextStyle(color: Colors.red),
                       ),
                     ),
@@ -173,8 +176,8 @@ class AppointmentCard extends StatelessWidget {
                         AppointmentStatus.cancelledByCustomer,
                       ),
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      label: const Text(
-                        'Remove',
+                      label: Text(
+                        AppLocalizations.of(context)?.delete ?? 'Remove',
                         style: TextStyle(color: Colors.red),
                       ),
                     ),
@@ -188,9 +191,26 @@ class AppointmentCard extends StatelessWidget {
     );
   }
 
-  String _displayValue(String? value) {
-    if (value == null || value.trim().isEmpty) return 'N/A';
+  String _displayValue(String? value, BuildContext context) {
+    if (value == null || value.trim().isEmpty) return AppLocalizations.of(context)?.notSetValue ?? 'N/A';
     return value;
+  }
+
+  String _localizedStatus(BuildContext context, AppointmentStatus status) {
+    final l10n = AppLocalizations.of(context);
+    switch (status) {
+      case AppointmentStatus.pending:
+        return l10n?.statusPending ?? 'Pending';
+      case AppointmentStatus.confirmed:
+        return l10n?.statusConfirmed ?? 'Confirmed';
+      case AppointmentStatus.completed:
+        return l10n?.statusCompleted ?? 'Completed';
+      case AppointmentStatus.cancelledByCustomer:
+      case AppointmentStatus.cancelledByProfessional:
+        return l10n?.statusCancelled ?? 'Cancelled';
+      case AppointmentStatus.noShow:
+        return 'No Show';
+    }
   }
 }
 

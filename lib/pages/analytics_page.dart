@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
@@ -69,15 +70,15 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
     if (user == null || !user.isProfessional) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Analytics')),
-        body: const Center(
-          child: Text('Analytics is available for professionals only'),
+        appBar: AppBar(title: Text(AppLocalizations.of(context)?.analytics ?? 'Analytics')),
+        body: Center(
+          child: Text(AppLocalizations.of(context)?.analyticsProfessionalOnly ?? 'Analytics is available for professionals only'),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Analytics')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.analytics ?? 'Analytics')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -86,42 +87,42 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             _buildRangeSelector(),
             const SizedBox(height: 24),
             _buildStatCard(
-              'Total Bookings',
+              AppLocalizations.of(context)?.totalBookings ?? 'Total Bookings',
               _getTotalBookings(apptProvider).toString(),
               Icons.event,
             ),
             const SizedBox(height: 16),
             _buildStatCard(
-              'Completed',
+              AppLocalizations.of(context)?.completedLabel ?? 'Completed',
               apptProvider.completedAppointments.length.toString(),
               Icons.check_circle,
             ),
             const SizedBox(height: 16),
             _buildStatCard(
-              'Pending',
+              AppLocalizations.of(context)?.statusPending ?? 'Pending',
               apptProvider.pendingAppointments.length.toString(),
               Icons.schedule,
             ),
             const SizedBox(height: 16),
             _buildStatCard(
-              'Cancelled',
+              AppLocalizations.of(context)?.statusCancelled ?? 'Cancelled',
               apptProvider.cancelledAppointments.length.toString(),
               Icons.cancel,
             ),
             const SizedBox(height: 24),
             _buildStatCard(
-              'Revenue',
+              AppLocalizations.of(context)?.revenueLabel ?? 'Revenue',
               _getRevenueLabel(paymentProvider),
               Icons.attach_money,
             ),
             const SizedBox(height: 16),
-            _buildSectionTitle('Appointments'),
+            _buildSectionTitle(AppLocalizations.of(context)?.appointmentsSection ?? 'Appointments'),
             const SizedBox(height: 8),
             if (apptProvider.currentAppointments.isEmpty)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Text('No upcoming appointments'),
+                  padding: const EdgeInsets.all(32),
+                  child: Text(AppLocalizations.of(context)?.noUpcomingAppointments ?? 'No upcoming appointments'),
                 ),
               )
             else
@@ -206,14 +207,14 @@ Widget _buildStatCard(String title, String value, IconData icon) {
         subtitle: Text(
           '${appt.professionalName ?? "N/A"} \u2014 ${FormatHelper.formatDateTime(appt.dateTime)}',
         ),
-        trailing: Text(
-          appt.status.displayLabel,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: _statusColor(appt.status),
+          trailing: Text(
+            _localizedStatus(context, appt.status),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _statusColor(appt.status),
+            ),
           ),
-        ),
       ),
     );
   }
@@ -233,6 +234,23 @@ Widget _buildStatCard(String title, String value, IconData icon) {
       return Colors.grey;
   }
 }
+
+  String _localizedStatus(BuildContext context, AppointmentStatus status) {
+    final l10n = AppLocalizations.of(context);
+    switch (status) {
+      case AppointmentStatus.pending:
+        return l10n?.statusPending ?? 'Pending';
+      case AppointmentStatus.confirmed:
+        return l10n?.statusConfirmed ?? 'Confirmed';
+      case AppointmentStatus.completed:
+        return l10n?.statusCompleted ?? 'Completed';
+      case AppointmentStatus.cancelledByCustomer:
+      case AppointmentStatus.cancelledByProfessional:
+        return l10n?.statusCancelled ?? 'Cancelled';
+      case AppointmentStatus.noShow:
+        return 'No Show';
+    }
+  }
 
   int _getTotalBookings(AppointmentProvider provider) {
     switch (_selectedRange) {

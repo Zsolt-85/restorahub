@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/payment.dart';
 
 class ReceiptPage extends StatelessWidget {
@@ -48,12 +49,12 @@ class ReceiptPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Receipt'),
+        title: Text(AppLocalizations.of(context)?.receipt ?? 'Receipt'),
         actions: [
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () => _shareReceipt(context),
-            tooltip: 'Share receipt',
+            tooltip: AppLocalizations.of(context)?.ok ?? 'Share receipt',
           ),
         ],
       ),

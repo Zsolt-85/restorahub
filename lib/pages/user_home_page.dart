@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
 import '../helpers/appointment_actions.dart';
+import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
@@ -58,7 +59,7 @@ class _UserHomePageState extends State<UserHomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Text(AppLocalizations.of(context)?.dashboard ?? 'Dashboard'),
         actions: const [
           UserProfileAvatar(),
         ],
@@ -73,7 +74,9 @@ class _UserHomePageState extends State<UserHomePage> {
             Navigator.pushNamed(context, Routes.professionalHome);
           }
         },
-        tooltip: isCustomer ? 'Book appointment' : 'Manage bookings',
+        tooltip: isCustomer
+            ? AppLocalizations.of(context)?.bookNow ?? 'Book appointment'
+            : AppLocalizations.of(context)?.professionalContact ?? 'Manage bookings',
         child: Icon(isCustomer ? Icons.add : Icons.manage_accounts),
       ),
     );
@@ -101,8 +104,9 @@ class _UserHomePageState extends State<UserHomePage> {
             children: [
               const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
-              Text(
-                'Could not load appointments',
+               Text(
+                AppLocalizations.of(context)?.error ??
+                    'Could not load appointments',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -115,7 +119,7 @@ class _UserHomePageState extends State<UserHomePage> {
                 onPressed: () =>
                     apptProvider.loadAppointments(),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: Text(AppLocalizations.of(context)?.retry ?? 'Retry'),
               ),
             ],
           ),
@@ -131,14 +135,15 @@ class _UserHomePageState extends State<UserHomePage> {
     if (appointments.isEmpty) {
       return EmptyStateWidget(
         icon: Icons.calendar_today_outlined,
-        title: 'No Bookings Yet',
-        subtitle: 'Explore local wellness professionals and schedule your next appointment.',
+        title: AppLocalizations.of(context)?.noAppointments ?? 'No Bookings Yet',
+        subtitle: AppLocalizations.of(context)?.noAppointments ??
+            'Explore local wellness professionals and schedule your next appointment.',
         actionButton: ElevatedButton.icon(
           onPressed: () {
             Navigator.pushNamed(context, Routes.services);
           },
           icon: const Icon(Icons.add),
-          label: const Text('Book a Service'),
+          label: Text(AppLocalizations.of(context)?.bookNow ?? 'Book a Service'),
         ),
       );
     }
@@ -179,9 +184,9 @@ class _UserHomePageState extends State<UserHomePage> {
                 ),
               ),
               indicatorSize: TabBarIndicatorSize.label,
-              tabs: const [
-                Tab(text: 'Upcoming'),
-                Tab(text: 'History'),
+              tabs: [
+                Tab(text: AppLocalizations.of(context)?.upcoming ?? 'Upcoming'),
+                Tab(text: AppLocalizations.of(context)?.history ?? 'History'),
               ],
             ),
           ),
@@ -216,11 +221,13 @@ class _UserHomePageState extends State<UserHomePage> {
       return EmptyStateWidget(
         icon: isCustomer ? Icons.history : Icons.calendar_today_outlined,
         title: isCustomer
-            ? 'No history to show'
-            : 'No bookings yet',
+            ? AppLocalizations.of(context)?.history ?? 'No history to show'
+            : AppLocalizations.of(context)?.noAppointments ?? 'No bookings yet',
         subtitle: isCustomer
-            ? 'Completed and cancelled appointments will appear here'
-            : 'Explore local wellness professionals and schedule your next appointment.',
+            ? AppLocalizations.of(context)?.history ??
+                'Completed and cancelled appointments will appear here'
+            : AppLocalizations.of(context)?.noAppointments ??
+                'Explore local wellness professionals and schedule your next appointment.',
         actionButton: isCustomer
             ? null
             : ElevatedButton.icon(
@@ -228,7 +235,7 @@ class _UserHomePageState extends State<UserHomePage> {
                   Navigator.pushNamed(context, Routes.services);
                 },
                 icon: const Icon(Icons.add),
-                label: const Text('Book a Service'),
+                label: Text(AppLocalizations.of(context)?.bookNow ?? 'Book a Service'),
               ),
       );
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/auth_provider.dart';
 
@@ -28,7 +29,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reset password')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.resetPassword ?? 'Reset password')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
