@@ -73,7 +73,7 @@ class _ProfessionalCalendarViewState extends State<ProfessionalCalendarView> {
           shape: BoxShape.circle,
         ),
       ),
-      headerStyle: HeaderStyle(
+      headerStyle: const HeaderStyle(
         formatButtonVisible: true,
         formatButtonShowsNext: false,
         titleCentered: true,

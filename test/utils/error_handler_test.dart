@@ -7,12 +7,12 @@ void main() {
   group('ErrorHandler', () {
     group('getDisplayMessage', () {
       test('returns message for AppException', () {
-        final error = const AuthException('Custom auth error', code: 'auth-failed');
+        const error = AuthException('Custom auth error', code: 'auth-failed');
         expect(ErrorHandler.getDisplayMessage(error), 'Custom auth error');
       });
 
       test('returns message for BookingException', () {
-        final error = const BookingException('Slot no longer available');
+        const error = BookingException('Slot no longer available');
         expect(ErrorHandler.getDisplayMessage(error), 'Slot no longer available');
       });
 

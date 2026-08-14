@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/routes.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -98,7 +99,7 @@ class UserProfileAvatar extends StatelessWidget {
       BuildContext context, AuthProvider auth, String value) {
     switch (value) {
       case 'profile':
-        Navigator.pushNamed(context, '/profile');
+        Navigator.pushNamed(context, Routes.profile);
         break;
       case 'theme':
         _showThemeSelector(context);
@@ -107,7 +108,7 @@ class UserProfileAvatar extends StatelessWidget {
         auth.logout();
         Navigator.pushNamedAndRemoveUntil(
           context,
-          '/login',
+          Routes.login,
           (route) => false,
         );
         break;

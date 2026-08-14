@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/routes.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -28,7 +29,7 @@ class _SettingsPageState extends State<SettingsPage> {
             title: const Text('Edit profile'),
             subtitle: Text(auth.currentUser?.email ?? ''),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.pushNamed(context, '/profile'),
+            onTap: () => Navigator.pushNamed(context, Routes.profile),
           ),
           const Divider(),
           Padding(
@@ -68,7 +69,7 @@ class _SettingsPageState extends State<SettingsPage> {
               auth.logout();
               Navigator.pushNamedAndRemoveUntil(
                 context,
-                '/login',
+                Routes.login,
                 (route) => false,
               );
             },

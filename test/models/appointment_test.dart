@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:restorahub/helpers/app_exception.dart';
+import 'package:restorahub/exceptions/app_exception.dart';
 import 'package:restorahub/models/appointment.dart';
 
 void main() {

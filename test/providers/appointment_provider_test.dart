@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:restorahub/helpers/app_exception.dart';
+import 'package:restorahub/exceptions/app_exception.dart';
 import 'package:restorahub/models/appointment.dart';
 import 'package:restorahub/models/user.dart';
 import 'package:restorahub/providers/appointment_provider.dart';
@@ -48,7 +48,7 @@ class FakeBookingRepository implements BookingRepository {
       });
 
       if (hasOverlap) {
-        throw AppException('This time slot is no longer available', code: 'SLOT_TAKEN');
+        throw const AppException('This time slot is no longer available', code: 'SLOT_TAKEN');
       }
     }
 
@@ -296,7 +296,7 @@ void main() {
         customerId: 'cust-1',
       );
       await provider.addAppointment(appt1);
-      await provider.addAppointment(appt2);
+      await expectLater(() => provider.addAppointment(appt2), throwsA(isA<AppException>()));
 
       // Try to reschedule appt1 to the exact same time as appt2
       final error = await provider.rescheduleAppointment(
@@ -326,7 +326,7 @@ void main() {
         customerId: 'cust-1',
       );
 
-      await provider.addAppointment(newAppt);
+      await expectLater(() => provider.addAppointment(newAppt), throwsA(isA<AppException>()));
 
       expect(provider.appointments.length, 0);
       expect(provider.error, 'This time slot is no longer available');
@@ -400,6 +400,144 @@ void main() {
         provider.startRealtimeAppointments();
         expect(provider.appointmentsStream, isNotNull);
         provider.stopRealtimeAppointments();
+      });
+    });
+
+    group('Appointment Segregation', () {
+      test('upcomingAppointments lists future active bookings sorted closest first', () async {
+        final now = DateTime.now();
+        final appts = [
+          Appointment(
+            id: 'u1',
+            service: 'S1',
+            dateTime: now.add(const Duration(days: 3)),
+            customerId: 'cust-1',
+          ),
+          Appointment(
+            id: 'u2',
+            service: 'S2',
+            dateTime: now.add(const Duration(days: 1)),
+            customerId: 'cust-1',
+          ),
+          Appointment(
+            id: 'u3',
+            service: 'S3',
+            dateTime: now.add(const Duration(days: 2)),
+            customerId: 'cust-1',
+          ),
+        ];
+        for (final a in appts) {
+          await bookingRepository.insertAppointment(a);
+        }
+        await provider.loadAppointments();
+
+        final upcoming = provider.upcomingAppointments;
+        expect(upcoming.length, 3);
+        expect(upcoming[0].id, 'u2');
+        expect(upcoming[1].id, 'u3');
+        expect(upcoming[2].id, 'u1');
+      });
+
+      test('upcomingAppointments excludes terminal bookings even if future', () async {
+        final now = DateTime.now();
+        final futureCompleted = Appointment(
+          id: 't1',
+          service: 'S',
+          dateTime: now.add(const Duration(days: 1)),
+          status: AppointmentStatus.completed,
+          customerId: 'cust-1',
+        );
+        await bookingRepository.insertAppointment(futureCompleted);
+        await provider.loadAppointments();
+
+        expect(provider.upcomingAppointments, isEmpty);
+        expect(provider.pastAppointments, contains(futureCompleted));
+      });
+
+      test('pastAppointments lists past and terminal bookings sorted most recent first', () async {
+        final now = DateTime.now();
+        final appts = [
+          Appointment(
+            id: 'p1',
+            service: 'S1',
+            dateTime: now.subtract(const Duration(days: 3)),
+            customerId: 'cust-1',
+          ),
+          Appointment(
+            id: 'p2',
+            service: 'S2',
+            dateTime: now.subtract(const Duration(days: 1)),
+            status: AppointmentStatus.completed,
+            customerId: 'cust-1',
+          ),
+          Appointment(
+            id: 'p3',
+            service: 'S3',
+            dateTime: now.add(const Duration(days: 5)),
+            status: AppointmentStatus.completed,
+            customerId: 'cust-1',
+          ),
+        ];
+        for (final a in appts) {
+          await bookingRepository.insertAppointment(a);
+        }
+        await provider.loadAppointments();
+
+        final past = provider.pastAppointments;
+        expect(past.length, 3);
+        expect(past[0].id, 'p3');
+        expect(past[1].id, 'p2');
+        expect(past[2].id, 'p1');
+      });
+
+      test('upcoming and past are disjoint and cover all bookings', () async {
+        final now = DateTime.now();
+        final appts = [
+          Appointment(
+            id: 'u1',
+            service: 'S',
+            dateTime: now.add(const Duration(days: 1)),
+            customerId: 'cust-1',
+          ),
+          Appointment(
+            id: 'c1',
+            service: 'S',
+            dateTime: now.add(const Duration(days: 2)),
+            status: AppointmentStatus.cancelledByCustomer,
+            customerId: 'cust-1',
+          ),
+          Appointment(
+            id: 'pa1',
+            service: 'S',
+            dateTime: now.subtract(const Duration(days: 1)),
+            customerId: 'cust-1',
+          ),
+          Appointment(
+            id: 'pa2',
+            service: 'S',
+            dateTime: now.subtract(const Duration(days: 2)),
+            status: AppointmentStatus.completed,
+            customerId: 'cust-1',
+          ),
+        ];
+        for (final a in appts) {
+          await bookingRepository.insertAppointment(a);
+        }
+        await provider.loadAppointments();
+
+        final upcomingIds =
+            provider.upcomingAppointments.map((a) => a.id).toSet();
+        final pastIds = provider.pastAppointments.map((a) => a.id).toSet();
+
+        expect(upcomingIds.intersection(pastIds), isEmpty);
+        expect(
+          upcomingIds.union(pastIds),
+          containsAll(appts.map((a) => a.id)),
+        );
+        expect(upcomingIds, contains('u1'));
+        expect(pastIds, contains('c1'));
+        expect(pastIds, contains('pa1'));
+        expect(pastIds, contains('pa2'));
       });
     });
   });

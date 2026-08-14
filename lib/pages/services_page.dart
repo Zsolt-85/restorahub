@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/routes.dart';
 import '../constants/constants.dart';
 import '../providers/auth_provider.dart';
-import 'booking_page.dart';
 
 class ServicesPage extends StatelessWidget {
   const ServicesPage({super.key});
@@ -44,13 +44,10 @@ class ServicesPage extends StatelessWidget {
                       trailing: Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.push(
+                        Navigator.pushNamed(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => BookingPage(
-                              service: '$service — $subtype',
-                            ),
-                          ),
+                          Routes.booking,
+                          arguments: '$service — $subtype',
                         );
                       },
                     ),
@@ -71,7 +68,7 @@ class ServicesPage extends StatelessWidget {
 
     if (auth.currentUser == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+        Navigator.pushNamedAndRemoveUntil(context, Routes.login, (_) => false);
       });
       return const Scaffold(body: SizedBox.shrink());
     }

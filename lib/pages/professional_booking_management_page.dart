@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/routes.dart';
 import '../helpers/appointment_actions.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
@@ -57,7 +58,7 @@ class _ProfessionalBookingManagementPageState
 
     if (user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+        Navigator.pushNamedAndRemoveUntil(context, Routes.login, (_) => false);
       });
       return const Scaffold(body: SizedBox.shrink());
     }
@@ -65,8 +66,8 @@ class _ProfessionalBookingManagementPageState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage bookings'),
-        actions: [
-          const UserProfileAvatar(),
+        actions: const [
+          UserProfileAvatar(),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -75,7 +76,7 @@ class _ProfessionalBookingManagementPageState
             color: Theme.of(context).colorScheme.primary,
           ),
           labelColor: Theme.of(context).colorScheme.onPrimary,
-          unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
           tabs: const [
             Tab(text: 'Upcoming'),
             Tab(text: 'Past'),
@@ -142,7 +143,7 @@ class _ProfessionalBookingManagementPageState
         subtitle: 'When customers book services with you, their requests will appear here.',
         actionButton: ElevatedButton.icon(
           onPressed: () {
-            Navigator.pushNamed(context, '/profile');
+            Navigator.pushNamed(context, Routes.profile);
           },
           icon: const Icon(Icons.person_outline),
           label: const Text('Edit Profile & Hours'),
@@ -162,10 +163,10 @@ class _ProfessionalBookingManagementPageState
           onEdit: () => AppointmentActions.confirmReschedule(context, appt),
           onCancel: () => AppointmentActions.confirmCancel(context, appt),
           onConfirm: isPending
-              ? () => AppointmentActions.confirmProfessionalDecision(context, appt)
+              ? () => AppointmentActions.acceptAppointment(context, appt)
               : null,
           onReject: isPending
-              ? () => AppointmentActions.confirmProfessionalDecision(context, appt)
+              ? () => AppointmentActions.declineAppointment(context, appt)
               : null,
         );
       },

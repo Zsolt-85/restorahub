@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../constants/routes.dart';
 import '../models/payment.dart';
 import '../providers/auth_provider.dart';
 import '../providers/payment_provider.dart';
-import 'receipt_page.dart';
 
 class EarningsReportPage extends StatefulWidget {
   const EarningsReportPage({super.key});
@@ -120,11 +120,10 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
                             ),
                           ),
                           onTap: () {
-                            Navigator.push(
+                            Navigator.pushNamed(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => ReceiptPage(payment: payment),
-                              ),
+                              Routes.receipt,
+                              arguments: payment,
                             );
                           },
                         ),

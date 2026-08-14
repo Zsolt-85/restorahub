@@ -79,7 +79,7 @@ class ThemeProvider extends ChangeNotifier {
     return ChipThemeData(
       selectedColor: colorScheme.primary,
       backgroundColor: colorScheme.surface,
-      disabledColor: onSurface.withOpacity(0.12),
+      disabledColor: onSurface.withValues(alpha: 0.12),
       labelStyle: TextStyle(color: colorScheme.onSurface),
       secondaryLabelStyle: TextStyle(color: colorScheme.onSurface),
     );
@@ -89,15 +89,15 @@ class ThemeProvider extends ChangeNotifier {
     final onSurface = colorScheme.onSurface;
     return ElevatedButtonThemeData(
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.disabled)) {
-            return onSurface.withOpacity(0.12);
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return onSurface.withValues(alpha: 0.12);
           }
           return colorScheme.primary;
         }),
-        foregroundColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.disabled)) {
-            return onSurface.withOpacity(0.38);
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return onSurface.withValues(alpha: 0.38);
           }
           return colorScheme.onPrimary;
         }),
@@ -111,8 +111,8 @@ class ThemeProvider extends ChangeNotifier {
       indicator: BoxDecoration(color: colorScheme.primary),
       indicatorColor: colorScheme.primary,
       labelColor: colorScheme.onPrimary,
-      unselectedLabelColor: onSurface.withOpacity(0.6),
-      unselectedLabelStyle: TextStyle(color: onSurface.withOpacity(0.6)),
+      unselectedLabelColor: onSurface.withValues(alpha: 0.6),
+      unselectedLabelStyle: TextStyle(color: onSurface.withValues(alpha: 0.6)),
     );
   }
 

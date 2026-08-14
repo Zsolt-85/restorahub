@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/routes.dart';
 import '../helpers/appointment_actions.dart';
+import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/appointment_card.dart';
@@ -9,8 +11,6 @@ import '../widgets/appointment_card_skeleton.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/user_profile_avatar.dart';
-import 'professional_booking_management_page.dart';
-import 'services_page.dart';
 
 class UserHomePage extends StatefulWidget {
   const UserHomePage({super.key});
@@ -47,9 +47,9 @@ class _UserHomePageState extends State<UserHomePage> {
     final apptProvider = Provider.of<AppointmentProvider>(context);
     final user = auth.currentUser;
 
-    if (user == null) {
+      if (user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+        Navigator.pushNamedAndRemoveUntil(context, Routes.login, (_) => false);
       });
       return const Scaffold(body: SizedBox.shrink());
     }
@@ -59,8 +59,8 @@ class _UserHomePageState extends State<UserHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
-        actions: [
-          const UserProfileAvatar(),
+        actions: const [
+          UserProfileAvatar(),
         ],
       ),
       drawer: AppDrawer(user: user, auth: auth),
@@ -68,17 +68,9 @@ class _UserHomePageState extends State<UserHomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           if (isCustomer) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ServicesPage()),
-            );
+            Navigator.pushNamed(context, Routes.services);
           } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const ProfessionalBookingManagementPage(),
-              ),
-            );
+            Navigator.pushNamed(context, Routes.professionalHome);
           }
         },
         tooltip: isCustomer ? 'Book appointment' : 'Manage bookings',
@@ -131,6 +123,10 @@ class _UserHomePageState extends State<UserHomePage> {
       );
     }
 
+    if (isCustomer) {
+      return _buildCustomerDashboardBody(context, apptProvider);
+    }
+
     final appointments = apptProvider.filteredAppointments;
     if (appointments.isEmpty) {
       return EmptyStateWidget(
@@ -139,14 +135,101 @@ class _UserHomePageState extends State<UserHomePage> {
         subtitle: 'Explore local wellness professionals and schedule your next appointment.',
         actionButton: ElevatedButton.icon(
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ServicesPage()),
-            );
+            Navigator.pushNamed(context, Routes.services);
           },
           icon: const Icon(Icons.add),
           label: const Text('Book a Service'),
         ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: appointments.length,
+      itemBuilder: (context, index) {
+        final appt = appointments[index];
+        return AppointmentCard(
+          appointment: appt,
+          viewerIsCustomer: isCustomer,
+          onEdit: () => AppointmentActions.confirmReschedule(context, appt),
+          onCancel: () => AppointmentActions.confirmCancel(context, appt),
+        );
+      },
+    );
+  }
+
+  Widget _buildCustomerDashboardBody(
+    BuildContext context,
+    AppointmentProvider apptProvider,
+  ) {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TabBar(
+              isScrollable: false,
+              labelColor: Theme.of(context).colorScheme.primary,
+              unselectedLabelColor: Colors.black87,
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 3.0,
+                ),
+              ),
+              indicatorSize: TabBarIndicatorSize.label,
+              tabs: const [
+                Tab(text: 'Upcoming'),
+                Tab(text: 'History'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildAppointmentSection(
+                  context,
+                  apptProvider.upcomingAppointments,
+                  true,
+                ),
+                _buildAppointmentSection(
+                  context,
+                  apptProvider.pastAppointments,
+                  true,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppointmentSection(
+    BuildContext context,
+    List<Appointment> appointments,
+    bool isCustomer,
+  ) {
+    if (appointments.isEmpty) {
+      return EmptyStateWidget(
+        icon: isCustomer ? Icons.history : Icons.calendar_today_outlined,
+        title: isCustomer
+            ? 'No history to show'
+            : 'No bookings yet',
+        subtitle: isCustomer
+            ? 'Completed and cancelled appointments will appear here'
+            : 'Explore local wellness professionals and schedule your next appointment.',
+        actionButton: isCustomer
+            ? null
+            : ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(context, Routes.services);
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Book a Service'),
+              ),
       );
     }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +8,7 @@ import 'firebase_options.dart';
 import 'repositories/firestore_booking_repository.dart';
 import 'repositories/firestore_user_repository.dart';
 import 'repositories/user_repository.dart';
+import 'repositories/firestore_notification_repository.dart';
 import 'repositories/notification_repository.dart';
 import 'repositories/firestore_payment_repository.dart';
 import 'repositories/payment_repository.dart';
@@ -15,6 +18,8 @@ import 'helpers/route_guard_helper.dart';
 import 'constants/routes.dart';
 
 import 'models/booking_summary.dart';
+import 'models/appointment.dart';
+import 'models/payment.dart';
 import 'providers/appointment_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
@@ -31,53 +36,74 @@ import 'pages/professional_booking_management_page.dart';
 import 'pages/registration_page.dart';
 import 'pages/success_page.dart';
 import 'pages/user_home_page.dart';
+import 'pages/services_page.dart';
+import 'pages/booking_page.dart';
+import 'pages/edit_appointment_page.dart';
+import 'pages/add_payment_page.dart';
+import 'pages/receipt_page.dart';
+import 'pages/settings_page.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  usePathUrlStrategy();
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    log(details.exceptionAsString(), error: details.exception);
+  };
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  await NotificationScheduleHelper.initialize();
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e) {
+      log('Firebase initialization error: $e', error: e);
+      rethrow;
+    }
 
-  final bookingRepo = FirestoreBookingRepository.instance;
-  final userRepo = FirestoreUserRepository.instance;
-  final notificationRepo = FirestoreNotificationRepository.instance;
-  final paymentRepo = FirestorePaymentRepository.instance;
-  final authProvider = AuthProvider(userRepository: userRepo);
-  final appointmentProvider = AppointmentProvider(
-    bookingRepository: bookingRepo,
-    userRepository: userRepo,
-    notificationRepository: notificationRepo,
-  );
-  final themeProvider = ThemeProvider();
+    usePathUrlStrategy();
 
-  await themeProvider.loadTheme();
-  await appointmentProvider.loadAppointments();
+    await NotificationScheduleHelper.initialize();
 
-  if (appointmentProvider.error != null) {
-    AppLogger.warning('Initial appointments load failed: ${appointmentProvider.error}');
-  }
+    final bookingRepo = FirestoreBookingRepository.instance;
+    final userRepo = FirestoreUserRepository.instance;
+    final notificationRepo = FirestoreNotificationRepository.instance;
+    final paymentRepo = FirestorePaymentRepository.instance;
+    final authProvider = AuthProvider(userRepository: userRepo);
+    final appointmentProvider = AppointmentProvider(
+      bookingRepository: bookingRepo,
+      userRepository: userRepo,
+      notificationRepository: notificationRepo,
+    );
+    final themeProvider = ThemeProvider();
 
-  final hasSession = await authProvider.restoreSession();
-  if (hasSession && authProvider.currentUser != null) {
-    appointmentProvider.setCurrentUser(authProvider.currentUser!);
-  }
+    await themeProvider.loadTheme();
+    await appointmentProvider.loadAppointments();
 
-  final initialRoute = _resolveInitialRoute(authProvider);
+    if (appointmentProvider.error != null) {
+      AppLogger.warning('Initial appointments load failed: ${appointmentProvider.error}');
+    }
 
-  runApp(
-    MyApp(
-      authProvider: authProvider,
-      appointmentProvider: appointmentProvider,
-      themeProvider: themeProvider,
-      initialRoute: initialRoute,
-      notificationRepo: notificationRepo,
-      paymentRepo: paymentRepo,
-    ),
-  );
+    final hasSession = await authProvider.restoreSession();
+    if (hasSession && authProvider.currentUser != null) {
+      appointmentProvider.setCurrentUser(authProvider.currentUser!);
+    }
+
+    final initialRoute = _resolveInitialRoute(authProvider);
+
+    runApp(
+      MyApp(
+        authProvider: authProvider,
+        appointmentProvider: appointmentProvider,
+        themeProvider: themeProvider,
+        initialRoute: initialRoute,
+        notificationRepo: notificationRepo,
+        paymentRepo: paymentRepo,
+      ),
+    );
+  }, (error, stack) {
+    log('Unhandled exception: $error', error: error, stackTrace: stack);
+  });
 }
 
 String _resolveInitialRoute(AuthProvider authProvider) {
@@ -163,12 +189,12 @@ class MyApp extends StatelessWidget {
                       return const LoginPage();
                     case Routes.register:
                       return const RegistrationPage();
+                    case Routes.forgotPassword:
+                      return const ForgotPasswordPage();
                     case Routes.customerHome:
                       return const UserHomePage();
                     case Routes.professionalHome:
                       return const ProfessionalBookingManagementPage();
-                    case '/forgot-password':
-                      return const ForgotPasswordPage();
                     case Routes.completeProfile:
                       return Scaffold(
                         appBar: AppBar(title: const Text('Complete Profile')),
@@ -196,17 +222,33 @@ class MyApp extends StatelessWidget {
                           ),
                         ),
                       );
-                    case '/success':
+                    case Routes.services:
+                      return const ServicesPage();
+                    case Routes.booking:
+                      final service = settings.arguments as String;
+                      return BookingPage(service: service);
+                    case Routes.editAppointment:
+                      final appt = settings.arguments as Appointment;
+                      return EditAppointmentPage(appointment: appt);
+                    case Routes.addPayment:
+                      final appt = settings.arguments as Appointment;
+                      return AddPaymentPage(appointment: appt);
+                    case Routes.receipt:
+                      final payment = settings.arguments as Payment;
+                      return ReceiptPage(payment: payment);
+                    case Routes.success:
                       final summary = settings.arguments as BookingSummary?;
                       return SuccessPage(summary: summary);
-                    case '/profile':
+                    case Routes.profile:
                       return const ProfilePage();
-                    case '/notifications':
+                    case Routes.notifications:
                       return const NotificationsPage();
-                    case '/analytics':
+                    case Routes.analytics:
                       return const AnalyticsPage();
-                    case '/past_appointments':
+                    case Routes.pastAppointments:
                       return const PastAppointmentsPage();
+                    case Routes.settings:
+                      return const SettingsPage();
                     default:
                       return const LoginPage();
                   }

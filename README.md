@@ -19,6 +19,20 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 - **Notification Repository Split:** `NotificationRepository` (abstraction) and `FirestoreNotificationRepository` (implementation) split into separate files, matching the standard used by bookings, users, and payments.
 - **Route Centralization & Guard Hardening:** All navigation routes are defined as constants in `lib/constants/routes.dart` and registered in `main.dart`'s `onGenerateRoute`. Parameterized pages (`booking`, `editAppointment`, `addPayment`, `receipt`, `success`) receive arguments via `settings.arguments`. Raw `MaterialPageRoute` pushes and hardcoded route strings were replaced with `Navigator.pushNamed` + route constants across the codebase.
 
+## 🔄 Recent System Updates
+
+### Firestore Atomic Writes & Server Sync
+Atomic server writes are now verified with a synchronous server read (`GetOptions(source: Source.server)`) in `FirestoreBookingRepository.createAppointmentAtomic` and `insertAppointment` (`lib/repositories/firestore_booking_repository.dart`). After a write, the document is re-fetched directly from the Firestore server; a missing `document.exists` now throws an `AppException` ("Server write rejected: Document does not exist on Firestore server.") instead of silently trusting offline cache, eliminating false-positive booking confirmations.
+
+### Customer Dashboard Categorization
+The customer dashboard uses a strict dual-tab layout — **Upcoming** vs. **History** (`lib/pages/user_home_page.dart`) — backed by `AppointmentProvider` (`lib/providers/appointment_provider.dart`). `upcomingAppointments` filters to `!isTerminal && !dateTime.isBefore(now)` and sorts **ascending** (closest first); `pastAppointments` filters to `dateTime.isBefore(now) || isTerminal` and sorts **descending** (most recent first), keeping past/cancelled bookings read-only and visually segregated from upcoming ones.
+
+### UI/UX Refinement
+The dashboard `TabBar` now uses a theme-based `UnderlineTabIndicator` (`Theme.of(context).colorScheme.primary`, width `3.0`) with `TabBarIndicatorSize.label`. Active tab text is primary-colored and unselected text is `Colors.black87` for clean contrast; the `TabBar` is wrapped in a padded `Container` with `isScrollable: false` so both tabs share equal width, with simple `Tab(text:)` labels and no forced-width backgrounds that caused clipping/overflow.
+
+### Context & Lifecycle Safety
+Post-async operations now guard against unmounted `BuildContext` lookups. Page widgets (`booking_page.dart`, `add_payment_page.dart`, `edit_appointment_page.dart`, `login_page.dart`, `registration_page.dart`, `earnings_report_page.dart`, `forgot_password_page.dart`, `success_page.dart`) and `lib/helpers/appointment_actions.dart` check `mounted` / `context.mounted` before calling `setState`, `Navigator`, or showing dialogs, preventing `setState`-after-dispose and navigation-after-dispose exceptions.
+
 ## Features
 
 - **Customer accounts** — browse services, pick a subtype, book with a matching professional

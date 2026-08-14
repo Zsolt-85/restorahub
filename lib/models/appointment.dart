@@ -1,4 +1,4 @@
-import 'package:restorahub/helpers/app_exception.dart';
+import 'package:restorahub/exceptions/app_exception.dart';
 
 enum AppointmentStatus { pending, confirmed, completed, cancelledByCustomer, cancelledByProfessional, noShow }
 

@@ -22,7 +22,7 @@ class AppointmentCardSkeleton extends StatelessWidget {
                 Shimmer.fromColors(
                   baseColor: baseColor,
                   highlightColor: highlightColor,
-                  child: CircleAvatar(radius: 20),
+                  child: const CircleAvatar(radius: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

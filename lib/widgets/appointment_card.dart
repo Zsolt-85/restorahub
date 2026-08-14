@@ -119,7 +119,7 @@ class AppointmentCard extends StatelessWidget {
                       onPressed: onReject,
                       icon: const Icon(Icons.cancel_outlined, color: Colors.red),
                       label: const Text(
-                        'Reject',
+                        'Decline',
                         style: TextStyle(color: Colors.red),
                       ),
                     ),
@@ -129,7 +129,15 @@ class AppointmentCard extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: onConfirm,
                       icon: const Icon(Icons.check_circle),
-                      label: const Text('Confirm'),
+                      label: const Text('Accept'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: appointment.isPast ? null : onEdit,
+                      icon: const Icon(Icons.edit_calendar),
+                      label: const Text('Reschedule'),
                     ),
                   ),
                 ] else if (canManage) ...[

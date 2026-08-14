@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/routes.dart';
 import '../constants/constants.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
@@ -74,7 +75,7 @@ class _LoginPageState extends State<LoginPage> {
               child: TextButton(
                 onPressed: _loading
                     ? null
-                    : () => Navigator.pushNamed(context, '/forgot-password'),
+                    : () => Navigator.pushNamed(context, Routes.forgotPassword),
                 child: const Text('Forgot password?'),
               ),
             ),
@@ -120,8 +121,8 @@ class _LoginPageState extends State<LoginPage> {
                             .setCurrentUser(auth.currentUser!);
 
                         final route = auth.currentUser!.isProfessional
-                            ? '/professional_home'
-                            : '/user_home';
+                            ? Routes.professionalHome
+                            : Routes.customerHome;
                         Navigator.pushReplacementNamed(context, route);
                       } else if (result == LoginResult.needsProfile) {
                         setState(() => _loading = false);
@@ -146,7 +147,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 12),
             TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/register'),
+              onPressed: () => Navigator.pushNamed(context, Routes.register),
               child: const Text("Don't have an account? Register"),
             ),
           ],
@@ -270,10 +271,10 @@ class _LoginPageState extends State<LoginPage> {
                           .setCurrentUser(auth.currentUser!);
                       Navigator.pop(context); // close dialog
                       
-                      final route = auth.currentUser!.isProfessional
-                          ? '/professional_home'
-                          : '/user_home';
-                      Navigator.pushReplacementNamed(context, route);
+                       final route = auth.currentUser!.isProfessional
+                           ? Routes.professionalHome
+                           : Routes.customerHome;
+                       Navigator.pushReplacementNamed(context, route);
                     } else if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Failed to save profile')),

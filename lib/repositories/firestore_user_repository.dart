@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../helpers/app_exception.dart';
+import '../exceptions/app_exception.dart';
 import '../models/user.dart';
 import '../utils/app_logger.dart';
 import 'user_repository.dart';

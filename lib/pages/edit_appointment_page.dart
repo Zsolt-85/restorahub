@@ -24,7 +24,6 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
   TimeOfDay? _selectedTime;
   bool _loadingProfessional = true;
   bool _saving = false;
-  String? _error;
 
   final Set<TimeOfDay> _unavailableSlots = {};
 
@@ -222,7 +221,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                                             color: Theme.of(context)
                                                 .colorScheme
                                                 .onSurface
-                                                .withOpacity(0.38),
+                                                .withValues(alpha: 0.38),
                                           ),
                                         ),
                                         const SizedBox(width: 4),
@@ -233,7 +232,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                                             color: Theme.of(context)
                                                 .colorScheme
                                                 .onSurface
-                                                .withOpacity(0.38),
+                                                .withValues(alpha: 0.38),
                                           ),
                                         ),
                                       ],
@@ -251,23 +250,22 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                         ),
                       ],
                       const SizedBox(height: 20),
-                      if (_error != null)
-                        Text(_error!, style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: _saving
                             ? null
                             : () async {
                                 if (_selectedDate == null ||
                                     _selectedTime == null) {
-                                  setState(() => _error =
-                                      'Please select a new date and time');
+                                  ErrorHandler.showErrorSnackBar(
+                                    context,
+                                    'Please select a new date and time',
+                                  );
                                   return;
                                 }
 
                                 setState(() {
                                   _saving = true;
-                                  _error = null;
                                 });
 
                                 final newDateTime =
@@ -291,7 +289,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                                   );
                                   Navigator.pop(context, true);
                                 } else {
-                                  setState(() => _error = ErrorHandler.getDisplayMessage(result));
+                                  ErrorHandler.showErrorSnackBar(context, result);
                                 }
                               },
                         child: _saving

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../helpers/app_exception.dart';
+import '../constants/routes.dart';
+import '../exceptions/app_exception.dart';
 import '../helpers/format_helper.dart';
 import '../models/appointment.dart';
-import '../pages/edit_appointment_page.dart';
 import '../providers/appointment_provider.dart';
+import '../utils/error_handler.dart';
 
 class AppointmentActions {
   static Future<void> confirmCancel(
@@ -64,11 +65,10 @@ class AppointmentActions {
     BuildContext context,
     Appointment appointment,
   ) async {
-    final updated = await Navigator.push<bool>(
+    final updated = await Navigator.pushNamed<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => EditAppointmentPage(appointment: appointment),
-      ),
+      Routes.editAppointment,
+      arguments: appointment,
     );
 
     if (updated == true && context.mounted) {
@@ -86,6 +86,53 @@ class AppointmentActions {
           const SnackBar(content: Text('Failed to refresh bookings')),
         );
       }
+    }
+  }
+
+  static Future<void> acceptAppointment(
+    BuildContext context,
+    Appointment appointment,
+  ) async {
+    try {
+      await Provider.of<AppointmentProvider>(context, listen: false)
+          .updateAppointmentStatus(appointment.id!, AppointmentStatus.confirmed);
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Booking confirmed')),
+      );
+    } on AppException catch (e) {
+      if (!context.mounted) return;
+      ErrorHandler.showErrorSnackBar(context, e);
+    } catch (e) {
+      if (!context.mounted) return;
+      ErrorHandler.showErrorSnackBar(context, e);
+    }
+  }
+
+  static Future<void> declineAppointment(
+    BuildContext context,
+    Appointment appointment,
+  ) async {
+    try {
+      await Provider.of<AppointmentProvider>(context, listen: false)
+          .updateAppointmentStatus(
+            appointment.id!,
+            AppointmentStatus.cancelledByProfessional,
+          );
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Booking declined')),
+      );
+    } on AppException catch (e) {
+      if (!context.mounted) return;
+      ErrorHandler.showErrorSnackBar(context, e);
+    } catch (e) {
+      if (!context.mounted) return;
+      ErrorHandler.showErrorSnackBar(context, e);
     }
   }
 

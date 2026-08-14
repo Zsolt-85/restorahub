@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../helpers/app_exception.dart';
+import '../exceptions/app_exception.dart';
 import '../models/appointment.dart';
 import '../utils/app_logger.dart';
 import 'booking_repository.dart';
@@ -58,9 +58,13 @@ class FirestoreBookingRepository implements BookingRepository {
     try {
       final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));
       AppLogger.debug('AVAILABILITY CHECK: professionalId=$professionalId, dateTime=$dateTime, slotEnd=$slotEnd, buffer=$bufferTimeMinutes');
+      final dateOnly = DateTime(dateTime.year, dateTime.month, dateTime.day);
+      final startOfDay = dateOnly.toIso8601String();
+      final endOfDay = dateOnly.add(const Duration(hours: 23, minutes: 59, seconds: 59)).toIso8601String();
       final query = await _appointmentsCol
           .where('professionalId', isEqualTo: professionalId)
-          .where('dateTime', isLessThan: slotEnd.toIso8601String())
+          .where('dateTime', isGreaterThanOrEqualTo: startOfDay)
+          .where('dateTime', isLessThanOrEqualTo: endOfDay)
           .where('status', whereNotIn: ['cancelledByCustomer', 'cancelledByProfessional', 'noShow'])
           .get();
       AppLogger.debug('AVAILABILITY CHECK: ${query.docs.length} documents fetched from Firestore');
@@ -84,55 +88,79 @@ class FirestoreBookingRepository implements BookingRepository {
 
   @override
   Future<void> createAppointmentAtomic(Appointment appointment) async {
+    final docRef = _firestore.collection('appointments').doc(appointment.id);
+    appointment.id = docRef.id;
+    print('DEBUG: Targeted Collection: appointments');
+    print('DEBUG: Attempting write to project: ${FirebaseFirestore.instance.app.options.projectId}');
+
     try {
-      await _firestore.runTransaction((transaction) async {
-        if (appointment.professionalId != null) {
-          final slotStart = appointment.dateTime;
-          final slotEnd = slotStart.add(Duration(minutes: appointment.durationMinutes));
-
-          final query = await _appointmentsCol
-              .where('professionalId', isEqualTo: appointment.professionalId)
-              .where('status', whereIn: ['pending', 'confirmed'])
-              .get();
-
-          for (final doc in query.docs) {
-            final data = doc.data();
-            final apptDateTime = DateTime.parse(data['dateTime'] as String);
-            final duration = data['durationMinutes'] as int? ?? 60;
-            final buffer = data['bufferTimeMinutes'] as int? ?? 0;
-            final apptEnd = apptDateTime.add(Duration(minutes: duration + buffer));
-
-            if (slotStart.isBefore(apptEnd) && slotEnd.isAfter(apptDateTime)) {
-              throw AppException('This time slot is no longer available', code: 'SLOT_TAKEN');
-            }
-          }
-        }
-
-        final docRef = appointment.id != null
-            ? _appointmentsCol.doc(appointment.id)
-            : _appointmentsCol.doc();
-        appointment.id = docRef.id;
-        transaction.set(docRef, appointment.toMap());
-      });
+      await docRef.set(appointment.toMap());
     } catch (e, stack) {
+      Object actualError = e;
+      try {
+        final dynamic dynamicError = e;
+        if (dynamicError.error != null) {
+          actualError = dynamicError.error;
+        }
+      } catch (_) {}
+      print('DIRECT WRITE ERROR: $e');
+      print('DEBUG RAW UNWRAPPED ERROR: $actualError');
+      AppLogger.error('FirestoreBookingRepository.createAppointmentAtomic error: $actualError\n$stack');
+      throw AppException(actualError.toString(), cause: e);
+    }
+
+    print('DEBUG: Document Created with ID: ${docRef.id}');
+
+    try {
+      final serverSnapshot = await docRef.get(const GetOptions(source: Source.server));
+      if (!serverSnapshot.exists) {
+        throw AppException('Server write rejected: Document does not exist on Firestore server.');
+      }
+    } catch (e, stack) {
+      AppLogger.error('FirestoreBookingRepository.createAppointmentAtomic verification error: $e\n$stack');
       if (e is AppException) rethrow;
-      AppLogger.error('FirestoreBookingRepository.createAppointmentAtomic error: $e\n$stack');
-      throw AppException('Failed to create booking', cause: e);
+      if (e is FirebaseException) {
+        throw AppException('Failed to verify booking creation: $e', cause: e);
+      }
+      throw AppException('Failed to verify booking creation: $e', cause: e);
     }
   }
 
   @override
   Future<int> insertAppointment(Appointment appointment) async {
+    final docRef = appointment.id != null
+        ? _appointmentsCol.doc(appointment.id)
+        : _appointmentsCol.doc();
+    appointment.id = docRef.id;
+    print('DEBUG: Targeted Collection: ${_appointmentsCol.path}');
+    print('DEBUG: Attempting write to project: ${FirebaseFirestore.instance.app.options.projectId}');
     try {
-      final docRef = appointment.id != null
-          ? _appointmentsCol.doc(appointment.id)
-          : _appointmentsCol.doc();
-      appointment.id = docRef.id;
-      await docRef.set(appointment.toMap());
+      try {
+        await docRef.set(appointment.toMap()).timeout(const Duration(seconds: 5));
+      } catch (e) {
+        print('DEBUG FIRESTORE CREATE ERROR: $e');
+        rethrow;
+      }
+      print('DEBUG: Document Created with ID: ${docRef.id}');
+
+      try {
+        final serverSnapshot = await docRef.get(const GetOptions(source: Source.server));
+        if (!serverSnapshot.exists) {
+          throw Exception('Server write rejected: Document does not exist on Firestore server.');
+        }
+    } catch (e, stack) {
+      AppLogger.error('FirestoreBookingRepository.insertAppointment verification error: $e\n$stack');
+      if (e is AppException) rethrow;
+      if (e is FirebaseException) {
+        throw AppException('Failed to verify booking creation: $e', cause: e);
+      }
+      throw AppException('Failed to verify booking creation: $e', cause: e);
+    }
+
       return 1;
     } catch (e, stack) {
       AppLogger.error('FirestoreBookingRepository.insertAppointment error: $e\n$stack');
-      throw AppException('Failed to create booking', cause: e);
+      throw AppException('Failed to create booking: $e', cause: e);
     }
   }
 
@@ -147,7 +175,7 @@ class FirestoreBookingRepository implements BookingRepository {
     } catch (e, stack) {
       AppLogger.error('FirestoreBookingRepository.updateAppointment error: $e\n$stack');
       if (e is AppException) rethrow;
-      throw AppException('Failed to update booking', cause: e);
+      throw AppException('Failed to update booking: $e', cause: e);
     }
   }
 
@@ -162,7 +190,7 @@ class FirestoreBookingRepository implements BookingRepository {
     } catch (e, stack) {
       AppLogger.error('FirestoreBookingRepository.deleteAppointment error: $e\n$stack');
       if (e is AppException) rethrow;
-      throw AppException('Failed to cancel booking', cause: e);
+      throw AppException('Failed to cancel booking: $e', cause: e);
     }
   }
 

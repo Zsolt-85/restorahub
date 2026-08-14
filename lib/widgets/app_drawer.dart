@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/routes.dart';
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
-import '../pages/settings_page.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key, required this.user, required this.auth});
@@ -55,7 +55,7 @@ class AppDrawer extends StatelessWidget {
                 : null,
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/notifications');
+              Navigator.pushNamed(context, Routes.notifications);
             },
           ),
           ListTile(
@@ -63,7 +63,7 @@ class AppDrawer extends StatelessWidget {
             title: const Text('Analytics'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/analytics');
+              Navigator.pushNamed(context, Routes.analytics);
             },
           ),
           ListTile(
@@ -71,7 +71,7 @@ class AppDrawer extends StatelessWidget {
             title: const Text('Edit profile'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/profile');
+              Navigator.pushNamed(context, Routes.profile);
             },
           ),
           ListTile(
@@ -79,7 +79,7 @@ class AppDrawer extends StatelessWidget {
             title: const Text('Past appointments'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/past_appointments');
+              Navigator.pushNamed(context, Routes.pastAppointments);
             },
           ),
           ListTile(
@@ -87,10 +87,7 @@ class AppDrawer extends StatelessWidget {
             title: const Text('Settings'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              );
+              Navigator.pushNamed(context, Routes.settings);
             },
           ),
           ListTile(
@@ -100,7 +97,7 @@ class AppDrawer extends StatelessWidget {
               auth.logout();
               Navigator.pushNamedAndRemoveUntil(
                 context,
-                '/login',
+                Routes.login,
                 (route) => false,
               );
             },

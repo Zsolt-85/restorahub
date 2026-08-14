@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../helpers/app_exception.dart';
+import '../constants/routes.dart';
+import '../exceptions/app_exception.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/schedule_helper.dart';
 import '../models/appointment.dart';
@@ -271,7 +272,7 @@ class _BookingPageState extends State<BookingPage> {
                                     color: Theme.of(context)
                                         .colorScheme
                                         .onSurface
-                                        .withOpacity(0.38),
+                                        .withValues(alpha: 0.38),
                                   ),
                                 ),
                                 const SizedBox(width: 4),
@@ -282,7 +283,7 @@ class _BookingPageState extends State<BookingPage> {
                                     color: Theme.of(context)
                                         .colorScheme
                                         .onSurface
-                                        .withOpacity(0.38),
+                                        .withValues(alpha: 0.38),
                                   ),
                                 ),
                               ],
@@ -344,6 +345,7 @@ class _BookingPageState extends State<BookingPage> {
                         service: widget.service,
                         dateTime: dateTime,
                         durationMinutes: pro.slotDurationMinutes,
+                        status: AppointmentStatus.pending,
                         customerId: customer.id,
                         customerName: customer.name,
                         customerPhone: customer.phone,
@@ -355,13 +357,14 @@ class _BookingPageState extends State<BookingPage> {
                       );
 
                       try {
+                        final navigator = Navigator.of(context);
+
                         await apptProvider.addAppointment(newAppt);
 
-                        if (!context.mounted) return;
+                        if (!mounted) return;
 
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/success',
+                        navigator.pushNamedAndRemoveUntil(
+                          Routes.success,
                           (route) => false,
                           arguments: BookingSummary(
                             service: widget.service,
@@ -375,9 +378,13 @@ class _BookingPageState extends State<BookingPage> {
                             professionalEmail: pro.email,
                           ),
                         );
-                       } catch (e) {
-                         setState(() => _error = ErrorHandler.getDisplayMessage(e));
-                       }
+                      } catch (e) {
+                        if (mounted) {
+                          final displayError = apptProvider.errorMessage ?? ErrorHandler.getDisplayMessage(e);
+                          ErrorHandler.showErrorSnackBar(context, displayError);
+                          setState(() => _error = displayError);
+                        }
+                      }
 
                       if (mounted) setState(() => _loading = false);
                     },

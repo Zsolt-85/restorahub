@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../helpers/app_exception.dart';
+import '../exceptions/app_exception.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/notification_schedule_helper.dart';
 import '../models/appointment.dart';
@@ -42,13 +42,16 @@ class AppointmentProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _error;
+  String? _errorMessage;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get errorMessage => _errorMessage;
 
   void _beginLoading() {
     _isLoading = true;
     _error = null;
+    _errorMessage = null;
     notifyListeners();
   }
 
@@ -142,12 +145,16 @@ class AppointmentProvider extends ChangeNotifier {
       _endLoading();
     } on AppException catch (e) {
       if (e.code == 'SLOT_TAKEN') {
-        _endLoading('This time slot is no longer available');
+        _errorMessage = 'This time slot is no longer available Details: $e';
       } else {
-        _endLoading(e.message);
+        _errorMessage = '${e.message} Details: ${e.toString()}';
       }
+      _endLoading();
+      rethrow;
     } catch (e) {
-      _endLoading('Unexpected error creating booking');
+      _errorMessage = 'Raw Error: $e';
+      _endLoading();
+      rethrow;
     }
   }
 
@@ -159,8 +166,10 @@ class AppointmentProvider extends ChangeNotifier {
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
+      rethrow;
     } catch (e) {
-      _endLoading('Unexpected error updating booking');
+      _endLoading('Unexpected error creating booking');
+      rethrow;
     }
   }
 
@@ -256,8 +265,9 @@ class AppointmentProvider extends ChangeNotifier {
   List<Appointment> get pastAppointments {
     final now = DateTime.now();
     return _appointments
-        .where((a) => a.dateTime.isBefore(now))
-        .toList();
+        .where((a) => a.dateTime.isBefore(now) || a.isTerminal)
+        .toList()
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
   }
 
   List<Appointment> get currentAppointments {
@@ -270,8 +280,9 @@ class AppointmentProvider extends ChangeNotifier {
   List<Appointment> get upcomingAppointments {
     final now = DateTime.now();
     return _appointments
-        .where((a) => a.dateTime.isAfter(now))
-        .toList();
+        .where((a) => !a.dateTime.isBefore(now) && !a.isTerminal)
+        .toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }
 
   int getAppointmentCountForMonth(int year, int month) {
@@ -377,23 +388,35 @@ class AppointmentProvider extends ChangeNotifier {
       return 'Professional not found for this booking';
     }
 
-    final professional = await _userRepository.getUserById(appointment.professionalId!);
-    final bufferTime = professional?.bufferTimeMinutes ?? 0;
+    _beginLoading();
+    try {
+      final professional = await _userRepository.getUserById(appointment.professionalId!);
+      final bufferTime = professional?.bufferTimeMinutes ?? 0;
 
-    final available = await isSlotAvailable(
-      slotStart: newDateTime,
-      slotDuration: appointment.durationMinutes,
-      professionalId: appointment.professionalId!,
-      bufferTimeMinutes: bufferTime,
-    );
+      final available = await isSlotAvailable(
+        slotStart: newDateTime,
+        slotDuration: appointment.durationMinutes,
+        professionalId: appointment.professionalId!,
+        bufferTimeMinutes: bufferTime,
+      );
 
-    if (!available) {
-      return 'This time slot is no longer available';
+      if (!available) {
+        _endLoading('This time slot is no longer available');
+        return 'This time slot is no longer available';
+      }
+
+      final updated = appointment.copyWith(dateTime: newDateTime);
+      await _repository.updateAppointment(updated);
+      await _reloadAppointments();
+      _endLoading();
+      return null;
+    } on AppException catch (e) {
+      _endLoading(e.message);
+      return e.message;
+    } catch (e) {
+      _endLoading('Unexpected error rescheduling booking');
+      return 'Unexpected error rescheduling booking';
     }
-
-    final updated = appointment.copyWith(dateTime: newDateTime);
-    await updateAppointment(updated);
-    return null;
   }
 
   List<Appointment> get filteredAppointments {

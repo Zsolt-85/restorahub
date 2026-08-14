@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/routes.dart';
 import '../helpers/calendar_helper.dart';
 import '../helpers/format_helper.dart';
 import '../models/booking_summary.dart';
@@ -116,7 +117,7 @@ class SuccessPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushNamedAndRemoveUntil(
                     context,
-                    '/user_home',
+                    Routes.customerHome,
                     (route) => false,
                   );
                 },

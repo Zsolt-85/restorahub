@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/routes.dart';
 import '../constants/constants.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
@@ -89,8 +90,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
         Navigator.pushReplacementNamed(
           context,
           auth.currentUser!.isProfessional
-              ? '/professional_home'
-              : '/user_home',
+              ? Routes.professionalHome
+              : Routes.customerHome,
         );
       } else if (success != null) {
         setState(() => _error = ErrorHandler.getDisplayMessage(success));

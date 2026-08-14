@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/routes.dart';
 import '../constants/constants.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
@@ -108,7 +109,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+        Navigator.pushNamedAndRemoveUntil(context, Routes.login, (_) => false);
       });
       return const Scaffold(body: SizedBox.shrink());
     }
