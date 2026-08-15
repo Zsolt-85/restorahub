@@ -1115,6 +1115,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Analytics is available for professionals only'**
   String get analyticsProfessionalOnly;
+
+  /// No description provided for @addToCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Calendar'**
+  String get addToCalendar;
+
+  /// No description provided for @googleCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Calendar'**
+  String get googleCalendar;
+
+  /// No description provided for @appleCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple / Device Calendar'**
+  String get appleCalendar;
+
+  /// No description provided for @calendarAddedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar event added successfully'**
+  String get calendarAddedSuccess;
 }
 
 class _AppLocalizationsDelegate

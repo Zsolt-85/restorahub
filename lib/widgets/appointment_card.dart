@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../helpers/format_helper.dart';
 import '../helpers/appointment_actions.dart';
+import '../helpers/calendar_export_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 
@@ -47,6 +48,8 @@ class AppointmentCard extends StatelessWidget {
     final showCustomerRemove = viewerIsCustomer &&
         appointment.status == AppointmentStatus.pending &&
         !appointment.isPast;
+
+    final canAddToCalendar = !appointment.isPast && !appointment.isTerminal;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -185,6 +188,19 @@ class AppointmentCard extends StatelessWidget {
                 ],
               ],
             ),
+            if (canAddToCalendar) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showCalendarOptions(context),
+                  icon: const Icon(Icons.calendar_today),
+                  label: Text(
+                    AppLocalizations.of(context)?.addToCalendar ?? 'Add to Calendar',
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -211,6 +227,59 @@ class AppointmentCard extends StatelessWidget {
       case AppointmentStatus.noShow:
         return 'No Show';
     }
+  }
+
+  void _showCalendarOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: Text(
+                AppLocalizations.of(context)?.googleCalendar ?? 'Google Calendar',
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await addToGoogleCalendar(appointment);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)?.calendarAddedSuccess ??
+                            'Calendar event added successfully',
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.phone_iphone),
+              title: Text(
+                AppLocalizations.of(context)?.appleCalendar ?? 'Apple / Device Calendar',
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await exportCalendarIcs(appointment);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)?.calendarAddedSuccess ??
+                            'Calendar event added successfully',
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

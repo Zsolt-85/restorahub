@@ -519,4 +519,16 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get analyticsProfessionalOnly =>
       'Az elemzés csak szakemberek számára érhető el';
+
+  @override
+  String get addToCalendar => 'Hozzáadás a naptárhoz';
+
+  @override
+  String get googleCalendar => 'Google Naptár';
+
+  @override
+  String get appleCalendar => 'Apple / Eszköz naptár';
+
+  @override
+  String get calendarAddedSuccess => 'Naptáresemény sikeresen hozzáadva';
 }

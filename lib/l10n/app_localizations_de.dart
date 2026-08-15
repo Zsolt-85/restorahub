@@ -520,4 +520,16 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get analyticsProfessionalOnly =>
       'Analysen sind nur für Profis verfügbar';
+
+  @override
+  String get addToCalendar => 'Zum Kalender hinzufügen';
+
+  @override
+  String get googleCalendar => 'Google Kalender';
+
+  @override
+  String get appleCalendar => 'Apple / Geräte-Kalender';
+
+  @override
+  String get calendarAddedSuccess => 'Kalenderereignis erfolgreich hinzugefügt';
 }

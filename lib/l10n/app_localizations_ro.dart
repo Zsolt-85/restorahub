@@ -521,4 +521,16 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get analyticsProfessionalOnly =>
       'Analiza este disponibilă doar pentru profesioniști';
+
+  @override
+  String get addToCalendar => 'Adaugă în calendar';
+
+  @override
+  String get googleCalendar => 'Google Calendar';
+
+  @override
+  String get appleCalendar => 'Apple / Calendar dispozitiv';
+
+  @override
+  String get calendarAddedSuccess => 'Eveniment adăugat în calendar cu succes';
 }

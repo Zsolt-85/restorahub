@@ -49,6 +49,7 @@ Post-async operations now guard against unmounted `BuildContext` lookups. Page w
 - **Professional booking confirmation** — professionals accept or decline incoming booking requests via confirmation dialog
 - **Real-time notifications** — instant Firestore streaming for booking requests, confirmations, and cancellations with unread badge
 - **Native calendar integration** — add confirmed bookings to device calendar (Google Calendar / Apple iCal) from the success screen
+- **Calendar Integration** — One-tap export to Google Calendar and Apple/Device Calendar (.ics download/share) from upcoming appointment cards.
 - **Upcoming / Past separation** — professionals manage upcoming bookings in a dedicated tab; past appointments are read-only
 - **Centralized route guards** — `RouteGuardHelper.evaluateRedirect` enforces auth requirements, profile completion, and role-based access on every named-route transition via `onGenerateRoute`
 
