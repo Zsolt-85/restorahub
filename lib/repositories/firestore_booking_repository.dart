@@ -90,8 +90,8 @@ class FirestoreBookingRepository implements BookingRepository {
   Future<void> createAppointmentAtomic(Appointment appointment) async {
     final docRef = _firestore.collection('appointments').doc(appointment.id);
     appointment.id = docRef.id;
-    print('DEBUG: Targeted Collection: appointments');
-    print('DEBUG: Attempting write to project: ${FirebaseFirestore.instance.app.options.projectId}');
+    AppLogger.debug('DEBUG: Targeted Collection: appointments');
+    AppLogger.debug('DEBUG: Attempting write to project: ${FirebaseFirestore.instance.app.options.projectId}');
 
     try {
       await docRef.set(appointment.toMap());
@@ -103,18 +103,18 @@ class FirestoreBookingRepository implements BookingRepository {
           actualError = dynamicError.error;
         }
       } catch (_) {}
-      print('DIRECT WRITE ERROR: $e');
-      print('DEBUG RAW UNWRAPPED ERROR: $actualError');
+      AppLogger.error('DIRECT WRITE ERROR: $e');
+      AppLogger.error('DEBUG RAW UNWRAPPED ERROR: $actualError');
       AppLogger.error('FirestoreBookingRepository.createAppointmentAtomic error: $actualError\n$stack');
       throw AppException(actualError.toString(), cause: e);
     }
 
-    print('DEBUG: Document Created with ID: ${docRef.id}');
+    AppLogger.debug('DEBUG: Document Created with ID: ${docRef.id}');
 
     try {
       final serverSnapshot = await docRef.get(const GetOptions(source: Source.server));
       if (!serverSnapshot.exists) {
-        throw AppException('Server write rejected: Document does not exist on Firestore server.');
+        throw const AppException('Server write rejected: Document does not exist on Firestore server.');
       }
     } catch (e, stack) {
       AppLogger.error('FirestoreBookingRepository.createAppointmentAtomic verification error: $e\n$stack');
@@ -132,16 +132,16 @@ class FirestoreBookingRepository implements BookingRepository {
         ? _appointmentsCol.doc(appointment.id)
         : _appointmentsCol.doc();
     appointment.id = docRef.id;
-    print('DEBUG: Targeted Collection: ${_appointmentsCol.path}');
-    print('DEBUG: Attempting write to project: ${FirebaseFirestore.instance.app.options.projectId}');
+    AppLogger.debug('DEBUG: Targeted Collection: ${_appointmentsCol.path}');
+    AppLogger.debug('DEBUG: Attempting write to project: ${FirebaseFirestore.instance.app.options.projectId}');
     try {
       try {
         await docRef.set(appointment.toMap()).timeout(const Duration(seconds: 5));
       } catch (e) {
-        print('DEBUG FIRESTORE CREATE ERROR: $e');
+        AppLogger.error('DEBUG FIRESTORE CREATE ERROR: $e');
         rethrow;
       }
-      print('DEBUG: Document Created with ID: ${docRef.id}');
+      AppLogger.debug('DEBUG: Document Created with ID: ${docRef.id}');
 
       try {
         final serverSnapshot = await docRef.get(const GetOptions(source: Source.server));

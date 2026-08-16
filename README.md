@@ -16,6 +16,15 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 
 ## 🔄 Recent System Updates
 
+### Web Compatibility & Logging Hardening
+Migrated web-specific APIs from `dart:html` to `package:web/web.dart` in `calendar_export_helper_web.dart` for forward-compatible Flutter web builds. Enforced `avoid_print: true` in `analysis_options.yaml`; all debug/error output in `FirestoreBookingRepository` now uses centralized `AppLogger` instead of raw `print` statements.
+
+### Booking Page Context Safety
+Pre-allocated `Navigator`, `ScaffoldMessenger`, and theme error color before async booking operations in `booking_page.dart`. Replaced direct `ErrorHandler.showErrorSnackBar` with explicit `clearSnackBars()` + `showSnackBar` using pre-captured references, eliminating `setState`/navigation-after-dispose risks on fast device rotation or route changes.
+
+### Appointment Provider Error Simplification
+`addAppointment` catch blocks now return concise user-safe messages via `_endLoading(...)` instead of exposing raw exception strings. `SLOT_TAKEN` cases still surface a dedicated message; all other failures fall back to generic `AppException` handling.
+
 ### Firestore Persistence Fix
 Atomic server writes are verified with a synchronous server read (`GetOptions(source: Source.server)`) in `FirestoreBookingRepository.createAppointmentAtomic` and `insertAppointment` (`lib/repositories/firestore_booking_repository.dart`). After a write, the document is re-fetched directly from the Firestore server; a missing `document.exists` now throws an `AppException` ("Server write rejected: Document does not exist on Firestore server.") instead of silently trusting offline cache, eliminating false-positive booking confirmations.
 
@@ -27,6 +36,9 @@ Full internationalization across all screens, dialogs, side navigation drawer, s
 
 ### UI/UX Refinement
 The dashboard `TabBar` now uses a theme-based `UnderlineTabIndicator` (`Theme.of(context).colorScheme.primary`, width `3.0`) with `TabBarIndicatorSize.label`. Active tab text is primary-colored and unselected text is `Colors.black87` for clean contrast; the `TabBar` is wrapped in a padded `Container` with `isScrollable: false` so both tabs share equal width, with simple `Tab(text:)` labels and no forced-width backgrounds that caused clipping/overflow.
+
+### Appointment Card Action Buttons
+Replaced the rigid `Wrap` layout with dynamic equal-width rows via `_buildActionButtonRow`. 1–2 action buttons now split the row 50/50 using `Expanded`; 3–4 buttons are grouped into two balanced stacked rows. All labels use `FittedBox(fit: BoxFit.scaleDown)` with `maxLines: 1` and `overflow: TextOverflow.ellipsis` to prevent vertical text squishing on narrow screens. The "Add to Calendar" button remains a standalone full-width row beneath the actions.
 
 ### Context & Lifecycle Safety
 Post-async operations now guard against unmounted `BuildContext` lookups. Page widgets (`booking_page.dart`, `add_payment_page.dart`, `edit_appointment_page.dart`, `login_page.dart`, `registration_page.dart`, `earnings_report_page.dart`, `forgot_password_page.dart`, `success_page.dart`) and `lib/helpers/appointment_actions.dart` check `mounted` / `context.mounted` before calling `setState`, `Navigator`, or showing dialogs, preventing `setState`-after-dispose and navigation-after-dispose exceptions.
@@ -62,6 +74,7 @@ Post-async operations now guard against unmounted `BuildContext` lookups. Page w
 - `shared_preferences` for theme preference
 - `intl` for date formatting
 - `add_2_calendar` for native calendar events
+- `package:web` for Flutter web browser APIs
 
 ## Getting started
 
@@ -143,8 +156,8 @@ flutter test
 
 ## 🔄 How to Resume Development
 
-- **Test suite:** 95/96 tests passing (`flutter test`) — 1 pre-existing failure in `appointment_provider_test.dart` (unrelated `SLOT_TAKEN` mock assertion)
-- **Static analysis:** 0 errors, 15 info-level warnings in pre-existing files (`flutter analyze`)
+- **Test suite:** 96/96 tests passing (`flutter test`)
+- **Static analysis:** 0 errors, with `avoid_print` lint enforced (`flutter analyze`)
 - **Current focus:** Pre-Production Deployment & Smoke Testing
 - **Next immediate steps:**
   1. Review Firestore security rules against the updated `UserRepository` and `NotificationRepository` queries.
@@ -165,6 +178,10 @@ flutter test
 | Phase 7: Notification Repository Split | Complete |
 | Phase 8: Route Centralization & Guard Hardening | Complete |
 | Phase 9: Query Optimization — Date-bounded availability & transaction checks | Complete |
+| Web Compatibility — `package:web` migration for Flutter web APIs | Complete |
+| Logging Hardening — `avoid_print` enforced; `print` replaced with `AppLogger` | Complete |
+| UI Layout — AppointmentCard action buttons use dynamic equal-width rows | Complete |
+| Context Safety — Booking page and providers guard against disposed contexts | Complete |
 | Authentication | Registration, login, password reset, first-login profile completion |
 | Booking | Slot availability check, create/cancel/reschedule appointments, 2-hour cancellation window |
 | Professional workflow | Accept/decline pending bookings, upcoming/past tabs, real-time updates |
@@ -173,14 +190,14 @@ flutter test
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
-| Tests | 95/96 passing (`flutter test`) |
-| Analysis | 0 errors, 15 info warnings (`flutter analyze`) |
+| Tests | 96/96 passing (`flutter test`) |
+| Analysis | 0 errors, `avoid_print` enforced (`flutter analyze`) |
 
 ## Checks
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 95/96 passing (1 pre-existing failure)
+flutter test      # 96/96 passing
 ```
 
 ## Register as a professional

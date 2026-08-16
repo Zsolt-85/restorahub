@@ -327,6 +327,10 @@ class _BookingPageState extends State<BookingPage> {
                       final pro = _selectedProfessional!;
                       final dateTime = _combine(_selectedDate!, _selectedTime!);
 
+                      final navigator = Navigator.of(context);
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      final errorColor = Theme.of(context).colorScheme.error;
+
                       if (!await apptProvider.isSlotAvailable(
                         slotStart: dateTime,
                         slotDuration: pro.slotDurationMinutes,
@@ -360,8 +364,6 @@ class _BookingPageState extends State<BookingPage> {
                       );
 
                       try {
-                        final navigator = Navigator.of(context);
-
                         await apptProvider.addAppointment(newAppt);
 
                         if (!mounted) return;
@@ -384,7 +386,12 @@ class _BookingPageState extends State<BookingPage> {
                       } catch (e) {
                         if (mounted) {
                           final displayError = apptProvider.errorMessage ?? ErrorHandler.getDisplayMessage(e);
-                          ErrorHandler.showErrorSnackBar(context, displayError);
+                          scaffoldMessenger
+                            ..clearSnackBars()
+                            ..showSnackBar(SnackBar(
+                              content: Text(displayError),
+                              backgroundColor: errorColor,
+                            ));
                           setState(() => _error = displayError);
                         }
                       }

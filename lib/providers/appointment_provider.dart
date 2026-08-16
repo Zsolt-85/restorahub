@@ -144,16 +144,10 @@ class AppointmentProvider extends ChangeNotifier {
       await _reloadAppointments();
       _endLoading();
     } on AppException catch (e) {
-      if (e.code == 'SLOT_TAKEN') {
-        _errorMessage = 'This time slot is no longer available Details: $e';
-      } else {
-        _errorMessage = '${e.message} Details: ${e.toString()}';
-      }
-      _endLoading();
+      _endLoading(e.code == 'SLOT_TAKEN' ? 'This time slot is no longer available' : e.message);
       rethrow;
     } catch (e) {
-      _errorMessage = 'Raw Error: $e';
-      _endLoading();
+      _endLoading('Unexpected error creating booking');
       rethrow;
     }
   }

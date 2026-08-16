@@ -51,6 +51,96 @@ class AppointmentCard extends StatelessWidget {
 
     final canAddToCalendar = !appointment.isPast && !appointment.isTerminal;
 
+    final actionButtons = <Widget>[
+      if (!viewerIsCustomer && appointment.status == AppointmentStatus.pending) ...[
+        OutlinedButton.icon(
+          onPressed: onReject,
+          icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppLocalizations.of(context)?.decline ?? 'Decline',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ),
+        ElevatedButton.icon(
+          onPressed: onConfirm,
+          icon: const Icon(Icons.check_circle),
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppLocalizations.of(context)?.accept ?? 'Accept',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        OutlinedButton.icon(
+          onPressed: appointment.isPast ? null : onEdit,
+          icon: const Icon(Icons.edit_calendar),
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppLocalizations.of(context)?.reschedule ?? 'Reschedule',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ] else if (canManage) ...[
+        OutlinedButton.icon(
+          onPressed: appointment.isPast ? null : onEdit,
+          icon: const Icon(Icons.edit_calendar),
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppLocalizations.of(context)?.reschedule ?? 'Reschedule',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+      if (canManage &&
+          (!viewerIsCustomer || appointment.status == AppointmentStatus.pending)) ...[
+        OutlinedButton.icon(
+          onPressed: onCancel,
+          icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppLocalizations.of(context)?.cancel ?? 'Cancel',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ),
+      ],
+      if (showCustomerRemove) ...[
+        OutlinedButton.icon(
+          onPressed: () => AppointmentActions.confirmStatusChange(
+            context,
+            appointment,
+            AppointmentStatus.cancelledByCustomer,
+          ),
+          icon: const Icon(Icons.delete_outline, color: Colors.red),
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppLocalizations.of(context)?.delete ?? 'Remove',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ),
+      ],
+    ];
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -117,79 +207,11 @@ class AppointmentCard extends StatelessWidget {
               value: _displayValue(counterpartyEmail, context),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                if (!viewerIsCustomer && appointment.status == AppointmentStatus.pending) ...[
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onReject,
-                      icon: const Icon(Icons.cancel_outlined, color: Colors.red),
-                      label: Text(
-                        AppLocalizations.of(context)?.decline ?? 'Decline',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: onConfirm,
-                      icon: const Icon(Icons.check_circle),
-                      label: Text(AppLocalizations.of(context)?.accept ?? 'Accept'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: appointment.isPast ? null : onEdit,
-                      icon: const Icon(Icons.edit_calendar),
-                      label: Text(AppLocalizations.of(context)?.reschedule ?? 'Reschedule'),
-                    ),
-                  ),
-                ] else if (canManage) ...[
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: appointment.isPast ? null : onEdit,
-                      icon: const Icon(Icons.edit_calendar),
-                      label: Text(AppLocalizations.of(context)?.reschedule ?? 'Reschedule'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                ],
-                if (canManage &&
-                    (!viewerIsCustomer || appointment.status == AppointmentStatus.pending)) ...[
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onCancel,
-                      icon: const Icon(Icons.cancel_outlined, color: Colors.red),
-                      label: Text(
-                        AppLocalizations.of(context)?.cancel ?? 'Cancel',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ),
-                ],
-                if (showCustomerRemove) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => AppointmentActions.confirmStatusChange(
-                        context,
-                        appointment,
-                        AppointmentStatus.cancelledByCustomer,
-                      ),
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      label: Text(
-                        AppLocalizations.of(context)?.delete ?? 'Remove',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+            if (actionButtons.isNotEmpty) ...[
+              _buildActionButtonRow(actionButtons),
+            ],
             if (canAddToCalendar) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -204,6 +226,49 @@ class AppointmentCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildActionButtonRow(List<Widget> buttons) {
+    if (buttons.isEmpty) return const SizedBox.shrink();
+    if (buttons.length == 1) {
+      return Row(children: [Expanded(child: buttons.first)]);
+    }
+    if (buttons.length == 2) {
+      return Row(
+        children: [
+          Expanded(child: buttons[0]),
+          const SizedBox(width: 8),
+          Expanded(child: buttons[1]),
+        ],
+      );
+    }
+    final firstRow = buttons.take(2).toList();
+    final secondRow = buttons.skip(2).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: firstRow[0]),
+            const SizedBox(width: 8),
+            Expanded(child: firstRow[1]),
+          ],
+        ),
+        if (secondRow.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          if (secondRow.length == 1)
+            Row(children: [Expanded(child: secondRow.first)])
+          else
+            Row(
+              children: [
+                Expanded(child: secondRow[0]),
+                const SizedBox(width: 8),
+                Expanded(child: secondRow[1]),
+              ],
+            ),
+        ],
+      ],
     );
   }
 
