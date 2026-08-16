@@ -14,6 +14,10 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 - **Segregated Customer & Professional Dashboards:** Dual-tab layouts (Upcoming vs. History) with strict date sorting. `upcomingAppointments` filters to `!isTerminal && !dateTime.isBefore(now)` and sorts **ascending** (closest first); `pastAppointments` filters to `dateTime.isBefore(now) || isTerminal` and sorts **descending** (most recent first), keeping past/cancelled bookings read-only and visually segregated from upcoming ones.
 - **PWA Branding Update:** Replaced default Flutter icons with the new minimalistic `logo_minimal.png` across `web/index.html`, `web/manifest.json`, and Firebase Hosting.
 - **Professional Cancel/Decline Consistency:** Fixed the professional booking management Cancel button to use a dedicated `professionalCancelAppointment` path that sets `cancelledByProfessional`, sends a notification to the customer, and enforces the 2-hour cancellation window. This aligns Cancel with the existing Decline behavior and ensures professional-initiated cancellations always notify customers regardless of the previous booking status.
+- **Customer Remove Button Cancellation Window:** Fixed the customer `Remove` button in `appointment_card.dart` to enforce the 2-hour cancellation window via `confirmStatusChange` before setting `cancelledByCustomer`, preventing silent bypass of the policy that previously occurred through direct status updates.
+- **Cancellation Snackbar Labels:** `confirmStatusChange` now shows `bookingCancelled` ("Booking cancelled") for `cancelledByCustomer`, `bookingConfirmed` ("Booking confirmed") for `confirmed`, and `completedLabel` ("Completed") for `completed`, replacing the awkward `displayLabel` output (e.g., "Cancelled by Customer").
+- **Notification Test Coverage:** Added `FakeNotificationRepository` and expanded `appointment_provider_test.dart` to verify `bookingRequested`, `bookingConfirmed`, and `bookingCancelled` dispatch across transition paths, plus error-swallowing behavior in `_sendNotification`.
+- **Cancellation Alias:** Added `canBeCancelled()` to `Appointment` as a clearer alias for `canBeCancelledByCustomer()`, used by professional cancellation logic.
 
 ## 🔄 Recent System Updates
 
@@ -157,7 +161,7 @@ flutter test
 
 ## 🔄 How to Resume Development
 
-- **Test suite:** 98/98 tests passing (`flutter test`)
+- **Test suite:** 104/104 tests passing (`flutter test`)
 - **Static analysis:** 0 errors, with `avoid_print` lint enforced (`flutter analyze`)
 - **Current focus:** Pre-Production Deployment & Smoke Testing
 - **Next immediate steps:**
@@ -191,14 +195,14 @@ flutter test
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
-| Tests | 98/98 passing (`flutter test`) |
+| Tests | 104/104 passing (`flutter test`) |
 | Analysis | 0 errors, `avoid_print` enforced (`flutter analyze`) |
 
 ## Checks
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 98/98 passing
+flutter test      # 104/104 passing
 ```
 
 ## Register as a professional

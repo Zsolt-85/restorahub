@@ -1,12 +1,15 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restorahub/exceptions/app_exception.dart';
 import 'package:restorahub/models/appointment.dart';
+import 'package:restorahub/models/notification.dart';
 import 'package:restorahub/models/user.dart';
 import 'package:restorahub/providers/appointment_provider.dart';
 import 'package:restorahub/repositories/booking_repository.dart';
 import 'package:restorahub/repositories/user_repository.dart';
+import 'package:restorahub/repositories/notification_repository.dart';
 
 class FakeBookingRepository implements BookingRepository {
   final List<Appointment> appointments = [];
@@ -140,18 +143,77 @@ class FakeUserRepository implements UserRepository {
   }
 }
 
+class FakeNotificationRepository implements NotificationRepository {
+  final List<AppNotification> sent = [];
+
+  @override
+  Future<void> sendNotification(AppNotification notification) async {
+    sent.add(notification);
+  }
+
+  @override
+  Future<List<AppNotification>> getNotificationsForUser(String userId) async {
+    return sent.where((n) => n.receiverId == userId).toList();
+  }
+
+  @override
+  Future<int> markAsRead(String notificationId) async {
+    return 1;
+  }
+
+  @override
+  Future<int> markAllAsRead(String userId) async {
+    return 0;
+  }
+
+  @override
+  Stream<QuerySnapshot> getNotificationsStream(String userId) {
+    throw UnimplementedError();
+  }
+}
+
+class _FailingNotificationRepository implements NotificationRepository {
+  @override
+  Future<void> sendNotification(AppNotification notification) async {
+    throw Exception('Notification failed');
+  }
+
+  @override
+  Future<List<AppNotification>> getNotificationsForUser(String userId) async {
+    return [];
+  }
+
+  @override
+  Future<int> markAsRead(String notificationId) async {
+    return 0;
+  }
+
+  @override
+  Future<int> markAllAsRead(String userId) async {
+    return 0;
+  }
+
+  @override
+  Stream<QuerySnapshot> getNotificationsStream(String userId) {
+    throw UnimplementedError();
+  }
+}
+
 void main() {
   group('AppointmentProvider Tests', () {
     late FakeBookingRepository bookingRepository;
     late FakeUserRepository userRepository;
+    late FakeNotificationRepository notificationRepository;
     late AppointmentProvider provider;
 
     setUp(() {
       bookingRepository = FakeBookingRepository();
       userRepository = FakeUserRepository();
+      notificationRepository = FakeNotificationRepository();
       provider = AppointmentProvider(
         bookingRepository: bookingRepository,
         userRepository: userRepository,
+        notificationRepository: notificationRepository,
       );
       provider.currentUser = User(
         id: 'cust-1',
@@ -394,6 +456,137 @@ void main() {
         expect(error, isNull);
         expect(provider.appointments.length, 1);
         expect(provider.appointments.first.status, AppointmentStatus.cancelledByProfessional);
+      });
+
+      group('Notification Dispatch', () {
+        test('addAppointment sends bookingRequested notification when both parties exist', () async {
+          final prof = User(
+            id: 'prof-1',
+            name: 'Test Professional',
+            email: 'prof@example.com',
+            phone: '555-0200',
+            role: 'professional',
+          );
+          await userRepository.insertUser(prof);
+
+          final appt = Appointment(
+            service: 'Massage',
+            dateTime: DateTime.now().add(const Duration(days: 1)),
+            durationMinutes: 60,
+            customerId: 'cust-1',
+            professionalId: 'prof-1',
+          );
+          await provider.addAppointment(appt);
+
+          expect(notificationRepository.sent.length, 1);
+          expect(notificationRepository.sent.first.type, NotificationType.bookingRequested);
+          expect(notificationRepository.sent.first.receiverId, 'prof-1');
+          expect(notificationRepository.sent.first.senderId, 'cust-1');
+        });
+
+        test('addAppointment does not send notification when professionalId is missing', () async {
+          final appt = Appointment(
+            service: 'Massage',
+            dateTime: DateTime.now().add(const Duration(days: 1)),
+            customerId: 'cust-1',
+          );
+          await provider.addAppointment(appt);
+
+          expect(notificationRepository.sent, isEmpty);
+        });
+
+        test('updateAppointmentStatus pending->confirmed sends bookingConfirmed notification', () async {
+          final prof = User(
+            id: 'prof-1',
+            name: 'Test Professional',
+            email: 'prof@example.com',
+            phone: '555-0200',
+            role: 'professional',
+          );
+          await userRepository.insertUser(prof);
+
+          final appt = Appointment(
+            id: '1',
+            service: 'Massage',
+            dateTime: DateTime.now().add(const Duration(days: 1)),
+            customerId: 'cust-1',
+            professionalId: 'prof-1',
+          );
+          await provider.addAppointment(appt);
+          notificationRepository.sent.clear();
+
+          await provider.updateAppointmentStatus('1', AppointmentStatus.confirmed);
+
+          expect(notificationRepository.sent.length, 1);
+          expect(notificationRepository.sent.first.type, NotificationType.bookingConfirmed);
+          expect(notificationRepository.sent.first.receiverId, 'cust-1');
+          expect(notificationRepository.sent.first.senderId, 'prof-1');
+        });
+
+        test('updateAppointmentStatus to cancelledByProfessional sends bookingCancelled notification', () async {
+          final appt = Appointment(
+            id: '1',
+            service: 'Massage',
+            dateTime: DateTime.now().add(const Duration(days: 1)),
+            status: AppointmentStatus.confirmed,
+            customerId: 'cust-1',
+            professionalId: 'prof-1',
+          );
+          await provider.addAppointment(appt);
+          notificationRepository.sent.clear();
+
+          await provider.updateAppointmentStatus('1', AppointmentStatus.cancelledByProfessional);
+
+          expect(notificationRepository.sent.length, 1);
+          expect(notificationRepository.sent.first.type, NotificationType.bookingCancelled);
+          expect(notificationRepository.sent.first.receiverId, 'cust-1');
+          expect(notificationRepository.sent.first.senderId, 'prof-1');
+        });
+
+        test('updateAppointmentStatus confirmed->cancelledByProfessional sends bookingCancelled notification', () async {
+          final appt = Appointment(
+            id: '1',
+            service: 'Massage',
+            dateTime: DateTime.now().add(const Duration(days: 1)),
+            status: AppointmentStatus.confirmed,
+            customerId: 'cust-1',
+            professionalId: 'prof-1',
+          );
+          await provider.addAppointment(appt);
+          notificationRepository.sent.clear();
+
+          await provider.updateAppointmentStatus('1', AppointmentStatus.cancelledByProfessional);
+
+          expect(notificationRepository.sent.length, 1);
+          expect(notificationRepository.sent.first.type, NotificationType.bookingCancelled);
+        });
+
+        test('_sendNotification swallows errors without throwing', () async {
+          final failingRepo = _FailingNotificationRepository();
+          provider = AppointmentProvider(
+            bookingRepository: bookingRepository,
+            userRepository: userRepository,
+            notificationRepository: failingRepo,
+          );
+          provider.currentUser = User(
+            id: 'cust-1',
+            name: 'Test User',
+            email: 'test@example.com',
+            phone: '555-0100',
+            role: 'customer',
+          );
+
+          final appt = Appointment(
+            id: '1',
+            service: 'Massage',
+            dateTime: DateTime.now().add(const Duration(days: 1)),
+            customerId: 'cust-1',
+            professionalId: 'prof-1',
+          );
+          await bookingRepository.insertAppointment(appt);
+
+          expect(() async => await provider.updateAppointmentStatus('1', AppointmentStatus.cancelledByProfessional), returnsNormally);
+        });
       });
     });
 

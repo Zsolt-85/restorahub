@@ -90,6 +90,8 @@ class Appointment {
     return timeUntilStart > cancellationWindow;
   }
 
+  bool canBeCancelled() => canBeCancelledByCustomer();
+
   bool canBeRescheduled() {
     if (isTerminal) return false;
     if (isCancelled) return false;

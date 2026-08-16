@@ -371,7 +371,7 @@ class AppointmentProvider extends ChangeNotifier {
 
   Future<String?> professionalCancelAppointment(String id) async {
     final appt = _appointments.firstWhere((a) => a.id == id);
-    if (!appt.canBeCancelledByCustomer()) {
+    if (!appt.canBeCancelled()) {
       return 'Appointments cannot be cancelled less than 2 hours before the start time.';
     }
     _beginLoading();

@@ -266,6 +266,18 @@ class AppointmentActions {
         confirmMessage = AppLocalizations.of(context)?.markAsCompleted ?? 'Mark this appointment as completed?';
         break;
       case AppointmentStatus.cancelledByCustomer:
+        if (!appointment.canBeCancelled()) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.failedToUpdate ??
+                    'Failed to update booking',
+              ),
+            ),
+          );
+          return;
+        }
         actionLabel = AppLocalizations.of(context)?.cancelBookingAction ?? 'Cancel booking';
         confirmMessage = AppLocalizations.of(context)?.cancelThisBooking ?? 'Cancel this booking?';
         break;
@@ -306,9 +318,23 @@ class AppointmentActions {
 
       if (!context.mounted) return;
 
-      final label = newStatus.displayLabel;
+      final l10n = AppLocalizations.of(context);
+      String message;
+      switch (newStatus) {
+        case AppointmentStatus.confirmed:
+          message = l10n?.bookingConfirmed ?? 'Booking confirmed';
+          break;
+        case AppointmentStatus.completed:
+          message = '${l10n?.bookingConfirmed ?? 'Booking'} ${l10n?.completedLabel ?? 'Completed'}';
+          break;
+        case AppointmentStatus.cancelledByCustomer:
+          message = l10n?.bookingCancelled ?? 'Booking cancelled';
+          break;
+        default:
+          message = l10n?.bookingConfirmed ?? 'Booking confirmed';
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${AppLocalizations.of(context)?.bookingConfirmed ?? 'Booking'} $label')),
+        SnackBar(content: Text(message)),
       );
     } on AppException catch (e) {
       if (!context.mounted) return;
