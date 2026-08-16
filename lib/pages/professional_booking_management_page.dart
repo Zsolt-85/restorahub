@@ -169,7 +169,7 @@ class _ProfessionalBookingManagementPageState
           appointment: appt,
           viewerIsCustomer: false,
           onEdit: () => AppointmentActions.confirmReschedule(context, appt),
-          onCancel: () => AppointmentActions.confirmCancel(context, appt),
+          onCancel: () => AppointmentActions.confirmProfessionalCancel(context, appt),
           onConfirm: isPending
               ? () => AppointmentActions.acceptAppointment(context, appt)
               : null,

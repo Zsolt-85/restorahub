@@ -62,6 +62,59 @@ class AppointmentActions {
     }
   }
 
+  static Future<void> confirmProfessionalCancel(
+    BuildContext context,
+    Appointment appointment,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context)?.cancelBooking ?? 'Cancel booking?'),
+        content: Text(
+          '${AppLocalizations.of(context)?.cancel ?? 'Cancel'} "${appointment.service}" on '
+          '${FormatHelper.formatDateTime(appointment.dateTime)}?\n\n${AppLocalizations.of(context)?.confirm ?? 'This cannot be undone.'}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppLocalizations.of(context)?.keepBooking ?? 'Keep booking'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              AppLocalizations.of(context)?.cancelBookingAction ?? 'Cancel booking',
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final error = await Provider.of<AppointmentProvider>(context, listen: false)
+          .professionalCancelAppointment(appointment.id!);
+
+      if (!context.mounted) return;
+
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${AppLocalizations.of(context)?.failedToUpdate ?? 'Failed to update booking'}: $error')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)?.bookingCancelled ?? 'Booking cancelled')),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)?.failedToUpdate ?? 'Failed to update booking')),
+      );
+    }
+  }
+
   static Future<void> confirmReschedule(
     BuildContext context,
     Appointment appointment,

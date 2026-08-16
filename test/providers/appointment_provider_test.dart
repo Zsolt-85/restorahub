@@ -365,6 +365,36 @@ void main() {
         expect(provider.appointments.length, 1);
         expect(provider.appointments.first.status, AppointmentStatus.cancelledByCustomer);
       });
+
+      test('professionalCancelAppointment fails within 2-hour window', () async {
+        final appt = Appointment(
+          id: '1',
+          service: 'Massage',
+          dateTime: DateTime.now().add(const Duration(hours: 1)),
+          customerId: 'cust-1',
+          professionalId: 'prof-1',
+        );
+        await provider.addAppointment(appt);
+
+        final error = await provider.professionalCancelAppointment('1');
+        expect(error, 'Appointments cannot be cancelled less than 2 hours before the start time.');
+      });
+
+      test('professionalCancelAppointment succeeds outside 2-hour window', () async {
+        final appt = Appointment(
+          id: '1',
+          service: 'Massage',
+          dateTime: DateTime.now().add(const Duration(days: 1)),
+          customerId: 'cust-1',
+          professionalId: 'prof-1',
+        );
+        await provider.addAppointment(appt);
+
+        final error = await provider.professionalCancelAppointment('1');
+        expect(error, isNull);
+        expect(provider.appointments.length, 1);
+        expect(provider.appointments.first.status, AppointmentStatus.cancelledByProfessional);
+      });
     });
 
     group('State Machine Transitions', () {

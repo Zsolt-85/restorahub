@@ -207,8 +207,7 @@ class AppointmentProvider extends ChangeNotifier {
         );
       }
 
-      if (previousStatus == AppointmentStatus.pending &&
-          newStatus == AppointmentStatus.cancelledByProfessional &&
+      if (newStatus == AppointmentStatus.cancelledByProfessional &&
           appt.customerId != null &&
           appt.professionalId != null) {
         await _sendNotification(
@@ -358,6 +357,26 @@ class AppointmentProvider extends ChangeNotifier {
     try {
       final updated = appt.withStatus(AppointmentStatus.cancelledByCustomer);
       await _repository.updateAppointment(updated);
+      await _reloadAppointments();
+      _endLoading();
+      return null;
+    } on AppException catch (e) {
+      _endLoading(e.message);
+      return e.message;
+    } catch (e) {
+      _endLoading('Unexpected error cancelling booking');
+      return 'Unexpected error cancelling booking';
+    }
+  }
+
+  Future<String?> professionalCancelAppointment(String id) async {
+    final appt = _appointments.firstWhere((a) => a.id == id);
+    if (!appt.canBeCancelledByCustomer()) {
+      return 'Appointments cannot be cancelled less than 2 hours before the start time.';
+    }
+    _beginLoading();
+    try {
+      await updateAppointmentStatus(id, AppointmentStatus.cancelledByProfessional);
       await _reloadAppointments();
       _endLoading();
       return null;

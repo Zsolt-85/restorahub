@@ -13,6 +13,7 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 - **Professional Manual Direct Booking:** Professionals can create bookings directly for customers from the management screen via `ProfessionalManualBookingPage`. The page loads registered customers (`role == 'customer'`) from Firestore, supports search/selection by **name, email, or phone number**, displays **phone number in search result items**, and shows a **selected customer preview card** with full name, phone, and email plus a clear/change button. Services are **filtered by the logged-in professional's specialty** (e.g., Haircut services only appear for hair-cut professionals), the **professional ID is locked** to the current user, and **time slot generation uses the exact same availability checking** as the customer booking page — `ScheduleHelper.generateSlots` + `ScheduleHelper.isSlotAvailable` against the professional's appointments for the selected date, with booked slots displayed as disabled choice chips labeled "Booked".
 - **Segregated Customer & Professional Dashboards:** Dual-tab layouts (Upcoming vs. History) with strict date sorting. `upcomingAppointments` filters to `!isTerminal && !dateTime.isBefore(now)` and sorts **ascending** (closest first); `pastAppointments` filters to `dateTime.isBefore(now) || isTerminal` and sorts **descending** (most recent first), keeping past/cancelled bookings read-only and visually segregated from upcoming ones.
 - **PWA Branding Update:** Replaced default Flutter icons with the new minimalistic `logo_minimal.png` across `web/index.html`, `web/manifest.json`, and Firebase Hosting.
+- **Professional Cancel/Decline Consistency:** Fixed the professional booking management Cancel button to use a dedicated `professionalCancelAppointment` path that sets `cancelledByProfessional`, sends a notification to the customer, and enforces the 2-hour cancellation window. This aligns Cancel with the existing Decline behavior and ensures professional-initiated cancellations always notify customers regardless of the previous booking status.
 
 ## 🔄 Recent System Updates
 
@@ -156,7 +157,7 @@ flutter test
 
 ## 🔄 How to Resume Development
 
-- **Test suite:** 96/96 tests passing (`flutter test`)
+- **Test suite:** 98/98 tests passing (`flutter test`)
 - **Static analysis:** 0 errors, with `avoid_print` lint enforced (`flutter analyze`)
 - **Current focus:** Pre-Production Deployment & Smoke Testing
 - **Next immediate steps:**
@@ -190,14 +191,14 @@ flutter test
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
-| Tests | 96/96 passing (`flutter test`) |
+| Tests | 98/98 passing (`flutter test`) |
 | Analysis | 0 errors, `avoid_print` enforced (`flutter analyze`) |
 
 ## Checks
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 96/96 passing
+flutter test      # 98/98 passing
 ```
 
 ## Register as a professional
@@ -235,6 +236,7 @@ flutter test      # 96/96 passing
 - Customers can cancel bookings from their home screen (up to 2 hours before the appointment)
 - Customers can reschedule by picking a new time slot
 - Professionals can cancel or reschedule incoming bookings from their management screen
+- Professional cancellations always notify the customer and set `cancelledByProfessional`
 - Past appointments cannot be modified
 
 ## Notifications
