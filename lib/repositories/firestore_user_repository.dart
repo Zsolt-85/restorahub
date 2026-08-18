@@ -13,6 +13,16 @@ class FirestoreUserRepository implements UserRepository {
   CollectionReference<Map<String, dynamic>> get _usersCol =>
       _firestore.collection('users');
 
+  Query<Map<String, dynamic>> _withBusinessFilter(
+    Query<Map<String, dynamic>> query,
+    String? businessId,
+  ) {
+    if (businessId != null && businessId.isNotEmpty) {
+      return query.where('businessId', isEqualTo: businessId);
+    }
+    return query;
+  }
+
   @override
   Future<User?> getUserById(String id) async {
     try {
@@ -133,6 +143,45 @@ class FirestoreUserRepository implements UserRepository {
       AppLogger.error('FirestoreUserRepository.getProfessionalsBySpecialty error: $e\n$stack');
       throw AppException('Failed to load professionals', cause: e);
     }
+  }
+
+  @override
+  Future<List<User>> getProfessionals({String? businessId}) async {
+    try {
+      final query = await _withBusinessFilter(
+        _usersCol.where('role', isEqualTo: 'professional'),
+        businessId,
+      ).get();
+
+      final professionals = <User>[];
+      for (final doc in query.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        professionals.add(User.fromMap(data));
+      }
+      professionals.sort((a, b) => a.name.compareTo(b.name));
+      return professionals;
+    } catch (e, stack) {
+      AppLogger.error('FirestoreUserRepository.getProfessionals error: $e\n$stack');
+      throw AppException('Failed to load professionals', cause: e);
+    }
+  }
+
+  @override
+  Stream<List<User>> watchProfessionals({String? businessId}) {
+    return _withBusinessFilter(
+      _usersCol.where('role', isEqualTo: 'professional'),
+      businessId,
+    ).snapshots().map((snapshot) {
+      final professionals = <User>[];
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        professionals.add(User.fromMap(data));
+      }
+      professionals.sort((a, b) => a.name.compareTo(b.name));
+      return professionals;
+    });
   }
 
   @override

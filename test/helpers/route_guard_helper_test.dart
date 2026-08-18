@@ -39,6 +39,24 @@ class FakeUserRepository implements UserRepository {
   }
 
   @override
+  Future<List<User>> getProfessionals({String? businessId}) async {
+    return users.values
+        .where((u) => u.role == 'professional')
+        .where((u) => businessId == null || u.businessId == businessId)
+        .toList();
+  }
+
+  @override
+  Stream<List<User>> watchProfessionals({String? businessId}) {
+    return Stream.value(
+      users.values
+          .where((u) => u.role == 'professional')
+          .where((u) => businessId == null || u.businessId == businessId)
+          .toList(),
+    );
+  }
+
+  @override
   Future<List<User>> getCustomers() async =>
       users.values.where((u) => u.role == 'customer').toList();
 }

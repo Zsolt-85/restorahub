@@ -10,6 +10,10 @@ import 'firebase_options.dart';
 import 'repositories/firestore_booking_repository.dart';
 import 'repositories/firestore_user_repository.dart';
 import 'repositories/user_repository.dart';
+import 'repositories/firestore_business_repository.dart';
+import 'repositories/business_repository.dart';
+import 'repositories/firestore_service_repository.dart';
+import 'repositories/service_repository.dart';
 import 'repositories/firestore_notification_repository.dart';
 import 'repositories/notification_repository.dart';
 import 'repositories/firestore_payment_repository.dart';
@@ -28,6 +32,7 @@ import 'providers/notification_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/payment_provider.dart';
 import 'providers/locale_provider.dart';
+import 'providers/business_provider.dart';
 
 import 'pages/analytics_page.dart';
 import 'pages/forgot_password_page.dart';
@@ -39,6 +44,7 @@ import 'pages/professional_booking_management_page.dart';
 import 'pages/professional_manual_booking_page.dart';
 import 'pages/registration_page.dart';
 import 'pages/success_page.dart';
+import 'pages/team_management_page.dart';
 import 'pages/user_home_page.dart';
 import 'pages/services_page.dart';
 import 'pages/booking_page.dart';
@@ -46,6 +52,7 @@ import 'pages/edit_appointment_page.dart';
 import 'pages/add_payment_page.dart';
 import 'pages/receipt_page.dart';
 import 'pages/settings_page.dart';
+import 'pages/admin_calendar_page.dart';
 
 Future<void> main() async {
   FlutterError.onError = (details) {
@@ -81,12 +88,14 @@ Future<void> main() async {
     );
     final themeProvider = ThemeProvider();
     final localeProvider = LocaleProvider();
+    final businessProvider = BusinessProvider();
 
     await themeProvider.loadTheme();
     await appointmentProvider.loadAppointments();
 
     if (appointmentProvider.error != null) {
-      AppLogger.warning('Initial appointments load failed: ${appointmentProvider.error}');
+      AppLogger.warning(
+          'Initial appointments load failed: ${appointmentProvider.error}');
     }
 
     final hasSession = await authProvider.restoreSession();
@@ -102,6 +111,7 @@ Future<void> main() async {
         appointmentProvider: appointmentProvider,
         themeProvider: themeProvider,
         localeProvider: localeProvider,
+        businessProvider: businessProvider,
         initialRoute: initialRoute,
         notificationRepo: notificationRepo,
         paymentRepo: paymentRepo,
@@ -114,9 +124,10 @@ Future<void> main() async {
 
 String _resolveInitialRoute(AuthProvider authProvider) {
   return RouteGuardHelper.evaluateRedirect(
-    currentRoute: Routes.login,
-    authProvider: authProvider,
-  ) ?? Routes.login;
+        currentRoute: Routes.login,
+        authProvider: authProvider,
+      ) ??
+      Routes.login;
 }
 
 class MyApp extends StatelessWidget {
@@ -126,6 +137,7 @@ class MyApp extends StatelessWidget {
     required this.appointmentProvider,
     required this.themeProvider,
     required this.localeProvider,
+    required this.businessProvider,
     required this.initialRoute,
     required this.notificationRepo,
     required this.paymentRepo,
@@ -135,6 +147,7 @@ class MyApp extends StatelessWidget {
   final AppointmentProvider appointmentProvider;
   final ThemeProvider themeProvider;
   final LocaleProvider localeProvider;
+  final BusinessProvider businessProvider;
   final String initialRoute;
   final NotificationRepository notificationRepo;
   final PaymentRepository paymentRepo;
@@ -148,9 +161,14 @@ class MyApp extends StatelessWidget {
           value: appointmentProvider,
         ),
         Provider<UserRepository>.value(value: FirestoreUserRepository.instance),
+        Provider<BusinessRepository>.value(
+            value: FirestoreBusinessRepository.instance),
+        Provider<ServiceRepository>.value(
+            value: FirestoreServiceRepository.instance),
         ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
         Provider<NotificationRepository>.value(value: notificationRepo),
-        ChangeNotifierProxyProvider<NotificationRepository, NotificationProvider>(
+        ChangeNotifierProxyProvider<NotificationRepository,
+            NotificationProvider>(
           create: (context) => NotificationProvider(
             repository: context.read<NotificationRepository>(),
           ),
@@ -174,13 +192,14 @@ class MyApp extends StatelessWidget {
           },
         ),
         ChangeNotifierProvider<LocaleProvider>.value(value: localeProvider),
+        ChangeNotifierProvider<BusinessProvider>.value(value: businessProvider),
       ],
-      child: Consumer2<ThemeProvider, LocaleProvider>(
-        builder: (context, theme, localeProvider, _) {
+      child: Consumer3<ThemeProvider, LocaleProvider, BusinessProvider>(
+        builder: (context, theme, localeProvider, activeBusinessProvider, _) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'RestoraHub',
-            theme: theme.theme,
+            theme: activeBusinessProvider.tenantTheme,
             locale: localeProvider.locale,
             localizationsDelegates: const [
               AppLocalizations.delegate,
@@ -216,7 +235,10 @@ class MyApp extends StatelessWidget {
                       return const ProfessionalManualBookingPage();
                     case Routes.completeProfile:
                       return Scaffold(
-                        appBar: AppBar(title: Text(AppLocalizations.of(context)?.completeProfile ?? 'Complete Profile')),
+                        appBar: AppBar(
+                            title: Text(
+                                AppLocalizations.of(context)?.completeProfile ??
+                                    'Complete Profile')),
                         body: Center(
                           child: Padding(
                             padding: const EdgeInsets.all(24),
@@ -224,17 +246,22 @@ class MyApp extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  AppLocalizations.of(context)?.completeProfileDialog ?? 'Your profile is incomplete.',
+                                  AppLocalizations.of(context)
+                                          ?.completeProfileDialog ??
+                                      'Your profile is incomplete.',
                                   style: const TextStyle(fontSize: 18),
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton(
-                                  onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                                  onPressed: () =>
+                                      Navigator.pushNamedAndRemoveUntil(
                                     context,
                                     Routes.login,
                                     (_) => false,
                                   ),
-                                  child: Text(AppLocalizations.of(context)?.goToLogin ?? 'Go to Login'),
+                                  child: Text(
+                                      AppLocalizations.of(context)?.goToLogin ??
+                                          'Go to Login'),
                                 ),
                               ],
                             ),
@@ -268,6 +295,10 @@ class MyApp extends StatelessWidget {
                       return const PastAppointmentsPage();
                     case Routes.settings:
                       return const SettingsPage();
+                    case Routes.teamManagement:
+                      return const TeamManagementPage();
+                    case Routes.adminCalendar:
+                      return const AdminCalendarPage();
                     default:
                       return const LoginPage();
                   }

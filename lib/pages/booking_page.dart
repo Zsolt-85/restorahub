@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
+import '../widgets/tenant_brand_header.dart';
 import '../exceptions/app_exception.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/schedule_helper.dart';
@@ -182,6 +183,8 @@ class _BookingPageState extends State<BookingPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const TenantBrandHeader(),
+            const SizedBox(height: 12),
             Card(
               color: Theme.of(context)
                   .colorScheme

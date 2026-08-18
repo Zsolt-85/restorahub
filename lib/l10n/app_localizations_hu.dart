@@ -531,4 +531,27 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get calendarAddedSuccess => 'Naptáresemény sikeresen hozzáadva';
+
+  @override
+  String get businessSettings => 'Vállalat beállítások';
+
+  @override
+  String get businessName => 'Vállalat neve';
+
+  @override
+  String get phoneNumber => 'Telefonszám';
+
+  @override
+  String get address => 'Cím';
+
+  @override
+  String get businessSavedSuccessfully =>
+      'Vállalat beállítások sikeresen frissítve';
+
+  @override
+  String get noBusinessConfigured => 'Nincs konfigurálva vállalat-információ.';
+
+  @override
+  String get businessAccessDenied =>
+      'Nincs jogosultsága a vállalat beállításainak eléréséhez.';
 }

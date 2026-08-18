@@ -13,12 +13,23 @@ class FirestoreBookingRepository implements BookingRepository {
   CollectionReference<Map<String, dynamic>> get _appointmentsCol =>
       _firestore.collection('appointments');
 
+  Query<Map<String, dynamic>> _withBusinessFilter(
+    Query<Map<String, dynamic>> query,
+    String? businessId,
+  ) {
+    if (businessId != null && businessId.isNotEmpty) {
+      return query.where('businessId', isEqualTo: businessId);
+    }
+    return query;
+  }
+
   @override
-  Future<List<Appointment>> getAppointmentsForCustomer(String customerId) async {
+  Future<List<Appointment>> getAppointmentsForCustomer(String customerId, {String? businessId}) async {
     try {
-      final query = await _appointmentsCol
-          .where('customerId', isEqualTo: customerId)
-          .get();
+      final query = await _withBusinessFilter(
+        _appointmentsCol.where('customerId', isEqualTo: customerId),
+        businessId,
+      ).get();
       final appointments = <Appointment>[];
       for (final doc in query.docs) {
         final data = doc.data();
@@ -34,11 +45,12 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId) async {
+  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId}) async {
     try {
-      final query = await _appointmentsCol
-          .where('professionalId', isEqualTo: professionalId)
-          .get();
+      final query = await _withBusinessFilter(
+        _appointmentsCol.where('professionalId', isEqualTo: professionalId),
+        businessId,
+      ).get();
       final appointments = <Appointment>[];
       for (final doc in query.docs) {
         final data = doc.data();
@@ -54,19 +66,46 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0}) async {
+  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate}) async {
+    try {
+      Query<Map<String, dynamic>> query = _appointmentsCol.where('businessId', isEqualTo: businessId);
+      if (startDate != null) {
+        query = query.where('dateTime', isGreaterThanOrEqualTo: startDate.toIso8601String());
+      }
+      if (endDate != null) {
+        query = query.where('dateTime', isLessThanOrEqualTo: endDate.toIso8601String());
+      }
+      final snapshot = await query.get();
+      final appointments = <Appointment>[];
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        appointments.add(Appointment.fromMap(data));
+      }
+      appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      return appointments;
+    } catch (e, stack) {
+      AppLogger.error('FirestoreBookingRepository.getAppointmentsForBusiness error: $e\n$stack');
+      throw AppException('Failed to load appointments', cause: e);
+    }
+  }
+
+  @override
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId}) async {
     try {
       final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));
       AppLogger.debug('AVAILABILITY CHECK: professionalId=$professionalId, dateTime=$dateTime, slotEnd=$slotEnd, buffer=$bufferTimeMinutes');
       final dateOnly = DateTime(dateTime.year, dateTime.month, dateTime.day);
       final startOfDay = dateOnly.toIso8601String();
       final endOfDay = dateOnly.add(const Duration(hours: 23, minutes: 59, seconds: 59)).toIso8601String();
-      final query = await _appointmentsCol
-          .where('professionalId', isEqualTo: professionalId)
-          .where('dateTime', isGreaterThanOrEqualTo: startOfDay)
-          .where('dateTime', isLessThanOrEqualTo: endOfDay)
-          .where('status', whereNotIn: ['cancelledByCustomer', 'cancelledByProfessional', 'noShow'])
-          .get();
+      final query = await _withBusinessFilter(
+        _appointmentsCol
+            .where('professionalId', isEqualTo: professionalId)
+            .where('dateTime', isGreaterThanOrEqualTo: startOfDay)
+            .where('dateTime', isLessThanOrEqualTo: endOfDay)
+            .where('status', whereNotIn: ['cancelledByCustomer', 'cancelledByProfessional', 'noShow']),
+        businessId,
+      ).get();
       AppLogger.debug('AVAILABILITY CHECK: ${query.docs.length} documents fetched from Firestore');
       final isAvailable = !query.docs.any((doc) {
         final data = doc.data();
@@ -195,10 +234,11 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId) {
-    return _appointmentsCol
-        .where('customerId', isEqualTo: customerId)
-        .snapshots()
+  Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId, {String? businessId}) {
+    return _withBusinessFilter(
+      _appointmentsCol.where('customerId', isEqualTo: customerId),
+      businessId,
+    ).snapshots()
         .map((snapshot) {
           final appointments = <Appointment>[];
           for (final doc in snapshot.docs) {
@@ -212,10 +252,11 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId) {
-    return _appointmentsCol
-        .where('professionalId', isEqualTo: professionalId)
-        .snapshots()
+  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId}) {
+    return _withBusinessFilter(
+      _appointmentsCol.where('professionalId', isEqualTo: professionalId),
+      businessId,
+    ).snapshots()
         .map((snapshot) {
           final appointments = <Appointment>[];
           for (final doc in snapshot.docs) {
@@ -226,6 +267,27 @@ class FirestoreBookingRepository implements BookingRepository {
           appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
           return appointments;
         });
+  }
+
+  @override
+  Stream<List<Appointment>> watchAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate}) {
+    Query<Map<String, dynamic>> query = _appointmentsCol.where('businessId', isEqualTo: businessId);
+    if (startDate != null) {
+      query = query.where('dateTime', isGreaterThanOrEqualTo: startDate.toIso8601String());
+    }
+    if (endDate != null) {
+      query = query.where('dateTime', isLessThanOrEqualTo: endDate.toIso8601String());
+    }
+    return query.snapshots().map((snapshot) {
+      final appointments = <Appointment>[];
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        appointments.add(Appointment.fromMap(data));
+      }
+      appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      return appointments;
+    });
   }
 
   @override

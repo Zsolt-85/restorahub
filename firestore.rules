@@ -1,30 +1,49 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAuthenticated() {
+    function isSignedIn() {
       return request.auth != null;
     }
+
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
+
+    function isBusinessMatch(bizId) {
+      return bizId == null || bizId == '' || (isSignedIn() && (resource == null || resource.data.businessId == null || resource.data.businessId == '' || resource.data.businessId == bizId));
+    }
+
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isOwner(userId) || isSignedIn();
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
     }
+
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
     match /appointments/{appointmentId} {
-      allow get: if isAuthenticated() && (resource.data.customerId == request.auth.uid || resource.data.professionalId == request.auth.uid);
-      allow list: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.customerId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (resource.data.customerId == request.auth.uid || resource.data.professionalId == request.auth.uid);
+      allow get: if isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.professionalId == request.auth.uid || isBusinessMatch(resource.data.businessId));
+      allow list: if isSignedIn() && (request.query.limit <= 50 || resource == null || isBusinessMatch(resource.data.businessId));
+      allow create: if request.resource.data.customerId != null && request.resource.data.professionalId != null && request.resource.data.dateTime != null && request.resource.data.service != null;
+      allow update, delete: if isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.professionalId == request.auth.uid || isBusinessMatch(resource.data.businessId));
     }
+
     match /payments/{paymentId} {
-      allow read: if isAuthenticated() && (resource.data.customerId == request.auth.uid || resource.data.professionalId == request.auth.uid);
-      allow create, update: if isAuthenticated() && request.resource.data.professionalId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.professionalId == request.auth.uid);
+      allow create, update: if isSignedIn() && request.resource.data.professionalId == request.auth.uid;
     }
+
     match /notifications/{notificationId} {
-      allow read, update: if isAuthenticated() && resource.data.receiverId == request.auth.uid;
-      allow create: if isAuthenticated();
+      allow read, update: if isSignedIn() && resource.data.receiverId == request.auth.uid;
+      allow create: if isSignedIn();
+    }
+
+    match /businesses/{businessId} {
+      allow read: if true;
+      allow write: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
   }
 }

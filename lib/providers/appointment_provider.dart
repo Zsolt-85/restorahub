@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../exceptions/app_exception.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/notification_schedule_helper.dart';
+import '../helpers/schedule_helper.dart';
 import '../models/appointment.dart';
 import '../models/notification.dart';
 import '../models/user.dart';
@@ -30,10 +31,10 @@ class AppointmentProvider extends ChangeNotifier {
 
   BookingRepository get repository => _repository;
 
-  List<Appointment> _appointments = [];
+  List<Appointment>? _appointments;
   User? currentUser;
 
-  List<Appointment> get appointments => _appointments;
+  List<Appointment> get appointments => _appointments ?? const [];
 
   StreamSubscription<List<Appointment>>? _appointmentsSubscription;
   Stream<List<Appointment>>? _appointmentsStream;
@@ -126,6 +127,30 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   Future<void> addAppointment(Appointment appt) async {
+    final validationError = appt.validateForCreation();
+    if (validationError != null) {
+      _errorMessage = validationError;
+      _error = validationError;
+      notifyListeners();
+      return;
+    }
+
+    final appointments = _appointments;
+    if (appointments != null && appt.professionalId != null) {
+      final available = ScheduleHelper.isSlotAvailable(
+        slotStart: appt.dateTime,
+        slotDuration: appt.durationMinutes,
+        professionalId: appt.professionalId!,
+        appointments: appointments,
+      );
+      if (!available) {
+        _errorMessage = "Selected time slot is no longer available.";
+        _error = "Selected time slot is no longer available.";
+        notifyListeners();
+        return;
+      }
+    }
+
     _beginLoading();
     try {
       await _repository.createAppointmentAtomic(appt);
@@ -186,7 +211,12 @@ class AppointmentProvider extends ChangeNotifier {
   ) async {
     _beginLoading();
     try {
-      final appt = _appointments.firstWhere((a) => a.id == id);
+      final appointments = _appointments;
+      if (appointments == null || appointments.isEmpty) {
+        _endLoading();
+        return;
+      }
+      final appt = appointments.firstWhere((a) => a.id == id, orElse: () => throw StateError('Appointment not found'));
       final previousStatus = appt.status;
       final updated = appt.withStatus(newStatus);
       await _repository.updateAppointment(updated);
@@ -232,56 +262,64 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   List<Appointment> get pendingAppointments {
-    return _appointments
-        .where((a) => a.status == AppointmentStatus.pending)
-        .toList();
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) return const [];
+    return appointments.where((a) => a.status == AppointmentStatus.pending).toList();
   }
 
   List<Appointment> get confirmedAppointments {
-    return _appointments
-        .where((a) => a.status == AppointmentStatus.confirmed)
-        .toList();
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) return const [];
+    return appointments.where((a) => a.status == AppointmentStatus.confirmed).toList();
   }
 
   List<Appointment> get completedAppointments {
-    return _appointments
-        .where((a) => a.status == AppointmentStatus.completed)
-        .toList();
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) return const [];
+    return appointments.where((a) => a.status == AppointmentStatus.completed).toList();
   }
 
   List<Appointment> get cancelledAppointments {
-    return _appointments
-        .where((a) => a.isCancelled)
-        .toList();
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) return const [];
+    return appointments.where((a) => a.isCancelled).toList();
   }
 
   List<Appointment> get pastAppointments {
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) return const [];
     final now = DateTime.now();
-    return _appointments
+    return appointments
         .where((a) => a.dateTime.isBefore(now) || a.isTerminal)
         .toList()
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
   }
 
   List<Appointment> get currentAppointments {
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) return const [];
     final now = DateTime.now();
-    return _appointments
+    return appointments
         .where((a) => a.dateTime.isAfter(now) && !a.isCancelled)
         .toList();
   }
 
   List<Appointment> get upcomingAppointments {
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) return const [];
     final now = DateTime.now();
-    return _appointments
+    return appointments
         .where((a) => !a.dateTime.isBefore(now) && !a.isTerminal)
         .toList()
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }
 
   int getAppointmentCountForMonth(int year, int month) {
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) return 0;
     final start = DateTime(year, month, 1);
     final end = DateTime(year, month + 1, 1);
-    return _appointments
+    return appointments
         .where(
           (a) =>
               a.dateTime.isAfter(start) &&
@@ -291,9 +329,11 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   int getYearToDateAppointmentCount(int year) {
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) return 0;
     final start = DateTime(year);
     final now = DateTime.now();
-    return _appointments
+    return appointments
         .where(
           (a) =>
               a.dateTime.isAfter(start) &&
@@ -331,9 +371,14 @@ class AppointmentProvider extends ChangeNotifier {
   ) async {
     _beginLoading();
     try {
-      final apptIndex = _appointments.indexWhere((a) => a.id == appointmentId);
+      final appointments = _appointments;
+      if (appointments == null || appointments.isEmpty) {
+        _endLoading();
+        return;
+      }
+      final apptIndex = appointments.indexWhere((a) => a.id == appointmentId);
       if (apptIndex != -1) {
-        final updated = _appointments[apptIndex].copyWith(
+        final updated = appointments[apptIndex].copyWith(
           paymentId: paymentId,
           status: AppointmentStatus.completed,
         );
@@ -349,7 +394,11 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   Future<String?> cancelAppointment(String id) async {
-    final appt = _appointments.firstWhere((a) => a.id == id);
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) {
+      return 'Appointment not found.';
+    }
+    final appt = appointments.firstWhere((a) => a.id == id, orElse: () => throw StateError('Appointment not found'));
     if (!appt.canBeCancelledByCustomer()) {
       return 'Appointments cannot be cancelled less than 2 hours before the start time.';
     }
@@ -370,7 +419,11 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   Future<String?> professionalCancelAppointment(String id) async {
-    final appt = _appointments.firstWhere((a) => a.id == id);
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) {
+      return 'Appointment not found.';
+    }
+    final appt = appointments.firstWhere((a) => a.id == id, orElse: () => throw StateError('Appointment not found'));
     if (!appt.canBeCancelled()) {
       return 'Appointments cannot be cancelled less than 2 hours before the start time.';
     }
@@ -433,26 +486,29 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   List<Appointment> get filteredAppointments {
-    if (currentUser == null) return [];
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty || currentUser == null) return const [];
 
     if (currentUser!.role == 'customer') {
-      return _appointments
+      return appointments
           .where((a) => a.customerId == currentUser!.id)
           .toList();
     }
 
     if (currentUser!.isProfessional) {
-      return _appointments
+      return appointments
           .where((a) => a.professionalId == currentUser!.id)
           .toList();
     }
 
-    return _appointments;
+    return appointments;
   }
 
   Future<void> scheduleUpcomingReminders() async {
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) return;
     final now = DateTime.now();
-    for (final appt in _appointments) {
+    for (final appt in appointments) {
       if (appt.isCancelled) continue;
       final reminderTime = appt.dateTime.subtract(const Duration(hours: 1));
       if (reminderTime.isAfter(now) && reminderTime.isBefore(appt.dateTime)) {

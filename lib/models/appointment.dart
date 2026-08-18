@@ -98,6 +98,25 @@ class Appointment {
     return true;
   }
 
+  String? validateForCreation() {
+    if (dateTime.isBefore(DateTime.now())) {
+      return 'Please select a future date and time for the appointment.';
+    }
+    if (service.trim().isEmpty) {
+      return 'Please provide a service name.';
+    }
+    if (customerId == null || customerId!.trim().isEmpty) {
+      return 'Customer ID is missing.';
+    }
+    if (professionalId == null || professionalId!.trim().isEmpty) {
+      return 'Professional ID is missing.';
+    }
+    if (durationMinutes <= 0) {
+      return 'Appointment duration must be greater than 0 minutes.';
+    }
+    return null;
+  }
+
   Appointment withStatus(AppointmentStatus newStatus) {
     if (!canTransitionTo(newStatus)) {
       throw AppException(

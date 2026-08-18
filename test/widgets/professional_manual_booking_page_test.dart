@@ -14,15 +14,19 @@ class FakeBookingRepository implements BookingRepository {
   final List<Appointment> appointments = [];
 
   @override
-  Future<List<Appointment>> getAppointmentsForCustomer(String customerId) async =>
+  Future<List<Appointment>> getAppointmentsForCustomer(String customerId, {String? businessId}) async =>
       appointments.where((a) => a.customerId == customerId).toList();
 
   @override
-  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId) async =>
+  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId}) async =>
       appointments.where((a) => a.professionalId == professionalId).toList();
 
   @override
-  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0}) async =>
+  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate}) async =>
+      appointments.where((a) => a.customerId != null || a.professionalId != null).toList();
+
+  @override
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId}) async =>
       true;
 
   @override
@@ -56,12 +60,16 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId) =>
+  Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId, {String? businessId}) =>
       Stream.value(appointments.where((a) => a.customerId == customerId).toList());
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId) =>
+  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId}) =>
       Stream.value(appointments.where((a) => a.professionalId == professionalId).toList());
+
+  @override
+  Stream<List<Appointment>> watchAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate}) =>
+      Stream.value(appointments.where((a) => a.customerId != null || a.professionalId != null).toList());
 
   @override
   Stream<Appointment?> watchAppointment(String id) =>
@@ -98,6 +106,22 @@ class FakeUserRepository implements UserRepository {
   @override
   Future<List<User>> getProfessionalsBySpecialty(String specialty) async =>
       users.where((u) => u.role == 'professional' && u.specialty == specialty).toList();
+
+  @override
+  Future<List<User>> getProfessionals({String? businessId}) async =>
+      users
+          .where((u) => u.role == 'professional')
+          .where((u) => businessId == null || u.businessId == businessId)
+          .toList();
+
+  @override
+  Stream<List<User>> watchProfessionals({String? businessId}) =>
+      Stream.value(
+        users
+            .where((u) => u.role == 'professional')
+            .where((u) => businessId == null || u.businessId == businessId)
+            .toList(),
+      );
 
   @override
   Future<List<User>> getCustomers() async =>

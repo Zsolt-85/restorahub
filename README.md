@@ -133,6 +133,27 @@ flutter test
 - **UI error boundaries** — `lib/exceptions/app_exception.dart` defines the exception hierarchy (`AppException`, `AuthException`, `NetworkException`, `BookingException`, `PermissionException`). `lib/utils/error_handler.dart` centralizes mapping to user-safe messages and a styled SnackBar helper. Pages in `login_page.dart`, `registration_page.dart`, `booking_page.dart`, `edit_appointment_page.dart`, and `profile_page.dart` use it to prevent raw exception leakage.
 - **Exception consolidation** — Removed the duplicate `AppException` definition from `lib/helpers/app_exception.dart` and unified all exception classes into `lib/exceptions/app_exception.dart`. Renamed the `originalException` parameter to `cause` across the hierarchy to align with the named parameter used throughout repositories and providers. All imports across `lib/` and `test/` were repointed to the single canonical source.
 
+## Multi-Tenant Architecture Progress
+
+### Phase 1: Core Multi-Tenant Foundation & Security
+
+- Added optional `businessId` to models (`User`, `Appointment`, `Service`, `Business`).
+- Built `BusinessProvider` for active tenant state and scoped queries.
+- Updated `firestore.rules` with safe legacy fallbacks for guest bookings.
+
+### Phase 2: Tenant Administration & Staff Management
+
+- Created `BusinessRepository` and `BusinessSettingsPage`.
+- Scoped `ServiceRepository` and `ServicesPage` by `businessId`.
+- Scoped `UserRepository` professionals and created `TeamManagementPage` (`/team_management`).
+- Created `AdminCalendarPage` (`/admin_calendar`) for multi-staff scheduling.
+
+### Phase 3: Dynamic White-Label Engine & Custom Branding
+
+- Implemented `ThemeHelper.generateTenantTheme()` for real-time `ThemeData` generation based on `primaryColorHex`.
+- Added custom branding controls (color swatches, custom hex input, logo URL with live preview) to `BusinessSettingsPage`.
+- Created `TenantBrandHeader` for dynamic customer-facing booking headers.
+
 ## 🚀 Project Status & Progress Tracker
 
 ### Completed Phases

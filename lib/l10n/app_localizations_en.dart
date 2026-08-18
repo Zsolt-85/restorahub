@@ -531,4 +531,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calendarAddedSuccess => 'Calendar event added successfully';
+
+  @override
+  String get businessSettings => 'Business Settings';
+
+  @override
+  String get businessName => 'Business Name';
+
+  @override
+  String get phoneNumber => 'Phone Number';
+
+  @override
+  String get address => 'Address';
+
+  @override
+  String get businessSavedSuccessfully =>
+      'Business settings updated successfully';
+
+  @override
+  String get noBusinessConfigured => 'No business information is configured.';
+
+  @override
+  String get businessAccessDenied =>
+      'You do not have permission to access business settings.';
 }

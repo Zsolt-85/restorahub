@@ -532,4 +532,28 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get calendarAddedSuccess => 'Kalenderereignis erfolgreich hinzugefügt';
+
+  @override
+  String get businessSettings => 'Geschäftseinstellungen';
+
+  @override
+  String get businessName => 'Firmenname';
+
+  @override
+  String get phoneNumber => 'Telefonnummer';
+
+  @override
+  String get address => 'Adresse';
+
+  @override
+  String get businessSavedSuccessfully =>
+      'Geschäftseinstellungen erfolgreich aktualisiert';
+
+  @override
+  String get noBusinessConfigured =>
+      'Es sind keine Geschäftsinformationen konfiguriert.';
+
+  @override
+  String get businessAccessDenied =>
+      'Sie haben keine Berechtigung, Geschäftseinstellungen zu öffnen.';
 }

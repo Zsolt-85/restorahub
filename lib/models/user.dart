@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+enum Role { superAdmin, businessAdmin, staff, customer }
+
 class User {
   final String? id;
   final String name;
@@ -13,12 +15,14 @@ class User {
   final int bufferTimeMinutes;
   final String? breakStartTime;
   final String? breakEndTime;
+  final String? businessId;
 
   User({
     this.id,
     required this.name,
     required this.email,
     required this.phone,
+    this.businessId,
     required this.role,
     this.specialty = '',
     this.workStartTime = '09:00',
@@ -50,6 +54,7 @@ class User {
       email: (map['email']?.toString() ?? '').toLowerCase(),
       phone: map['phone']?.toString() ?? '',
       role: map['role']?.toString() ?? 'customer',
+      businessId: map['businessId']?.toString(),
       specialty: map['specialty']?.toString() ?? '',
       workStartTime: map['workStartTime']?.toString() ?? '09:00',
       workEndTime: map['workEndTime']?.toString() ?? '17:00',
@@ -67,6 +72,7 @@ class User {
       'email': email.toLowerCase(),
       'phone': phone,
       'role': role,
+      'businessId': businessId,
       'specialty': specialty,
       'workStartTime': workStartTime,
       'workEndTime': workEndTime,
@@ -83,6 +89,7 @@ class User {
     String? email,
     String? phone,
     String? role,
+    String? businessId,
     String? specialty,
     String? workStartTime,
     String? workEndTime,
@@ -97,6 +104,7 @@ class User {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       role: role ?? this.role,
+      businessId: businessId ?? this.businessId,
       specialty: specialty ?? this.specialty,
       workStartTime: workStartTime ?? this.workStartTime,
       workEndTime: workEndTime ?? this.workEndTime,

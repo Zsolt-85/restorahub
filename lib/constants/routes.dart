@@ -17,4 +17,6 @@ class Routes {
   static const pastAppointments = '/past_appointments';
   static const settings = '/settings';
   static const professionalManualBooking = '/professional_manual_booking';
+  static const teamManagement = '/team_management';
+  static const adminCalendar = '/admin_calendar';
 }

@@ -7,5 +7,7 @@ abstract class UserRepository {
   Future<int> updateUser(User user);
   Future<void> syncUserInAppointments(User user);
   Future<List<User>> getProfessionalsBySpecialty(String specialty);
+  Future<List<User>> getProfessionals({String? businessId});
+  Stream<List<User>> watchProfessionals({String? businessId});
   Future<List<User>> getCustomers();
 }

@@ -1139,6 +1139,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Calendar event added successfully'**
   String get calendarAddedSuccess;
+
+  /// No description provided for @businessSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Business Settings'**
+  String get businessSettings;
+
+  /// No description provided for @businessName.
+  ///
+  /// In en, this message translates to:
+  /// **'Business Name'**
+  String get businessName;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get phoneNumber;
+
+  /// No description provided for @address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// No description provided for @businessSavedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Business settings updated successfully'**
+  String get businessSavedSuccessfully;
+
+  /// No description provided for @noBusinessConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No business information is configured.'**
+  String get noBusinessConfigured;
+
+  /// No description provided for @businessAccessDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have permission to access business settings.'**
+  String get businessAccessDenied;
 }
 
 class _AppLocalizationsDelegate

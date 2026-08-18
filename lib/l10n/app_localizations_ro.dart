@@ -533,4 +533,28 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get calendarAddedSuccess => 'Eveniment adăugat în calendar cu succes';
+
+  @override
+  String get businessSettings => 'Setări firmă';
+
+  @override
+  String get businessName => 'Denumire firmă';
+
+  @override
+  String get phoneNumber => 'Număr de telefon';
+
+  @override
+  String get address => 'Adresă';
+
+  @override
+  String get businessSavedSuccessfully =>
+      'Setările firmei au fost actualizate cu succes';
+
+  @override
+  String get noBusinessConfigured =>
+      'Nu sunt configurate informații despre firmă.';
+
+  @override
+  String get businessAccessDenied =>
+      'Nu aveți permisiunea să accesați setările firmei.';
 }
