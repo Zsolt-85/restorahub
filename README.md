@@ -175,6 +175,15 @@ flutter test
 - Role-gated access: only `super_admin` users can access the dashboard; non-admins see an access-denied screen.
 - Integrated into `AppDrawer` for super admin navigation.
 
+### Phase 7: QA & Test Suite Resolution
+
+- **Full suite green:** All **108/108** unit tests pass with 0 failures (`flutter test`).
+- Fixed `test/providers/appointment_provider_test.dart` fixtures to match the current `AppointmentProvider` behavior:
+  - Corrected **date-validation setups** — bookings now use future `DateTime` values so `Appointment.validateForCreation` (which rejects past dates) no longer short-circuits the tests.
+  - Corrected **slot-unavailability fixtures** — aligned overlapping appointment dates so the `SLOT_TAKEN` path in `createAppointmentAtomic` actually triggers; `addAppointment` records the error `'This time slot is no longer available'` and returns without throwing (no longer expects a thrown exception).
+  - Added the required `professionalId` to `addAppointment`/cancellation/state-machine fixtures since `validateForCreation` now requires a professional for creation.
+- **Professional self-managed service catalog (`assignedProfessionalIds`):** Professionals can curate their own offering. Booking flows filter the service catalog dynamically by the logged-in professional's assigned services, so only services the professional actually provides appear in the picker — extending the existing specialty-based filtering with explicit per-professional assignment.
+
 ## 🚀 Project Status & Progress Tracker
 
 ### Completed Phases
@@ -208,7 +217,7 @@ flutter test
 
 ## 🔄 How to Resume Development
 
-- **Test suite:** 97/108 tests passing (`flutter test`)
+- **Test suite:** 108/108 tests passing (`flutter test`)
 - **Static analysis:** 0 errors, with `avoid_print` lint enforced (`flutter analyze`)
 - **Current focus:** Pre-Production Deployment & Smoke Testing
 - **Next immediate steps:**
@@ -243,14 +252,14 @@ flutter test
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
-| Tests | 97/108 passing (`flutter test`) |
+| Tests | 108/108 passing (`flutter test`) |
 | Analysis | 0 errors, `avoid_print` enforced (`flutter analyze`) |
 
 ## Checks
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 97/108 passing
+flutter test      # 108/108 passing
 ```
 
 ## Register as a professional
@@ -387,5 +396,5 @@ All multi-tenant phases are complete and verified.
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 97/108 passing
+flutter test      # 108/108 passing
 ```

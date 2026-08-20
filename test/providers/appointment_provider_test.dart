@@ -296,8 +296,10 @@ void main() {
     test('addAppointment adds to repository and reloads list', () async {
       final appt = Appointment(
         service: 'Facial',
-        dateTime: DateTime(2026, 8, 1, 11, 0),
+        dateTime: DateTime(2026, 9, 1, 11, 0),
+        durationMinutes: 60,
         customerId: 'cust-1',
+        professionalId: 'prof-1',
       );
 
       await provider.addAppointment(appt);
@@ -311,8 +313,10 @@ void main() {
       final appt = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 8, 1, 10, 0),
+        dateTime: DateTime(2026, 9, 1, 10, 0),
+        durationMinutes: 60,
         customerId: 'cust-1',
+        professionalId: 'prof-1',
       );
       await provider.addAppointment(appt);
 
@@ -326,8 +330,10 @@ void main() {
       final appt = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 8, 1, 10, 0),
+        dateTime: DateTime(2026, 9, 1, 10, 0),
+        durationMinutes: 60,
         customerId: 'cust-1',
+        professionalId: 'prof-1',
       );
       await provider.addAppointment(appt);
       expect(provider.appointments.length, 1);
@@ -340,9 +346,11 @@ void main() {
       final appt = Appointment(
         id: '10',
         service: 'Massage',
-        dateTime: DateTime(2026, 8, 1, 10, 0),
+        dateTime: DateTime(2026, 9, 1, 10, 0),
+        durationMinutes: 60,
         status: AppointmentStatus.confirmed,
         customerId: 'cust-1',
+        professionalId: 'prof-1',
       );
       await provider.addAppointment(appt);
 
@@ -367,14 +375,14 @@ void main() {
       final appt = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 8, 1, 10, 0),
+        dateTime: DateTime(2026, 9, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
         customerId: 'cust-1',
       );
       await provider.addAppointment(appt);
 
-      final newTime = DateTime(2026, 8, 1, 14, 0);
+      final newTime = DateTime(2026, 9, 1, 14, 0);
       final error = await provider.rescheduleAppointment(
         appointment: provider.appointments.first,
         newDateTime: newTime,
@@ -398,7 +406,7 @@ void main() {
       final appt1 = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 8, 1, 10, 0),
+        dateTime: DateTime(2026, 9, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
         customerId: 'cust-1',
@@ -406,18 +414,21 @@ void main() {
       final appt2 = Appointment(
         id: '2',
         service: 'Facial',
-        dateTime: DateTime(2026, 8, 1, 10, 0),
+        dateTime: DateTime(2026, 9, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
         customerId: 'cust-1',
       );
       await provider.addAppointment(appt1);
-      await expectLater(() => provider.addAppointment(appt2), throwsA(isA<AppException>()));
+      // appt2 occupies the same slot; insert it directly so the slot is taken
+      // without relying on addAppointment throwing (current provider sets an
+      // error instead of throwing when a slot is unavailable).
+      await bookingRepository.insertAppointment(appt2);
 
       // Try to reschedule appt1 to the exact same time as appt2
       final error = await provider.rescheduleAppointment(
         appointment: provider.appointments.firstWhere((a) => a.id == '1'),
-        newDateTime: DateTime(2026, 8, 1, 10, 0),
+        newDateTime: DateTime(2026, 9, 1, 10, 0),
       );
 
       expect(error, 'This time slot is no longer available');
@@ -427,7 +438,7 @@ void main() {
       final existingAppt = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 8, 1, 10, 0),
+        dateTime: DateTime(2026, 9, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
         customerId: 'cust-1',
@@ -436,7 +447,7 @@ void main() {
 
       final newAppt = Appointment(
         service: 'Facial',
-        dateTime: DateTime(2026, 8, 1, 10, 0),
+        dateTime: DateTime(2026, 9, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
         customerId: 'cust-1',
@@ -454,7 +465,9 @@ void main() {
           id: '1',
           service: 'Massage',
           dateTime: DateTime.now().add(const Duration(hours: 1)),
+          durationMinutes: 60,
           customerId: 'cust-1',
+          professionalId: 'prof-1',
         );
         await provider.addAppointment(appt);
 
@@ -467,7 +480,9 @@ void main() {
           id: '1',
           service: 'Massage',
           dateTime: DateTime.now().add(const Duration(days: 1)),
+          durationMinutes: 60,
           customerId: 'cust-1',
+          professionalId: 'prof-1',
         );
         await provider.addAppointment(appt);
 
@@ -646,8 +661,10 @@ void main() {
           id: '1',
           service: 'Massage',
           dateTime: DateTime.now().add(const Duration(days: 1)),
+          durationMinutes: 60,
           status: AppointmentStatus.completed,
           customerId: 'cust-1',
+          professionalId: 'prof-1',
         );
         await provider.addAppointment(appt);
 
@@ -660,8 +677,10 @@ void main() {
           id: '1',
           service: 'Massage',
           dateTime: DateTime.now().add(const Duration(days: 1)),
+          durationMinutes: 60,
           status: AppointmentStatus.completed,
           customerId: 'cust-1',
+          professionalId: 'prof-1',
         );
         await provider.addAppointment(appt);
 
