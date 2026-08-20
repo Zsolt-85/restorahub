@@ -11,7 +11,7 @@ class AppointmentCard extends StatelessWidget {
     super.key,
     required this.appointment,
     required this.viewerIsCustomer,
-    required this.onEdit,
+    this.onEdit,
     required this.onCancel,
     this.onConfirm,
     this.onReject,
@@ -19,7 +19,7 @@ class AppointmentCard extends StatelessWidget {
 
   final Appointment appointment;
   final bool viewerIsCustomer;
-  final VoidCallback onEdit;
+  final void Function(Appointment)? onEdit;
   final VoidCallback onCancel;
   final VoidCallback? onConfirm;
   final VoidCallback? onReject;
@@ -79,7 +79,7 @@ class AppointmentCard extends StatelessWidget {
           ),
         ),
         OutlinedButton.icon(
-          onPressed: appointment.isPast ? null : onEdit,
+          onPressed: appointment.isPast ? null : (onEdit != null ? () => onEdit!(appointment) : null),
           icon: const Icon(Icons.edit_calendar),
           label: FittedBox(
             fit: BoxFit.scaleDown,
@@ -92,7 +92,24 @@ class AppointmentCard extends StatelessWidget {
         ),
       ] else if (canManage) ...[
         OutlinedButton.icon(
-          onPressed: appointment.isPast ? null : onEdit,
+          onPressed: appointment.isPast ? null : (onEdit != null ? () => onEdit!(appointment) : null),
+          icon: const Icon(Icons.edit_calendar),
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppLocalizations.of(context)?.reschedule ?? 'Reschedule',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+      if (viewerIsCustomer &&
+          !appointment.isPast &&
+          !appointment.isTerminal &&
+          onEdit != null) ...[
+        OutlinedButton.icon(
+          onPressed: () => onEdit!(appointment),
           icon: const Icon(Icons.edit_calendar),
           label: FittedBox(
             fit: BoxFit.scaleDown,
@@ -171,6 +188,17 @@ class AppointmentCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(FormatHelper.formatDateTime(appointment.dateTime)),
                       Text('${AppLocalizations.of(context)?.duration ?? 'Duration'}: ${appointment.durationMinutes} ${AppLocalizations.of(context)?.mins ?? 'min'}'),
+                      if (appointment.price != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          '${AppLocalizations.of(context)?.price ?? 'Price'}: ${FormatHelper.formatCurrency(appointment.price!)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 4),
                         Text(
                           _localizedStatus(context, appointment.status),

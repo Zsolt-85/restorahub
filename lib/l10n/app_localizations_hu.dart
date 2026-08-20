@@ -554,4 +554,13 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get businessAccessDenied =>
       'Nincs jogosultsága a vállalat beállításainak eléréséhez.';
+
+  @override
+  String get description => 'Leírás';
+
+  @override
+  String get durationMinutes => 'Időtartam (percek)';
+
+  @override
+  String get myOfferedServices => 'Ajánlott szolgáltatások';
 }

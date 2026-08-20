@@ -557,4 +557,13 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get businessAccessDenied =>
       'Nu aveți permisiunea să accesați setările firmei.';
+
+  @override
+  String get description => 'Descriere';
+
+  @override
+  String get durationMinutes => 'Durata (minute)';
+
+  @override
+  String get myOfferedServices => 'Serviciile mele oferite';
 }

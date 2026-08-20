@@ -11,9 +11,9 @@ import '../repositories/user_repository.dart';
 import '../utils/error_handler.dart';
 
 class EditAppointmentPage extends StatefulWidget {
-  const EditAppointmentPage({super.key, required this.appointment});
+  const EditAppointmentPage({super.key, this.appointment});
 
-  final Appointment appointment;
+  final Appointment? appointment;
 
   @override
   State<EditAppointmentPage> createState() => _EditAppointmentPageState();
@@ -25,32 +25,57 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
   TimeOfDay? _selectedTime;
   bool _loadingProfessional = true;
   bool _saving = false;
+  Appointment? _appointment;
 
   final Set<TimeOfDay> _unavailableSlots = {};
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.appointment.dateTime;
-    _selectedTime = TimeOfDay.fromDateTime(widget.appointment.dateTime);
-    _loadProfessional();
+    _appointment = widget.appointment ??
+        (ModalRoute.of(context)?.settings.arguments as Appointment?);
+    if (_appointment == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.pop(context);
+      });
+      return;
+    }
+    _selectedDate = _appointment!.dateTime;
+    _selectedTime = TimeOfDay.fromDateTime(_appointment!.dateTime);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProfessional();
+    });
   }
 
   Future<void> _loadProfessional() async {
-    final repo = Provider.of<UserRepository>(context, listen: false);
-    final professional = widget.appointment.professionalId == null
-        ? null
-        : await repo.getUserById(widget.appointment.professionalId!);
-
     if (!mounted) return;
 
-    setState(() {
-      _professional = professional;
-      _loadingProfessional = false;
-      _unavailableSlots.clear();
-    });
-    if (professional != null) {
-      _loadSlotAvailability(professional);
+    try {
+      final targetAppointment = _appointment;
+      if (targetAppointment == null) return;
+
+      final repo = Provider.of<UserRepository>(context, listen: false);
+      final professionalId = targetAppointment.professionalId;
+      final professional = professionalId == null
+          ? null
+          : await repo.getUserById(professionalId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _professional = professional;
+        _loadingProfessional = false;
+        _unavailableSlots.clear();
+      });
+      if (professional != null) {
+        _loadSlotAvailability(professional);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingProfessional = false;
+        _unavailableSlots.clear();
+      });
     }
   }
 
@@ -80,26 +105,26 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
   }
 
   List<TimeOfDay> _availableSlots(User professional) {
-    if (_selectedDate == null) return [];
+    if (_selectedDate == null || _appointment == null) return [];
 
     return ScheduleHelper.generateSlots(
       start: professional.workStart,
       end: professional.workEnd,
-      slotMinutes: widget.appointment.durationMinutes,
+      slotMinutes: _appointment!.durationMinutes,
       breakStart: professional.breakStart,
       breakEnd: professional.breakEnd,
     );
   }
 
   Future<void> _loadSlotAvailability(User professional) async {
-    if (_selectedDate == null) {
+    if (_selectedDate == null || _appointment == null) {
       setState(() => _unavailableSlots.clear());
       return;
     }
 
     try {
       final repo = Provider.of<AppointmentProvider>(context, listen: false).repository;
-      final allAppointments = await repo.getAppointmentsForProfessional(professional.id!);
+      final allAppointments = await repo.getAppointmentsForProfessional(professional.id!, professionalEmail: professional.email);
 
       final dateStr = _selectedDate!;
       final dayAppointments = allAppointments.where((a) {
@@ -107,7 +132,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
             a.dateTime.month == dateStr.month &&
             a.dateTime.day == dateStr.day &&
             !a.isTerminal &&
-            a.id != widget.appointment.id;
+            a.id != _appointment!.id;
       }).toList();
 
       final slots = _availableSlots(professional);
@@ -117,7 +142,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
         final slotStart = _combine(_selectedDate!, slot);
         final isAvailable = ScheduleHelper.isSlotAvailable(
           slotStart: slotStart,
-          slotDuration: widget.appointment.durationMinutes,
+          slotDuration: _appointment!.durationMinutes,
           professionalId: professional.id!,
           appointments: dayAppointments,
           bufferTimeMinutes: professional.bufferTimeMinutes,
@@ -148,8 +173,15 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
   @override
   Widget build(BuildContext context) {
     final apptProvider = Provider.of<AppointmentProvider>(context);
-    final appointment = widget.appointment;
+    final appointment = _appointment;
     final professional = _professional;
+
+    if (appointment == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Reschedule booking')),
+        body: const Center(child: Text('Invalid appointment data.')),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)?.rescheduleBooking ?? 'Reschedule booking')),
@@ -170,13 +202,13 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                appointment.service,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-                               Text('${AppLocalizations.of(context)?.professionalContact ?? 'With'} ${appointment.professionalName}'),
-                              Text('${AppLocalizations.of(context)?.history ?? 'Current'}: ${FormatHelper.formatDateTime(appointment.dateTime)}'),
+                               Text(
+                                 appointment.service,
+                                 style: Theme.of(context).textTheme.titleMedium,
+                               ),
+                               const SizedBox(height: 8),
+                                Text('${AppLocalizations.of(context)?.professionalContact ?? 'With'} ${appointment.professionalName ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A'}'),
+                               Text('${AppLocalizations.of(context)?.history ?? 'Current'}: ${FormatHelper.formatDateTime(appointment.dateTime)}'),
                             ],
                           ),
                         ),

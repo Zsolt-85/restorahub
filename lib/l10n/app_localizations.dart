@@ -1181,6 +1181,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You do not have permission to access business settings.'**
   String get businessAccessDenied;
+
+  /// No description provided for @description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get description;
+
+  /// No description provided for @durationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration (minutes)'**
+  String get durationMinutes;
+
+  /// No description provided for @myOfferedServices.
+  ///
+  /// In en, this message translates to:
+  /// **'My Offered Services'**
+  String get myOfferedServices;
 }
 
 class _AppLocalizationsDelegate

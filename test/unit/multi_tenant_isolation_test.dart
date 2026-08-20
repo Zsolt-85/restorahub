@@ -24,13 +24,13 @@ class _FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId}) async {
+  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) async {
     if (businessId == null) return _allAppointments.where((a) => a.professionalId == professionalId).toList();
     return _allAppointments.where((a) => a.professionalId == professionalId && (a.customerId == businessId || a.professionalId == businessId)).toList();
   }
 
   @override
-  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId}) async => false;
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId, String? professionalEmail}) async => false;
 
   @override
   Future<void> createAppointmentAtomic(Appointment appointment) async {}
@@ -48,13 +48,22 @@ class _FakeBookingRepository implements BookingRepository {
   Stream<Appointment?> watchAppointment(String id) => Stream.value(null);
 
   @override
+  Future<Appointment?> getAppointmentById(String id) async {
+    try {
+      return _allAppointments.firstWhere((a) => a.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
   Stream<List<Appointment>> watchAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate}) => Stream.value([]);
 
   @override
   Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId, {String? businessId}) => Stream.value([]);
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId}) => Stream.value([]);
+  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) => Stream.value([]);
 }
 
 class _FakeServiceRepository implements ServiceRepository {

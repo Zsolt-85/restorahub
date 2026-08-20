@@ -22,7 +22,7 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId}) async {
+  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) async {
     return appointments.where((a) => a.professionalId == professionalId).toList();
   }
 
@@ -32,7 +32,7 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId}) async {
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId, String? professionalEmail}) async {
     final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));
     return !appointments.any((a) {
       if (a.professionalId != professionalId) return false;
@@ -98,7 +98,7 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId}) {
+  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) {
     final controller = StreamController<List<Appointment>>();
     controller.add(appointments.where((a) => a.professionalId == professionalId).toList());
     return controller.stream;
@@ -117,6 +117,15 @@ class FakeBookingRepository implements BookingRepository {
     final appt = appointments.where((a) => a.id == id).firstOrNull;
     controller.add(appt);
     return controller.stream;
+  }
+
+  @override
+  Future<Appointment?> getAppointmentById(String id) async {
+    try {
+      return appointments.firstWhere((a) => a.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 }
 

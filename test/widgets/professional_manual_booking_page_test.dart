@@ -18,7 +18,7 @@ class FakeBookingRepository implements BookingRepository {
       appointments.where((a) => a.customerId == customerId).toList();
 
   @override
-  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId}) async =>
+  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) async =>
       appointments.where((a) => a.professionalId == professionalId).toList();
 
   @override
@@ -26,7 +26,7 @@ class FakeBookingRepository implements BookingRepository {
       appointments.where((a) => a.customerId != null || a.professionalId != null).toList();
 
   @override
-  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId}) async =>
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId, String? professionalEmail}) async =>
       true;
 
   @override
@@ -64,7 +64,7 @@ class FakeBookingRepository implements BookingRepository {
       Stream.value(appointments.where((a) => a.customerId == customerId).toList());
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId}) =>
+  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) =>
       Stream.value(appointments.where((a) => a.professionalId == professionalId).toList());
 
   @override
@@ -74,6 +74,15 @@ class FakeBookingRepository implements BookingRepository {
   @override
   Stream<Appointment?> watchAppointment(String id) =>
       Stream.value(appointments.where((a) => a.id == id).cast<Appointment?>().firstOrNull);
+
+  @override
+  Future<Appointment?> getAppointmentById(String id) async {
+    try {
+      return appointments.firstWhere((a) => a.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 class FakeUserRepository implements UserRepository {

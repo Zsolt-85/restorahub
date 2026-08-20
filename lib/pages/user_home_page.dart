@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/service_provider.dart';
 import '../widgets/appointment_card.dart';
 import '../widgets/appointment_card_skeleton.dart';
 import '../widgets/app_drawer.dart';
@@ -156,7 +157,7 @@ class _UserHomePageState extends State<UserHomePage> {
         return AppointmentCard(
           appointment: appt,
           viewerIsCustomer: isCustomer,
-          onEdit: () => AppointmentActions.confirmReschedule(context, appt),
+          onEdit: (appt) => AppointmentActions.confirmReschedule(context, appt),
           onCancel: () => AppointmentActions.confirmCancel(context, appt),
         );
       },
@@ -196,6 +197,7 @@ class _UserHomePageState extends State<UserHomePage> {
                   context,
                   apptProvider.upcomingAppointments,
                   true,
+                  onEdit: (appt) => _navigateToReschedule(context, appt),
                 ),
                 _buildAppointmentSection(
                   context,
@@ -210,11 +212,42 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
+  void _navigateToReschedule(BuildContext context, Appointment appt) {
+    if (appt.id == null || appt.id!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)?.error ??
+                'Unable to reschedule this appointment',
+          ),
+        ),
+      );
+      return;
+    }
+
+    String baseService = appt.service;
+    if (baseService.contains('\u2014')) {
+      baseService = baseService.split('\u2014').first.trim();
+    }
+    final category = ServiceProvider.getCategoryForService(baseService);
+
+    Navigator.pushNamed(
+      context,
+      Routes.booking,
+      arguments: {
+        'service': appt.service,
+        'category': category.isEmpty ? null : category,
+        'appointmentId': appt.id,
+      },
+    );
+  }
+
   Widget _buildAppointmentSection(
     BuildContext context,
     List<Appointment> appointments,
-    bool isCustomer,
-  ) {
+    bool isCustomer, {
+    void Function(Appointment)? onEdit,
+  }) {
     if (appointments.isEmpty) {
       return EmptyStateWidget(
         icon: isCustomer ? Icons.history : Icons.calendar_today_outlined,
@@ -246,7 +279,7 @@ class _UserHomePageState extends State<UserHomePage> {
         return AppointmentCard(
           appointment: appt,
           viewerIsCustomer: isCustomer,
-          onEdit: () => AppointmentActions.confirmReschedule(context, appt),
+          onEdit: onEdit,
           onCancel: () => AppointmentActions.confirmCancel(context, appt),
         );
       },

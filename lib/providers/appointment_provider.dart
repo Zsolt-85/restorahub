@@ -40,6 +40,19 @@ class AppointmentProvider extends ChangeNotifier {
 
   List<Appointment> get appointments => _appointments ?? const [];
 
+  Future<Appointment?> getAppointmentById(String id) async {
+    if (_appointments != null) {
+      for (final a in _appointments!) {
+        if (a.id == id) return a;
+      }
+    }
+    try {
+      return await _repository.getAppointmentById(id);
+    } catch (e) {
+      return null;
+    }
+  }
+
   StreamSubscription<List<Appointment>>? _appointmentsSubscription;
   Stream<List<Appointment>>? _appointmentsStream;
 
@@ -85,7 +98,7 @@ class AppointmentProvider extends ChangeNotifier {
     if (currentUser!.role == 'customer') {
       _appointments = await _repository.getAppointmentsForCustomer(userId, businessId: businessId);
     } else if (currentUser!.isProfessional) {
-      _appointments = await _repository.getAppointmentsForProfessional(userId, businessId: businessId);
+      _appointments = await _repository.getAppointmentsForProfessional(userId, businessId: businessId, professionalEmail: currentUser!.email);
     }
   }
 
@@ -98,7 +111,7 @@ class AppointmentProvider extends ChangeNotifier {
     if (currentUser!.role == 'customer') {
       _appointmentsStream = _repository.watchAppointmentsForCustomer(userId, businessId: businessId);
     } else if (currentUser!.isProfessional) {
-      _appointmentsStream = _repository.watchAppointmentsForProfessional(userId, businessId: businessId);
+      _appointmentsStream = _repository.watchAppointmentsForProfessional(userId, businessId: businessId, professionalEmail: currentUser!.email);
     } else {
       return;
     }
@@ -420,6 +433,7 @@ class AppointmentProvider extends ChangeNotifier {
     required int slotDuration,
     required String professionalId,
     int bufferTimeMinutes = 0,
+    String? professionalEmail,
   }) async {
     try {
       return await _repository.checkProfessionalAvailability(
@@ -427,6 +441,7 @@ class AppointmentProvider extends ChangeNotifier {
         dateTime: slotStart,
         slotDurationMinutes: slotDuration,
         bufferTimeMinutes: bufferTimeMinutes,
+        professionalEmail: professionalEmail,
       );
     } catch (e) {
       return false;
@@ -564,8 +579,10 @@ class AppointmentProvider extends ChangeNotifier {
     }
 
     if (currentUser!.isProfessional) {
+      final userId = currentUser!.id;
+      final userEmail = currentUser!.email;
       return appointments
-          .where((a) => a.professionalId == currentUser!.id)
+          .where((a) => a.professionalId == userId || (userEmail.isNotEmpty && a.professionalEmail == userEmail))
           .toList();
     }
 

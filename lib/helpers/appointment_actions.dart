@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../constants/routes.dart';
 import '../exceptions/app_exception.dart';
 import '../l10n/app_localizations.dart';
 import '../helpers/format_helper.dart';
 import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../utils/error_handler.dart';
+import '../pages/edit_appointment_page.dart';
 
 class AppointmentActions {
   static Future<void> confirmCancel(
@@ -119,10 +119,16 @@ class AppointmentActions {
     BuildContext context,
     Appointment appointment,
   ) async {
-    final updated = await Navigator.pushNamed<bool>(
-      context,
-      Routes.editAppointment,
-      arguments: appointment,
+    debugPrint('confirmReschedule triggered for appointment ${appointment.id}: ${appointment.service}');
+    if (!context.mounted) return;
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+    final updated = await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (context) => EditAppointmentPage(appointment: appointment),
+        settings: const RouteSettings(name: '/edit-appointment'),
+      ),
     );
 
     if (updated == true && context.mounted) {

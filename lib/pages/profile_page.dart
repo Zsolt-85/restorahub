@@ -1,12 +1,16 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
 import '../constants/constants.dart';
 import '../l10n/app_localizations.dart';
+import '../models/service.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/business_provider.dart';
+import '../repositories/service_repository.dart';
 import '../utils/error_handler.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -17,6 +21,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -34,10 +39,16 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _loading = false;
   String? _error;
 
+  List<Service> _businessServices = [];
+  bool _loadingServices = false;
+
   @override
   void initState() {
     super.initState();
     _loadUser();
+    if (Provider.of<AuthProvider>(context, listen: false).currentUser?.isProfessional ?? false) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadBusinessServices());
+    }
   }
 
   void _loadUser() {
@@ -56,6 +67,33 @@ class _ProfilePageState extends State<ProfilePage> {
       _bufferTimeMinutes = user.bufferTimeMinutes;
       _breakStart = user.breakStart;
       _breakEnd = user.breakEnd;
+    }
+  }
+
+  Future<void> _loadBusinessServices() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final user = auth.currentUser;
+    if (user == null || !user.isProfessional) return;
+
+    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessId = businessProvider.currentBusiness?.id ?? user.businessId;
+    if (businessId == null || businessId.isEmpty) return;
+
+    setState(() => _loadingServices = true);
+    try {
+      final repository = Provider.of<ServiceRepository>(context, listen: false);
+      final services = await repository.getServices(businessId: businessId);
+      if (mounted) {
+        setState(() => _businessServices = services);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _businessServices = []);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingServices = false);
+      }
     }
   }
 
@@ -100,6 +138,216 @@ class _ProfilePageState extends State<ProfilePage> {
           _breakEnd = picked;
         }
       });
+    }
+  }
+
+  Future<void> _createCustomService() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final user = auth.currentUser;
+    if (user == null || !user.isProfessional || user.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('User not authenticated. Please log in again.'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessId = businessProvider.currentBusiness?.id ?? user.businessId;
+    if (businessId == null || businessId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No business associated with your account. Please contact support.'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final durationController = TextEditingController();
+    final priceController = TextEditingController();
+    final l10n = AppLocalizations.of(context);
+    final errorColor = Theme.of(context).colorScheme.error;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n?.addService ?? 'Add Service'),
+        content: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: l10n?.name ?? 'Name',
+                    border: const OutlineInputBorder(),
+                  ),
+                  textInputAction: TextInputAction.next,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Service name is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(
+                    labelText: l10n?.description ?? 'Description',
+                    border: const OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: durationController,
+                  decoration: InputDecoration(
+                    labelText: l10n?.durationMinutes ?? 'Duration (minutes)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Duration is required';
+                    }
+                    final parsed = int.tryParse(value.trim());
+                    if (parsed == null || parsed <= 0) {
+                      return 'Enter a valid duration in minutes';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: priceController,
+                  decoration: InputDecoration(
+                    labelText: l10n?.price ?? 'Price',
+                    border: const OutlineInputBorder(),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Price is required';
+                    }
+                    final parsed = double.tryParse(value.trim());
+                    if (parsed == null || parsed < 0) {
+                      return 'Enter a valid price';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n?.cancel ?? 'Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+
+              if (!_formKey.currentState!.validate()) {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: const Text('Please correct the errors above'),
+                    backgroundColor: errorColor,
+                  ),
+                );
+                return;
+              }
+
+              final name = nameController.text.trim();
+              final description = descriptionController.text.trim();
+              final duration = int.tryParse(durationController.text.trim());
+              final price = double.tryParse(priceController.text.trim());
+
+              Navigator.pop(dialogContext);
+              setState(() => _loading = true);
+
+              try {
+                final repository = Provider.of<ServiceRepository>(context, listen: false);
+                final service = Service(
+                  name: name,
+                  description: description.isEmpty ? null : description,
+                  businessId: businessId,
+                  durationMinutes: duration,
+                  price: price,
+                  assignedProfessionalIds: [user.id!],
+                );
+                await repository.createService(service);
+                if (!mounted) return;
+                _formKey.currentState?.reset();
+                nameController.clear();
+                descriptionController.clear();
+                durationController.clear();
+                priceController.clear();
+                messenger.showSnackBar(
+                  SnackBar(content: Text(l10n?.save ?? 'Service created')),
+                );
+                await _loadBusinessServices();
+              } catch (e) {
+                if (!mounted) return;
+                debugPrint('Error creating service: $e');
+                final errorMessage = e is FirebaseException
+                    ? (e.message ?? e.toString())
+                    : e.toString();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(errorMessage),
+                    backgroundColor: errorColor,
+                  ),
+                );
+              } finally {
+                if (mounted) {
+                  setState(() => _loading = false);
+                }
+              }
+            },
+            child: Text(l10n?.save ?? 'Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _toggleProfessionalAssignment(Service service) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final user = auth.currentUser;
+    if (user == null || !user.isProfessional || user.id == null) return;
+
+    final isAssigned = service.assignedProfessionalIds.contains(user.id);
+    final updatedIds = List<String>.from(service.assignedProfessionalIds);
+    if (isAssigned) {
+      updatedIds.remove(user.id);
+    } else {
+      updatedIds.add(user.id!);
+    }
+
+    setState(() => _loading = true);
+    try {
+      final repository = Provider.of<ServiceRepository>(context, listen: false);
+      final updatedService = service.copyWith(assignedProfessionalIds: updatedIds);
+      await repository.updateService(updatedService);
+      if (!mounted) return;
+      await _loadBusinessServices();
+    } catch (e) {
+      if (!mounted) return;
+      ErrorHandler.showErrorSnackBar(context, ErrorHandler.getDisplayMessage(e));
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -257,6 +505,59 @@ class _ProfilePageState extends State<ProfilePage> {
                 subtitle: Text(_breakEnd?.format(context) ?? AppLocalizations.of(context)?.notSet ?? 'Not set'),
                 trailing: const Icon(Icons.free_breakfast),
                 onTap: () => _pickBreakTime(isStart: false),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                AppLocalizations.of(context)?.myOfferedServices ?? 'My Offered Services',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              if (_loadingServices)
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(),
+                )),
+              if (_businessServices.isEmpty && !_loadingServices)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    AppLocalizations.of(context)?.noServicesAvailable ?? 'No services available',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ..._businessServices.map((service) {
+                final isAssigned = user.isProfessional && user.id != null
+                    ? service.assignedProfessionalIds.contains(user.id)
+                    : false;
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    title: Text(service.name),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (service.description != null && service.description!.isNotEmpty)
+                          Text(service.description!),
+                        if (service.durationMinutes != null || service.price != null)
+                          Text(
+                            [
+                              if (service.durationMinutes != null) '${service.durationMinutes} min',
+                               if (service.price != null) '${service.price!.toStringAsFixed(2)} RON',
+                            ].join(' · '),
+                          ),
+                      ],
+                    ),
+                    trailing: Switch(
+                      value: isAssigned,
+                      onChanged: (_) => _toggleProfessionalAssignment(service),
+                    ),
+                  ),
+                );
+              }).toList(),
+              ElevatedButton.icon(
+                onPressed: _loading ? null : _createCustomService,
+                icon: const Icon(Icons.add),
+                label: Text(AppLocalizations.of(context)?.addService ?? 'Add Custom Service'),
               ),
             ],
             const SizedBox(height: 24),

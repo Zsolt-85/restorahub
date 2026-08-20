@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../exceptions/app_exception.dart';
 import '../models/appointment.dart';
@@ -45,18 +47,26 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId}) async {
+  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) async {
     try {
-      final query = await _withBusinessFilter(
-        _appointmentsCol.where('professionalId', isEqualTo: professionalId),
-        businessId,
-      ).get();
-      final appointments = <Appointment>[];
-      for (final doc in query.docs) {
+      final byId = await _appointmentsCol.where('professionalId', isEqualTo: professionalId).get();
+      final results = <String, Appointment>{};
+      for (final doc in byId.docs) {
         final data = doc.data();
         data['id'] = doc.id;
-        appointments.add(Appointment.fromMap(data));
+        results[doc.id] = Appointment.fromMap(data);
       }
+
+      if (results.isEmpty && professionalEmail != null && professionalEmail.isNotEmpty) {
+        final byEmail = await _appointmentsCol.where('professionalEmail', isEqualTo: professionalEmail).get();
+        for (final doc in byEmail.docs) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          results[doc.id] = Appointment.fromMap(data);
+        }
+      }
+
+      final appointments = results.values.toList();
       appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
       return appointments;
     } catch (e, stack) {
@@ -91,29 +101,41 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId}) async {
+  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId, String? professionalEmail}) async {
     try {
       final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));
       AppLogger.debug('AVAILABILITY CHECK: professionalId=$professionalId, dateTime=$dateTime, slotEnd=$slotEnd, buffer=$bufferTimeMinutes');
       final dateOnly = DateTime(dateTime.year, dateTime.month, dateTime.day);
       final startOfDay = dateOnly.toIso8601String();
       final endOfDay = dateOnly.add(const Duration(hours: 23, minutes: 59, seconds: 59)).toIso8601String();
-      final query = await _withBusinessFilter(
-        _appointmentsCol
-            .where('professionalId', isEqualTo: professionalId)
+
+      Query<Map<String, dynamic>> query = _appointmentsCol
+          .where('professionalId', isEqualTo: professionalId)
+          .where('dateTime', isGreaterThanOrEqualTo: startOfDay)
+          .where('dateTime', isLessThanOrEqualTo: endOfDay)
+          .where('status', whereNotIn: ['cancelledByCustomer', 'cancelledByProfessional', 'noShow']);
+
+      final byIdSnap = await query.get();
+      final docs = byIdSnap.docs;
+
+      if (docs.isEmpty && professionalEmail != null && professionalEmail.isNotEmpty) {
+        final byEmailSnap = await _appointmentsCol
+            .where('professionalEmail', isEqualTo: professionalEmail)
             .where('dateTime', isGreaterThanOrEqualTo: startOfDay)
             .where('dateTime', isLessThanOrEqualTo: endOfDay)
-            .where('status', whereNotIn: ['cancelledByCustomer', 'cancelledByProfessional', 'noShow']),
-        businessId,
-      ).get();
-      AppLogger.debug('AVAILABILITY CHECK: ${query.docs.length} documents fetched from Firestore');
-      final isAvailable = !query.docs.any((doc) {
+            .where('status', whereNotIn: ['cancelledByCustomer', 'cancelledByProfessional', 'noShow'])
+            .get();
+        docs.addAll(byEmailSnap.docs);
+      }
+
+      AppLogger.debug('AVAILABILITY CHECK: ${docs.length} documents fetched from Firestore');
+      final isAvailable = !docs.any((doc) {
         final data = doc.data();
         final apptDateTime = DateTime.parse(data['dateTime'] as String);
         final duration = data['durationMinutes'] as int? ?? 60;
         final occupiedDuration = duration + bufferTimeMinutes;
         final apptEnd = apptDateTime.add(Duration(minutes: occupiedDuration));
-        final overlaps = apptEnd.isAfter(dateTime);
+        final overlaps = apptEnd.isAfter(dateTime) && apptDateTime.isBefore(slotEnd);
         AppLogger.debug('AVAILABILITY CHECK: doc=${doc.id}, apptDateTime=$apptDateTime, duration=$duration, buffer=$bufferTimeMinutes, apptEnd=$apptEnd, overlaps=$overlaps');
         return overlaps;
       });
@@ -187,14 +209,14 @@ class FirestoreBookingRepository implements BookingRepository {
         if (!serverSnapshot.exists) {
           throw Exception('Server write rejected: Document does not exist on Firestore server.');
         }
-    } catch (e, stack) {
-      AppLogger.error('FirestoreBookingRepository.insertAppointment verification error: $e\n$stack');
-      if (e is AppException) rethrow;
-      if (e is FirebaseException) {
+      } catch (e, stack) {
+        AppLogger.error('FirestoreBookingRepository.insertAppointment verification error: $e\n$stack');
+        if (e is AppException) rethrow;
+        if (e is FirebaseException) {
+          throw AppException('Failed to verify booking creation: $e', cause: e);
+        }
         throw AppException('Failed to verify booking creation: $e', cause: e);
       }
-      throw AppException('Failed to verify booking creation: $e', cause: e);
-    }
 
       return 1;
     } catch (e, stack) {
@@ -228,17 +250,13 @@ class FirestoreBookingRepository implements BookingRepository {
       return 1;
     } catch (e, stack) {
       AppLogger.error('FirestoreBookingRepository.deleteAppointment error: $e\n$stack');
-      if (e is AppException) rethrow;
       throw AppException('Failed to cancel booking: $e', cause: e);
     }
   }
 
   @override
   Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId, {String? businessId}) {
-    return _withBusinessFilter(
-      _appointmentsCol.where('customerId', isEqualTo: customerId),
-      businessId,
-    ).snapshots()
+    return _appointmentsCol.where('customerId', isEqualTo: customerId).snapshots()
         .map((snapshot) {
           final appointments = <Appointment>[];
           for (final doc in snapshot.docs) {
@@ -252,21 +270,36 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId}) {
-    return _withBusinessFilter(
-      _appointmentsCol.where('professionalId', isEqualTo: professionalId),
-      businessId,
-    ).snapshots()
-        .map((snapshot) {
-          final appointments = <Appointment>[];
-          for (final doc in snapshot.docs) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            appointments.add(Appointment.fromMap(data));
-          }
-          appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-          return appointments;
-        });
+  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) {
+    final byId = _appointmentsCol.where('professionalId', isEqualTo: professionalId).snapshots().map((snapshot) {
+      final map = <String, Appointment>{};
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        map[doc.id] = Appointment.fromMap(data);
+      }
+      return map;
+    });
+
+    if (professionalEmail == null || professionalEmail.isEmpty) {
+      return byId.map((map) {
+        final list = map.values.toList();
+        list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+        return list;
+      });
+    }
+
+    final byEmail = _appointmentsCol.where('professionalEmail', isEqualTo: professionalEmail).snapshots().map((snapshot) {
+      final map = <String, Appointment>{};
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        map[doc.id] = Appointment.fromMap(data);
+      }
+      return map;
+    });
+
+    return _combineLatest(byId, byEmail);
   }
 
   @override
@@ -301,5 +334,63 @@ class FirestoreBookingRepository implements BookingRepository {
           data['id'] = snapshot.id;
           return Appointment.fromMap(data);
         });
+  }
+
+  @override
+  Future<Appointment?> getAppointmentById(String id) async {
+    if (id.isEmpty) return null;
+    try {
+      final doc = await _appointmentsCol.doc(id).get();
+      if (!doc.exists) return null;
+      final data = doc.data()!;
+      data['id'] = doc.id;
+      return Appointment.fromMap(data);
+    } catch (e, stack) {
+      AppLogger.error('FirestoreBookingRepository.getAppointmentById error: $e\n$stack');
+      throw AppException('Failed to load appointment', cause: e);
+    }
+  }
+
+  Stream<List<T>> _combineLatest<T, S>(
+    Stream<Map<String, T>> streamA,
+    Stream<Map<String, T>> streamB,
+  ) {
+    return Stream<List<T>>.multi((controller) {
+      final combined = <String, T>{};
+      var aDone = false;
+      var bDone = false;
+      var aValue = <String, T>{};
+      var bValue = <String, T>{};
+
+      void emit() {
+        combined.clear();
+        combined.addAll(aValue);
+        combined.addAll(bValue);
+        final list = combined.values.toList();
+        list.sort((a, b) => (a as Appointment).dateTime.compareTo((b as Appointment).dateTime));
+        controller.add(list);
+      }
+
+      final subA = streamA.listen((value) {
+        aValue = value;
+        emit();
+      }, onError: controller.addError, onDone: () {
+        aDone = true;
+        if (bDone) controller.close();
+      });
+
+      final subB = streamB.listen((value) {
+        bValue = value;
+        emit();
+      }, onError: controller.addError, onDone: () {
+        bDone = true;
+        if (aDone) controller.close();
+      });
+
+      controller.onCancel = () {
+        subA.cancel();
+        subB.cancel();
+      };
+    });
   }
 }

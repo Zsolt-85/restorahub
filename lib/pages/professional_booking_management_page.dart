@@ -27,27 +27,26 @@ class _ProfessionalBookingManagementPageState
     extends State<ProfessionalBookingManagementPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late AppointmentProvider _appointmentProvider;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _appointmentProvider = Provider.of<AppointmentProvider>(context, listen: false);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      final apptProvider =
-          Provider.of<AppointmentProvider>(context, listen: false);
       if (auth.currentUser != null) {
-        apptProvider.setCurrentUser(auth.currentUser!);
-        apptProvider.startRealtimeAppointments();
+        _appointmentProvider.setCurrentUser(auth.currentUser!);
+        _appointmentProvider.startRealtimeAppointments();
       }
     });
   }
 
   @override
   void dispose() {
-    Provider.of<AppointmentProvider>(context, listen: false)
-        .stopRealtimeAppointments();
     _tabController.dispose();
+    _appointmentProvider.stopRealtimeAppointments();
     super.dispose();
   }
 
@@ -169,7 +168,7 @@ class _ProfessionalBookingManagementPageState
         return AppointmentCard(
           appointment: appt,
           viewerIsCustomer: false,
-          onEdit: () => AppointmentActions.confirmReschedule(context, appt),
+          onEdit: (appt) => AppointmentActions.confirmReschedule(context, appt),
           onCancel: () => AppointmentActions.confirmProfessionalCancel(context, appt),
           onConfirm: isPending
               ? () => AppointmentActions.acceptAppointment(context, appt)
@@ -238,7 +237,7 @@ class _ProfessionalBookingManagementPageState
         return AppointmentCard(
           appointment: appt,
           viewerIsCustomer: false,
-          onEdit: () {},
+          onEdit: (_) {},
           onCancel: () {},
         );
       },

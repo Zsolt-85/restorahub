@@ -13,4 +13,9 @@ class FormatHelper {
 
   static String formatDateTime(DateTime dateTime) =>
       _dateTimeFormat.format(dateTime.toLocal());
+
+  static String formatCurrency(double amount, {String currency = 'RON'}) {
+    final formatted = NumberFormat('#,##0.00', 'en_US').format(amount);
+    return '$formatted $currency';
+  }
 }

@@ -556,4 +556,13 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get businessAccessDenied =>
       'Sie haben keine Berechtigung, Geschäftseinstellungen zu öffnen.';
+
+  @override
+  String get description => 'Beschreibung';
+
+  @override
+  String get durationMinutes => 'Dauer (Minuten)';
+
+  @override
+  String get myOfferedServices => 'Meine angebotenen Dienstleistungen';
 }

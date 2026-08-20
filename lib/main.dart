@@ -34,6 +34,7 @@ import 'providers/payment_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/business_provider.dart';
 import 'providers/super_admin_provider.dart';
+import 'providers/service_provider.dart';
 
 import 'pages/analytics_page.dart';
 import 'pages/forgot_password_page.dart';
@@ -204,6 +205,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<SuperAdminProvider>.value(
           value: superAdminProvider,
         ),
+        ChangeNotifierProvider<ServiceProvider>(
+          create: (_) => ServiceProvider(repository: FirestoreServiceRepository.instance),
+        ),
       ],
       child: Consumer3<ThemeProvider, LocaleProvider, BusinessProvider>(
         builder: (context, theme, localeProvider, activeBusinessProvider, _) {
@@ -281,12 +285,28 @@ class MyApp extends StatelessWidget {
                       );
                     case Routes.services:
                       return const ServicesPage();
-                    case Routes.booking:
-                      final service = settings.arguments as String;
-                      return BookingPage(service: service);
-                    case Routes.editAppointment:
-                      final appt = settings.arguments as Appointment;
-                      return EditAppointmentPage(appointment: appt);
+                     case Routes.booking:
+                       final args = settings.arguments;
+                       if (args is Map<String, dynamic>) {
+                         return BookingPage(
+                           service: args['service'] as String?,
+                           category: args['category'] as String?,
+                           appointmentId: args['appointmentId'] as String?,
+                         );
+                       }
+                       if (args is String) {
+                         return BookingPage(service: args);
+                       }
+                       return const BookingPage();
+                     case Routes.editAppointment:
+                       final appointment = settings.arguments as Appointment?;
+                       if (appointment == null) {
+                         return Scaffold(
+                           appBar: AppBar(title: const Text('Reschedule booking')),
+                           body: const Center(child: Text('Invalid appointment data.')),
+                         );
+                       }
+                       return EditAppointmentPage(appointment: appointment);
                     case Routes.addPayment:
                       final appt = settings.arguments as Appointment;
                       return AddPaymentPage(appointment: appt);

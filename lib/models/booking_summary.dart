@@ -1,7 +1,9 @@
 import '../models/appointment.dart';
 
 class BookingSummary {
+  final String? serviceId;
   final String service;
+  final double? price;
   final String professionalName;
   final String? professionalId;
   final DateTime dateTime;
@@ -13,7 +15,9 @@ class BookingSummary {
   final String? professionalEmail;
 
   const BookingSummary({
+    this.serviceId,
     required this.service,
+    this.price,
     required this.professionalName,
     this.professionalId,
     required this.dateTime,

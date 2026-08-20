@@ -52,69 +52,6 @@ class _ServicesPageState extends State<ServicesPage> {
     return role == 'business_admin' || role == 'super_admin';
   }
 
-  List<Service> _constantServices() {
-    return serviceNames.map((name) {
-      return Service(
-        name: name,
-        description: serviceDescriptions[name],
-        subtypes: serviceTypes[name],
-      );
-    }).toList();
-  }
-
-  void _openSubtypePicker(BuildContext context, Service service) {
-    final subtypes = service.subtypes ?? serviceTypes[service.name] ?? [];
-    final colorScheme = Theme.of(context).colorScheme;
-
-    showModalBottomSheet<void>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Choose ${service.name} type',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                ...subtypes.map(
-                  (subtype) => Card(
-                    color: colorScheme.surface,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(color: colorScheme.outlineVariant),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      title: Text(subtype, style: TextStyle(color: colorScheme.onSurface)),
-                      trailing: Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(
-                          context,
-                          Routes.booking,
-                          arguments: '${service.name} — $subtype',
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Future<void> _createService(BuildContext context) async {
     final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
     final repository = Provider.of<ServiceRepository>(context, listen: false);
@@ -203,7 +140,7 @@ class _ServicesPageState extends State<ServicesPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)?.services ?? 'Services')),
-      body: _buildServicesBody(context, businessId),
+      body: _buildCategoryGrid(context),
       floatingActionButton:
           isAdmin && (businessId != null && businessId.isNotEmpty)
               ? FloatingActionButton.extended(
@@ -215,38 +152,13 @@ class _ServicesPageState extends State<ServicesPage> {
     );
   }
 
-  Widget _buildServicesBody(BuildContext context, String? businessId) {
-    if (businessId == null || businessId.isEmpty) {
-      return _buildGrid(_constantServices(), context);
-    }
-
-    final repository = Provider.of<ServiceRepository>(context, listen: false);
-
-    return StreamBuilder<List<Service>>(
-      stream: repository.watchServices(businessId: businessId),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          AppLogger.error('ServicesPage watchServices error: ${snapshot.error}');
-          return _buildGrid(_constantServices(), context);
-        }
-
-        final firestoreServices = snapshot.data ?? [];
-
-        if (firestoreServices.isEmpty) {
-          return _buildGrid(_constantServices(), context);
-        }
-
-        return _buildGrid(firestoreServices, context);
-      },
-    );
-  }
-
-  Widget _buildGrid(List<Service> services, BuildContext context) {
+  Widget _buildCategoryGrid(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final categories = serviceDescriptions.keys.toList();
 
     return GridView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: services.length,
+      itemCount: categories.length,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 320,
         crossAxisSpacing: 16,
@@ -254,9 +166,9 @@ class _ServicesPageState extends State<ServicesPage> {
         childAspectRatio: 0.72,
       ),
       itemBuilder: (_, index) {
-        final service = services[index];
-        final icon = serviceIcons[service.name] ?? Icons.spa_outlined;
-        final description = service.description ?? '';
+        final category = categories[index];
+        final icon = serviceIcons[category] ?? Icons.spa_outlined;
+        final description = serviceDescriptions[category] ?? '';
 
         return Card(
           color: colorScheme.surface,
@@ -266,7 +178,11 @@ class _ServicesPageState extends State<ServicesPage> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: InkWell(
-            onTap: () => _openSubtypePicker(context, service),
+            onTap: () => Navigator.pushNamed(
+              context,
+              Routes.booking,
+              arguments: {'category': category},
+            ),
             borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -282,7 +198,7 @@ class _ServicesPageState extends State<ServicesPage> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    service.name,
+                    category,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: colorScheme.onSurface,
                           fontWeight: FontWeight.w700,

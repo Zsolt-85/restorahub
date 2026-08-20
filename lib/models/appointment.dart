@@ -23,11 +23,13 @@ extension AppointmentStatusLabel on AppointmentStatus {
 
 class Appointment {
   String? id;
+  String? serviceId;
   String service;
   DateTime dateTime;
   int durationMinutes;
   AppointmentStatus status;
   String? paymentId;
+  double? price;
 
   String? customerId;
   String? customerName;
@@ -41,11 +43,13 @@ class Appointment {
 
   Appointment({
     this.id,
+    this.serviceId,
     this.paymentId,
     required this.service,
     required this.dateTime,
     this.durationMinutes = 60,
     this.status = AppointmentStatus.pending,
+    this.price,
     this.customerId,
     this.customerName,
     this.customerPhone,
@@ -57,6 +61,14 @@ class Appointment {
   });
 
   DateTime get endTime => dateTime.add(Duration(minutes: durationMinutes));
+
+  String get serviceType {
+    final parts = service.split('\u2014');
+    if (parts.length > 1) {
+      return parts.last.trim();
+    }
+    return service;
+  }
 
   bool get isPast => dateTime.isBefore(DateTime.now());
 
@@ -129,6 +141,7 @@ class Appointment {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'serviceId': serviceId,
       'paymentId': paymentId,
       'service': service,
       'dateTime': dateTime.toIso8601String(),
@@ -170,6 +183,7 @@ class Appointment {
 
     return Appointment(
       id: map['id']?.toString(),
+      serviceId: map['serviceId']?.toString(),
       paymentId: map['paymentId']?.toString(),
       service: service,
       dateTime: DateTime.parse(map['dateTime'] as String),
@@ -188,11 +202,13 @@ class Appointment {
 
   Appointment copyWith({
     String? id,
+    String? serviceId,
     String? paymentId,
     String? service,
     DateTime? dateTime,
     int? durationMinutes,
     AppointmentStatus? status,
+    double? price,
     String? customerId,
     String? customerName,
     String? customerPhone,
@@ -204,11 +220,13 @@ class Appointment {
   }) {
     return Appointment(
       id: id ?? this.id,
+      serviceId: serviceId ?? this.serviceId,
       paymentId: paymentId ?? this.paymentId,
       service: service ?? this.service,
       dateTime: dateTime ?? this.dateTime,
       durationMinutes: durationMinutes ?? this.durationMinutes,
       status: status ?? this.status,
+      price: price ?? this.price,
       customerId: customerId ?? this.customerId,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,

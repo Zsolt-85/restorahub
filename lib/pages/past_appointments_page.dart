@@ -46,7 +46,7 @@ class _PastAppointmentsPageState extends State<PastAppointmentsPage> {
                 return AppointmentCard(
                   appointment: appt,
                   viewerIsCustomer: user.role == 'customer',
-                  onEdit: () {},
+                  onEdit: (_) {},
                   onCancel: () {},
                 );
               },

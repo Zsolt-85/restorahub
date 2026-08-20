@@ -69,7 +69,7 @@ class FirestoreServiceRepository implements ServiceRepository {
       AppLogger.error(
         'FirestoreServiceRepository.createService error: $e\n$stack',
       );
-      throw AppException('Failed to create service', cause: e);
+      rethrow;
     }
   }
 

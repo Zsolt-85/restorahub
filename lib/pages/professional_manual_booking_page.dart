@@ -3,12 +3,15 @@ import 'package:provider/provider.dart';
 
 import '../constants/constants.dart';
 import '../exceptions/app_exception.dart';
+import '../helpers/format_helper.dart';
 import '../helpers/schedule_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
+import '../models/service.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/service_provider.dart';
 import '../repositories/user_repository.dart';
 
 class ProfessionalManualBookingPage extends StatefulWidget {
@@ -29,10 +32,15 @@ class _ProfessionalManualBookingPageState
   List<User> _filteredCustomers = [];
   User? _selectedCustomer;
   String? _selectedService;
+  Service? _selectedServiceObj;
+  bool _isCustomService = false;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isLoading = false;
   String? _errorMessage;
+
+  final TextEditingController _durationController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
 
   final Set<TimeOfDay> _unavailableSlots = {};
 
@@ -48,6 +56,8 @@ class _ProfessionalManualBookingPageState
   void dispose() {
     _customerSearchController.dispose();
     _searchController.dispose();
+    _durationController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -147,7 +157,7 @@ class _ProfessionalManualBookingPageState
       final repo =
           Provider.of<AppointmentProvider>(context, listen: false).repository;
       final allAppointments =
-          await repo.getAppointmentsForProfessional(professional.id!);
+          await repo.getAppointmentsForProfessional(professional.id!, professionalEmail: professional.email);
 
       final dateStr = _selectedDate!;
       final dayAppointments = allAppointments.where((a) {
@@ -218,7 +228,7 @@ class _ProfessionalManualBookingPageState
       );
       return;
     }
-    if (_selectedService == null) {
+    if (_selectedService == null || _selectedService!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)?.pleaseSelectService ?? 'Please select a service')),
       );
@@ -250,10 +260,16 @@ class _ProfessionalManualBookingPageState
       _selectedTime!.minute,
     );
 
+    final durationMinutes = int.tryParse(_durationController.text.trim()) ??
+        professional.slotDurationMinutes;
+    final price = double.tryParse(_priceController.text.trim());
+
     final newAppt = Appointment(
+      serviceId: _selectedServiceObj?.id,
       service: _selectedService!,
       dateTime: dateTime,
-      durationMinutes: professional.slotDurationMinutes,
+      durationMinutes: durationMinutes > 0 ? durationMinutes : professional.slotDurationMinutes,
+      price: price,
       status: AppointmentStatus.confirmed,
       customerId: _selectedCustomer!.id,
       customerName: _selectedCustomer!.name,
@@ -298,6 +314,223 @@ class _ProfessionalManualBookingPageState
     }
   }
 
+  Widget _buildServiceSelection(User professional) {
+    final specialityServices = _availableServices(professional);
+
+    try {
+      final serviceProvider = Provider.of<ServiceProvider>(context, listen: false);
+      return StreamBuilder<List<Service>>(
+        stream: serviceProvider.streamServicesForProfessional(
+          businessId: professional.businessId,
+          professionalId: professional.id,
+        ),
+        builder: (context, snapshot) {
+          final customServices = snapshot.data ?? <Service>[];
+          return _buildServiceDropdown(customServices, specialityServices, professional);
+        },
+      );
+    } catch (e) {
+      return _buildServiceDropdown([], specialityServices, professional);
+    }
+  }
+
+  Widget _buildServiceDropdown(
+      List<Service> customServices,
+      List<String> specialityServices,
+      User professional) {
+    final theme = Theme.of(context);
+    final serviceItems = <String, String>{};
+    final serviceMap = <String, Service>{};
+
+    for (final s in customServices) {
+      final key = s.id ?? s.name;
+      serviceItems[key] = s.name;
+      serviceMap[key] = s;
+    }
+
+    for (final s in specialityServices) {
+      if (!serviceItems.containsValue(s)) {
+        final key = 'default_$s';
+        serviceItems[key] = s;
+      }
+    }
+
+    final items = [
+      const DropdownMenuItem(value: '__custom__', child: Text('Custom / Other')),
+      ...serviceItems.entries.map((entry) {
+        final service = serviceMap[entry.key];
+        final subtitle = service != null
+            ? '${service.durationMinutes ?? '--'} min · ${service.price != null ? FormatHelper.formatCurrency(service.price!) : '--'}'
+            : null;
+        return DropdownMenuItem(
+          value: entry.key,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(entry.value),
+              if (subtitle != null)
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+        );
+      }).toList(),
+    ];
+
+    final hasServices = serviceItems.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<String>(
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)?.selectService ?? 'Select Service',
+            border: const OutlineInputBorder(),
+            errorText: !hasServices
+                ? AppLocalizations.of(context)?.noServicesForSpecialty ?? 'No services for your specialty'
+                : null,
+          ),
+          items: items,
+          selectedItemBuilder: (context) {
+            return items.map((item) {
+              final key = item.value;
+              if (key == '__custom__') {
+                return Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    'Custom / Other',
+                    style: theme.textTheme.titleSmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }
+              final service = serviceMap[key];
+              final name = serviceItems[key];
+              if (service != null) {
+                final label = '$name (${service.durationMinutes ?? '--'} min - ${service.price != null ? FormatHelper.formatCurrency(service.price!) : '--'})';
+                return Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    label,
+                    style: theme.textTheme.titleSmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }
+              return Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  name ?? '',
+                  style: theme.textTheme.titleSmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList();
+          },
+          initialValue: _selectedServiceObj != null
+              ? (_selectedServiceObj!.id ?? 'default_${_selectedServiceObj!.name}')
+              : (_isCustomService ? null : (_selectedService != null ? 'default_$_selectedService' : null)),
+          validator: (_) =>
+              _selectedService == null ? AppLocalizations.of(context)?.pleaseSelectService ?? 'Select a service' : null,
+          onChanged: !hasServices
+              ? null
+              : (v) {
+                  if (v == null) return;
+                  setState(() {
+                    if (v == '__custom__') {
+                      _isCustomService = true;
+                      _selectedService = '';
+                      _selectedServiceObj = null;
+                      _durationController.clear();
+                      _priceController.clear();
+                    } else {
+                      _isCustomService = false;
+                      final matchedService = serviceMap[v];
+                      if (matchedService != null) {
+                        _selectedService = matchedService.name;
+                        _selectedServiceObj = matchedService;
+                        _durationController.text =
+                            matchedService.durationMinutes?.toString() ?? '';
+                        _priceController.text =
+                            matchedService.price != null ? matchedService.price.toString() : '';
+                      } else {
+                        final name = serviceItems[v];
+                        if (name != null) {
+                          _selectedService = name;
+                          _selectedServiceObj = null;
+                          _durationController.clear();
+                          _priceController.clear();
+                        }
+                      }
+                    }
+                  });
+                },
+        ),
+        if (_selectedService != null || _isCustomService) ...[
+          const SizedBox(height: 12),
+          TextFormField(
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)?.name ?? 'Service Name',
+              border: const OutlineInputBorder(),
+            ),
+            initialValue: _selectedService,
+            onChanged: (v) => _selectedService = v,
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? AppLocalizations.of(context)?.pleaseSelectService ?? 'Select a service'
+                : null,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)?.mins ?? 'Duration (min)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  controller: _durationController,
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    final parsed = int.tryParse(v?.trim() ?? '');
+                    if (parsed == null || parsed <= 0) {
+                      return 'Enter valid duration';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)?.price ?? 'Price (RON)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  controller: _priceController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    final parsed = double.tryParse(v.trim());
+                    if (parsed == null || parsed < 0) {
+                      return 'Enter valid price';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -310,7 +543,6 @@ class _ProfessionalManualBookingPageState
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    final availableServices = _availableServices(professional);
     final timeSlots = _slotsForProfessional(professional);
 
     return Scaffold(
@@ -350,24 +582,7 @@ class _ProfessionalManualBookingPageState
                     if (_selectedCustomer != null)
                       _buildCustomerPreviewCard(_selectedCustomer!),
                     const SizedBox(height: 16),
-                     DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context)?.selectService ?? 'Select Service',
-                        border: const OutlineInputBorder(),
-                        errorText: availableServices.isEmpty
-                            ? AppLocalizations.of(context)?.noServicesForSpecialty ?? 'No services for your specialty'
-                            : null,
-                      ),
-                      items: availableServices
-                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                          .toList(),
-                      initialValue: _selectedService,
-                      validator: (_) =>
-                          _selectedService == null ? AppLocalizations.of(context)?.pleaseSelectService ?? 'Select a service' : null,
-                      onChanged: availableServices.isEmpty
-                          ? null
-                          : (v) => setState(() => _selectedService = v),
-                    ),
+                    _buildServiceSelection(professional),
                     const SizedBox(height: 16),
                      ListTile(
                       title: Text(
@@ -387,9 +602,9 @@ class _ProfessionalManualBookingPageState
                     const SizedBox(height: 16),
                     if (_selectedDate != null) ...[
                         Text(
-                         '${AppLocalizations.of(context)?.availableSlots ?? 'Available slots'} (${professional.slotDurationMinutes} ${AppLocalizations.of(context)?.minEach ?? 'min each'})',
+                         '${AppLocalizations.of(context)?.availableSlots ?? 'Available slots'} (${_selectedServiceObj?.durationMinutes ?? professional.slotDurationMinutes} ${AppLocalizations.of(context)?.minEach ?? 'min each'})',
                          style: Theme.of(context).textTheme.titleSmall,
-                       ),
+                        ),
                       const SizedBox(height: 8),
                        if (timeSlots.isEmpty)
                          Text(AppLocalizations.of(context)?.noAvailableSlots ?? 'No slots fit this professional schedule.')
@@ -426,7 +641,7 @@ class _ProfessionalManualBookingPageState
                                         .onSurface
                                         .withValues(alpha: 0.38),
                                   ),
-                                ),
+                                 ),
                                       ],
                                     )
                                   : isSelected
@@ -457,7 +672,7 @@ class _ProfessionalManualBookingPageState
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                            : Text(AppLocalizations.of(context)?.createBooking ?? 'Create Booking'),
-                    ),
+                     ),
                   ],
                 ),
               ),

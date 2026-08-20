@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../helpers/format_helper.dart';
+import '../helpers/appointment_actions.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
@@ -349,11 +350,21 @@ class _AppointmentSlot extends StatelessWidget {
                      label: AppLocalizations.of(context)?.timeLabel ?? 'Time',
                      value: '${FormatHelper.formatTime(appointment.dateTime)} - ${FormatHelper.formatTime(endTime)}',
                    ),
-                   _DetailRow(
-                     icon: Icons.timer_outlined,
-                     label: AppLocalizations.of(context)?.duration ?? 'Duration',
-                     value: '${appointment.durationMinutes} ${AppLocalizations.of(context)?.minutesLabel ?? 'minutes'}',
-                   ),
+                    _DetailRow(
+                      icon: Icons.timer_outlined,
+                      label: AppLocalizations.of(context)?.duration ?? 'Duration',
+                      value: '${appointment.durationMinutes} ${AppLocalizations.of(context)?.minutesLabel ?? 'minutes'}',
+                    ),
+                    if (appointment.status != AppointmentStatus.completed &&
+                        !appointment.isCancelled &&
+                        !appointment.isPast) ...[
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => AppointmentActions.confirmReschedule(context, appointment),
+                        icon: const Icon(Icons.edit_calendar),
+                        label: Text(AppLocalizations.of(context)?.reschedule ?? 'Reschedule'),
+                      ),
+                    ],
                 ],
               ),
             );
