@@ -34,9 +34,9 @@ class PaymentProvider extends ChangeNotifier {
     return count;
   }
 
-  Future<void> loadPaymentsForProfessional(String professionalId) async {
+  Future<void> loadPaymentsForProfessional(String professionalId, {String? businessId}) async {
     try {
-      _payments = await _repository.getPaymentsByProfessional(professionalId);
+      _payments = await _repository.getPaymentsByProfessional(professionalId, businessId: businessId);
       notifyListeners();
     } catch (e) {
       AppLogger.error('PaymentProvider.loadPaymentsForProfessional error: $e');
@@ -47,12 +47,14 @@ class PaymentProvider extends ChangeNotifier {
     String professionalId,
     DateTime start,
     DateTime end,
+    {String? businessId}
   ) async {
     try {
       _payments = await _repository.getPaymentsByProfessionalInRange(
         professionalId,
         start,
         end,
+        businessId: businessId,
       );
       notifyListeners();
     } catch (e) {

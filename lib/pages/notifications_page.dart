@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/notification.dart';
 import '../providers/auth_provider.dart';
+import '../providers/business_provider.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/empty_state_widget.dart';
 
@@ -21,11 +22,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final notifProvider = Provider.of<NotificationProvider>(context, listen: false);
+      final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
       if (auth.currentUser != null) {
         final userId = auth.currentUser!.id;
+        final businessId = businessProvider.currentBusiness?.id;
         if (userId != null) {
-          notifProvider.loadNotifications(userId);
-          notifProvider.startRealtimeNotifications(userId);
+          notifProvider.loadNotifications(userId, businessId: businessId);
+          notifProvider.startRealtimeNotifications(userId, businessId: businessId);
         }
       }
     });
@@ -59,7 +62,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
               icon: const Icon(Icons.mark_email_read),
               tooltip: AppLocalizations.of(context)?.ok ?? 'Mark all as read',
               onPressed: () {
-                notifProvider.markAllAsRead(user.id!);
+                final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+                notifProvider.markAllAsRead(user.id!, businessId: businessProvider.currentBusiness?.id);
               },
             ),
         ],

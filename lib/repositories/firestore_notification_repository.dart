@@ -16,11 +16,16 @@ class FirestoreNotificationRepository implements NotificationRepository {
       _firestore.collection('notifications');
 
   @override
-  Future<void> sendNotification(AppNotification notification) async {
+  Future<void> sendNotification(AppNotification notification, {String? businessId}) async {
     try {
       final docRef = _notificationsCol.doc();
       notification.id = docRef.id;
-      await docRef.set(notification.toMap());
+      final data = Map<String, dynamic>.from(notification.toMap());
+      if ((notification.businessId == null || notification.businessId!.isEmpty) &&
+          businessId != null && businessId.isNotEmpty) {
+        data['businessId'] = businessId;
+      }
+      await docRef.set(data);
     } catch (e, stack) {
       AppLogger.error('FirestoreNotificationRepository.sendNotification error: $e\n$stack');
       throw AppException('Failed to send notification', cause: e);
@@ -28,14 +33,17 @@ class FirestoreNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Future<List<AppNotification>> getNotificationsForUser(String userId) async {
+  Future<List<AppNotification>> getNotificationsForUser(String userId, {String? businessId}) async {
     try {
-      final query = await _notificationsCol
+      Query<Map<String, dynamic>> query = _notificationsCol
           .where('receiverId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .get();
+          .orderBy('createdAt', descending: true);
+      if (businessId != null && businessId.isNotEmpty) {
+        query = query.where('businessId', isEqualTo: businessId);
+      }
+      final snapshot = await query.get();
       final notifications = <AppNotification>[];
-      for (final doc in query.docs) {
+      for (final doc in snapshot.docs) {
         final data = doc.data();
         data['id'] = doc.id;
         notifications.add(AppNotification.fromMap(data));
@@ -61,20 +69,23 @@ class FirestoreNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Future<int> markAllAsRead(String userId) async {
+  Future<int> markAllAsRead(String userId, {String? businessId}) async {
     try {
-      final query = await _notificationsCol
+      Query<Map<String, dynamic>> query = _notificationsCol
           .where('receiverId', isEqualTo: userId)
-          .where('status', isEqualTo: NotificationStatus.unread.name)
-          .get();
+          .where('status', isEqualTo: NotificationStatus.unread.name);
+      if (businessId != null && businessId.isNotEmpty) {
+        query = query.where('businessId', isEqualTo: businessId);
+      }
+      final snapshot = await query.get();
       final batch = _firestore.batch();
-      for (final doc in query.docs) {
+      for (final doc in snapshot.docs) {
         batch.update(doc.reference, {
           'status': NotificationStatus.read.name,
         });
       }
       await batch.commit();
-      return query.docs.length;
+      return snapshot.docs.length;
     } catch (e, stack) {
       AppLogger.error('FirestoreNotificationRepository.markAllAsRead error: $e\n$stack');
       throw AppException('Failed to mark notifications as read', cause: e);
@@ -82,10 +93,13 @@ class FirestoreNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Stream<QuerySnapshot> getNotificationsStream(String userId) {
-    return _notificationsCol
+  Stream<QuerySnapshot> getNotificationsStream(String userId, {String? businessId}) {
+    Query<Map<String, dynamic>> query = _notificationsCol
         .where('receiverId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
-        .snapshots();
+        .orderBy('createdAt', descending: true);
+    if (businessId != null && businessId.isNotEmpty) {
+      query = query.where('businessId', isEqualTo: businessId);
+    }
+    return query.snapshots();
   }
 }

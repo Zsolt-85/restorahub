@@ -6,10 +6,12 @@ import 'package:restorahub/exceptions/app_exception.dart';
 import 'package:restorahub/models/appointment.dart';
 import 'package:restorahub/models/notification.dart';
 import 'package:restorahub/models/user.dart';
+import 'package:restorahub/models/business.dart';
 import 'package:restorahub/providers/appointment_provider.dart';
 import 'package:restorahub/repositories/booking_repository.dart';
 import 'package:restorahub/repositories/user_repository.dart';
 import 'package:restorahub/repositories/notification_repository.dart';
+import 'package:restorahub/repositories/business_repository.dart';
 
 class FakeBookingRepository implements BookingRepository {
   final List<Appointment> appointments = [];
@@ -177,12 +179,12 @@ class FakeNotificationRepository implements NotificationRepository {
   final List<AppNotification> sent = [];
 
   @override
-  Future<void> sendNotification(AppNotification notification) async {
+  Future<void> sendNotification(AppNotification notification, {String? businessId}) async {
     sent.add(notification);
   }
 
   @override
-  Future<List<AppNotification>> getNotificationsForUser(String userId) async {
+  Future<List<AppNotification>> getNotificationsForUser(String userId, {String? businessId}) async {
     return sent.where((n) => n.receiverId == userId).toList();
   }
 
@@ -192,24 +194,38 @@ class FakeNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Future<int> markAllAsRead(String userId) async {
+  Future<int> markAllAsRead(String userId, {String? businessId}) async {
     return 0;
   }
 
   @override
-  Stream<QuerySnapshot> getNotificationsStream(String userId) {
+  Stream<QuerySnapshot> getNotificationsStream(String userId, {String? businessId}) {
     throw UnimplementedError();
+  }
+}
+
+class FakeBusinessRepository implements BusinessRepository {
+  final Map<String, Business> businesses = {};
+
+  @override
+  Future<Business?> getBusinessById(String businessId) async {
+    return businesses[businessId];
+  }
+
+  @override
+  Future<void> updateBusiness(Business business) async {
+    businesses[business.id] = business;
   }
 }
 
 class _FailingNotificationRepository implements NotificationRepository {
   @override
-  Future<void> sendNotification(AppNotification notification) async {
+  Future<void> sendNotification(AppNotification notification, {String? businessId}) async {
     throw Exception('Notification failed');
   }
 
   @override
-  Future<List<AppNotification>> getNotificationsForUser(String userId) async {
+  Future<List<AppNotification>> getNotificationsForUser(String userId, {String? businessId}) async {
     return [];
   }
 
@@ -219,12 +235,12 @@ class _FailingNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Future<int> markAllAsRead(String userId) async {
+  Future<int> markAllAsRead(String userId, {String? businessId}) async {
     return 0;
   }
 
   @override
-  Stream<QuerySnapshot> getNotificationsStream(String userId) {
+  Stream<QuerySnapshot> getNotificationsStream(String userId, {String? businessId}) {
     throw UnimplementedError();
   }
 }
@@ -234,16 +250,19 @@ void main() {
     late FakeBookingRepository bookingRepository;
     late FakeUserRepository userRepository;
     late FakeNotificationRepository notificationRepository;
+    late FakeBusinessRepository businessRepository;
     late AppointmentProvider provider;
 
     setUp(() {
       bookingRepository = FakeBookingRepository();
       userRepository = FakeUserRepository();
       notificationRepository = FakeNotificationRepository();
+      businessRepository = FakeBusinessRepository();
       provider = AppointmentProvider(
         bookingRepository: bookingRepository,
         userRepository: userRepository,
         notificationRepository: notificationRepository,
+        businessRepository: businessRepository,
       );
       provider.currentUser = User(
         id: 'cust-1',
@@ -597,6 +616,7 @@ void main() {
             bookingRepository: bookingRepository,
             userRepository: userRepository,
             notificationRepository: failingRepo,
+            businessRepository: businessRepository,
           );
           provider.currentUser = User(
             id: 'cust-1',

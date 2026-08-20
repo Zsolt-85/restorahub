@@ -14,6 +14,7 @@ import '../repositories/firestore_booking_repository.dart';
 import '../repositories/user_repository.dart';
 import '../repositories/firestore_user_repository.dart';
 import '../repositories/notification_repository.dart';
+import '../repositories/business_repository.dart';
 import '../utils/app_logger.dart';
 
 class AppointmentProvider extends ChangeNotifier {
@@ -21,13 +22,16 @@ class AppointmentProvider extends ChangeNotifier {
     BookingRepository? bookingRepository,
     UserRepository? userRepository,
     NotificationRepository? notificationRepository,
+    BusinessRepository? businessRepository,
   })  : _repository = bookingRepository ?? FirestoreBookingRepository.instance,
         _userRepository = userRepository ?? FirestoreUserRepository.instance,
-        _notificationRepository = notificationRepository;
+        _notificationRepository = notificationRepository,
+        _businessRepository = businessRepository;
 
   final BookingRepository _repository;
   final UserRepository _userRepository;
   final NotificationRepository? _notificationRepository;
+  final BusinessRepository? _businessRepository;
 
   BookingRepository get repository => _repository;
 
@@ -62,10 +66,10 @@ class AppointmentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadAppointments() async {
+  Future<void> loadAppointments({String? businessId}) async {
     _beginLoading();
     try {
-      await _reloadAppointments();
+      await _reloadAppointments(businessId: businessId);
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
@@ -74,27 +78,27 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _reloadAppointments() async {
+  Future<void> _reloadAppointments({String? businessId}) async {
     if (currentUser == null) return;
     final userId = currentUser!.id;
     if (userId == null) return;
     if (currentUser!.role == 'customer') {
-      _appointments = await _repository.getAppointmentsForCustomer(userId);
+      _appointments = await _repository.getAppointmentsForCustomer(userId, businessId: businessId);
     } else if (currentUser!.isProfessional) {
-      _appointments = await _repository.getAppointmentsForProfessional(userId);
+      _appointments = await _repository.getAppointmentsForProfessional(userId, businessId: businessId);
     }
   }
 
-  void startRealtimeAppointments() {
+  void startRealtimeAppointments({String? businessId}) {
     _appointmentsSubscription?.cancel();
     if (currentUser == null) return;
     final userId = currentUser!.id;
     if (userId == null) return;
 
     if (currentUser!.role == 'customer') {
-      _appointmentsStream = _repository.watchAppointmentsForCustomer(userId);
+      _appointmentsStream = _repository.watchAppointmentsForCustomer(userId, businessId: businessId);
     } else if (currentUser!.isProfessional) {
-      _appointmentsStream = _repository.watchAppointmentsForProfessional(userId);
+      _appointmentsStream = _repository.watchAppointmentsForProfessional(userId, businessId: businessId);
     } else {
       return;
     }
@@ -120,9 +124,73 @@ class AppointmentProvider extends ChangeNotifier {
   Future<void> _sendNotification(AppNotification notification) async {
     if (_notificationRepository == null) return;
     try {
-      await _notificationRepository!.sendNotification(notification);
+      String? businessId = notification.businessId;
+      String? businessName = notification.businessName;
+      if ((businessId == null || businessId.isEmpty) &&
+          (businessName == null || businessName.isEmpty)) {
+        final sender = await _userRepository.getUserById(notification.senderId);
+        final receiver = await _userRepository.getUserById(notification.receiverId);
+        final candidateUser = sender?.businessId != null && sender!.businessId!.isNotEmpty
+            ? sender
+            : receiver?.businessId != null && receiver!.businessId!.isNotEmpty
+                ? receiver
+                : null;
+        if (candidateUser != null) {
+          businessId = candidateUser.businessId;
+          final business = await _businessRepository?.getBusinessById(businessId!);
+          businessName = business?.name;
+        }
+      }
+
+      final title = _buildNotificationTitle(notification.type, businessName);
+      final message = _buildNotificationMessage(notification, businessName);
+
+      await _notificationRepository!.sendNotification(
+        notification.copyWith(
+          title: title,
+          message: message,
+          businessId: businessId,
+          businessName: businessName,
+        ),
+        businessId: businessId,
+      );
     } catch (e) {
       AppLogger.error('AppointmentProvider._sendNotification error: $e');
+    }
+  }
+
+  String _buildNotificationTitle(NotificationType type, String? businessName) {
+    final suffix = businessName != null && businessName.isNotEmpty ? ' at $businessName' : '';
+    switch (type) {
+      case NotificationType.bookingRequested:
+        return 'New booking request$suffix';
+      case NotificationType.bookingConfirmed:
+        return 'Booking confirmed$suffix';
+      case NotificationType.bookingCancelled:
+        return 'Booking declined$suffix';
+      case NotificationType.bookingRescheduled:
+        return 'Booking rescheduled$suffix';
+      case NotificationType.bookingCompleted:
+        return 'Booking completed$suffix';
+      case NotificationType.upcomingReminder:
+        return 'Upcoming appointment reminder$suffix';
+    }
+  }
+
+  String _buildNotificationMessage(AppNotification notification, String? businessName) {
+    switch (notification.type) {
+      case NotificationType.bookingRequested:
+        return notification.message;
+      case NotificationType.bookingConfirmed:
+        return notification.message;
+      case NotificationType.bookingCancelled:
+        return notification.message;
+      case NotificationType.bookingRescheduled:
+        return notification.message;
+      case NotificationType.bookingCompleted:
+        return notification.message;
+      case NotificationType.upcomingReminder:
+        return notification.message;
     }
   }
 
@@ -166,7 +234,7 @@ class AppointmentProvider extends ChangeNotifier {
           ),
         );
       }
-      await _reloadAppointments();
+      await _reloadAppointments(businessId: currentUser?.businessId);
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.code == 'SLOT_TAKEN' ? 'This time slot is no longer available' : e.message);
@@ -181,7 +249,7 @@ class AppointmentProvider extends ChangeNotifier {
     _beginLoading();
     try {
       await _repository.updateAppointment(appt);
-      await _reloadAppointments();
+      await _reloadAppointments(businessId: currentUser?.businessId);
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
@@ -196,7 +264,7 @@ class AppointmentProvider extends ChangeNotifier {
     _beginLoading();
     try {
       await _repository.deleteAppointment(id);
-      await _reloadAppointments();
+      await _reloadAppointments(businessId: currentUser?.businessId);
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
@@ -252,7 +320,7 @@ class AppointmentProvider extends ChangeNotifier {
         );
       }
 
-      await _reloadAppointments();
+      await _reloadAppointments(businessId: currentUser?.businessId);
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
@@ -383,7 +451,7 @@ class AppointmentProvider extends ChangeNotifier {
           status: AppointmentStatus.completed,
         );
         await _repository.updateAppointment(updated);
-        await _reloadAppointments();
+        await _reloadAppointments(businessId: currentUser?.businessId);
       }
       _endLoading();
     } on AppException catch (e) {
@@ -406,7 +474,7 @@ class AppointmentProvider extends ChangeNotifier {
     try {
       final updated = appt.withStatus(AppointmentStatus.cancelledByCustomer);
       await _repository.updateAppointment(updated);
-      await _reloadAppointments();
+      await _reloadAppointments(businessId: currentUser?.businessId);
       _endLoading();
       return null;
     } on AppException catch (e) {
@@ -430,7 +498,7 @@ class AppointmentProvider extends ChangeNotifier {
     _beginLoading();
     try {
       await updateAppointmentStatus(id, AppointmentStatus.cancelledByProfessional);
-      await _reloadAppointments();
+      await _reloadAppointments(businessId: currentUser?.businessId);
       _endLoading();
       return null;
     } on AppException catch (e) {
@@ -473,7 +541,7 @@ class AppointmentProvider extends ChangeNotifier {
 
       final updated = appointment.copyWith(dateTime: newDateTime);
       await _repository.updateAppointment(updated);
-      await _reloadAppointments();
+      await _reloadAppointments(businessId: currentUser?.businessId);
       _endLoading();
       return null;
     } on AppException catch (e) {

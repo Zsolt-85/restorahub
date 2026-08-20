@@ -135,24 +135,35 @@ flutter test
 
 ## Multi-Tenant Architecture Progress
 
-### Phase 1: Core Multi-Tenant Foundation & Security
+### Phase 1: Core Foundation & Security
 
 - Added optional `businessId` to models (`User`, `Appointment`, `Service`, `Business`).
 - Built `BusinessProvider` for active tenant state and scoped queries.
 - Updated `firestore.rules` with safe legacy fallbacks for guest bookings.
 
-### Phase 2: Tenant Administration & Staff Management
+### Phase 2: Tenant Administration & Management
 
-- Created `BusinessRepository` and `BusinessSettingsPage`.
+- Created `BusinessRepository` and `BusinessSettingsPage` (`Routes.businessSettings`).
 - Scoped `ServiceRepository` and `ServicesPage` by `businessId`.
 - Scoped `UserRepository` professionals and created `TeamManagementPage` (`/team_management`).
 - Created `AdminCalendarPage` (`/admin_calendar`) for multi-staff scheduling.
 
-### Phase 3: Dynamic White-Label Engine & Custom Branding
+### Phase 3: White-Label Engine & Dynamic Branding
 
 - Implemented `ThemeHelper.generateTenantTheme()` for real-time `ThemeData` generation based on `primaryColorHex`.
 - Added custom branding controls (color swatches, custom hex input, logo URL with live preview) to `BusinessSettingsPage`.
 - Created `TenantBrandHeader` for dynamic customer-facing booking headers.
+
+### Phase 4: Scoped Pipeline & App Drawer Wiring
+
+- Scoped `NotificationProvider` dispatches and streams by active `businessId`.
+- Scoped `AnalyticsPage` and payment revenue calculations per business tenant.
+- Added role-gated **Business Administration** section to `AppDrawer` with navigation tiles for Business Settings, Team Management, Services Catalog, and Staff Calendar (visible to `business_admin` and `super_admin` only).
+
+### Phase 5: Isolation Testing Suite
+
+- Added `test/unit/multi_tenant_isolation_test.dart` with in-memory fake repositories verifying zero cross-tenant data leaks for appointments, services, and professionals.
+- Legacy fallback coverage ensures `businessId = null` safely returns single-tenant default records.
 
 ## 🚀 Project Status & Progress Tracker
 
@@ -168,6 +179,10 @@ flutter test
 | Phase 6 / TD-012 | Notification Repository Split — `NotificationRepository` + `FirestoreNotificationRepository` | ✅ Completed |
 | Phase 7 / TD-014 | Route Centralization & Guard Hardening — All routes in `routes.dart`, `onGenerateRoute` registration, named-route navigation | ✅ Completed |
 | Phase 8 | Query Optimization — Date-bounded Firestore availability & transaction checks in `FirestoreBookingRepository` | ✅ Completed |
+| Phase 4.1 | Business-Scoped Notification Dispatcher — Notifications stamped and filtered by `businessId` | ✅ Completed |
+| Phase 4.2 | Scoped Analytics & Payments Isolation — Revenue/booking counts scoped per tenant | ✅ Completed |
+| Phase 4.3 | Navigation & Admin Drawer Wiring — Role-gated Business Administration menu in `AppDrawer` | ✅ Completed |
+| Phase 5.1 | Cross-Tenant Data Isolation Test Suite — `multi_tenant_isolation_test.dart` with fake repositories | ✅ Completed |
 
 ### Technical Debt Items
 
@@ -182,7 +197,7 @@ flutter test
 
 ## 🔄 How to Resume Development
 
-- **Test suite:** 104/104 tests passing (`flutter test`)
+- **Test suite:** 108/108 tests passing (`flutter test`)
 - **Static analysis:** 0 errors, with `avoid_print` lint enforced (`flutter analyze`)
 - **Current focus:** Pre-Production Deployment & Smoke Testing
 - **Next immediate steps:**
@@ -204,6 +219,7 @@ flutter test
 | Phase 7: Notification Repository Split | Complete |
 | Phase 8: Route Centralization & Guard Hardening | Complete |
 | Phase 9: Query Optimization — Date-bounded availability & transaction checks | Complete |
+| Phase 10: Multi-Tenant Architecture (Phases 1–5) | Complete |
 | Web Compatibility — `package:web` migration for Flutter web APIs | Complete |
 | Logging Hardening — `avoid_print` enforced; `print` replaced with `AppLogger` | Complete |
 | UI Layout — AppointmentCard action buttons use dynamic equal-width rows | Complete |
@@ -216,7 +232,7 @@ flutter test
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
-| Tests | 104/104 passing (`flutter test`) |
+| Tests | 108/108 passing (`flutter test`) |
 | Analysis | 0 errors, `avoid_print` enforced (`flutter analyze`) |
 
 ## Checks
@@ -295,7 +311,7 @@ test/              # Unit tests
 
 ## Navigation & route guards
 
-- **Route constants** — All named routes are defined as `static const` strings in `lib/constants/routes.dart` (`login`, `register`, `forgotPassword`, `completeProfile`, `customerHome`, `professionalHome`, `services`, `booking`, `editAppointment`, `addPayment`, `receipt`, `success`, `profile`, `notifications`, `analytics`, `pastAppointments`, `settings`).
+- **Route constants** — All named routes are defined as `static const` strings in `lib/constants/routes.dart` (`login`, `register`, `forgotPassword`, `completeProfile`, `customerHome`, `professionalHome`, `services`, `booking`, `editAppointment`, `addPayment`, `receipt`, `success`, `profile`, `notifications`, `analytics`, `pastAppointments`, `settings`, `businessSettings`, `teamManagement`, `adminCalendar`).
 - **Centralized guard** — `RouteGuardHelper.evaluateRedirect` is called on every named-route transition in `onGenerateRoute`. It returns a target route or `null` if no redirect is needed.
 - **Auth gating** — Unauthenticated users on protected routes are redirected to `/login`.
 - **Profile completion** — Authenticated users with `!isProfileComplete` are redirected to `/complete-profile`.
@@ -342,3 +358,23 @@ Credentials are stored in **Firebase Auth**. Profile, booking, and notification 
 - **Real-time streams** — Appointment and notification lists use Firestore `snapshots()` so UI stays in sync across devices without pull-to-refresh.
 - **Centralized route guards** — Navigation is routed through `onGenerateRoute` in `main.dart`. All routes are defined as constants in `lib/constants/routes.dart`. `RouteGuardHelper.evaluateRedirect` enforces auth, profile completion, and role boundaries. Parameterized pages parse typed arguments from `settings.arguments`. `AuthProvider` exposes `isAuthenticated` and `isProfileComplete` getters for guard evaluation.
 - **Calendar export** — `CalendarHelper.addToNativeCalendar` builds a native event via `add_2_calendar` with booking details, contact info, and a 1-hour reminder.
+
+---
+
+
+2. Completed Multi-Tenant Transformation (Phases 1–5)
+
+All multi-tenant phases are complete and verified.
+
+- **Phase 1:** `businessId` schema, `BusinessProvider`, Firestore rules fallback.
+- **Phase 2:** `BusinessSettingsPage`, `ServicesPage`, `TeamManagementPage`, `AdminCalendarPage`.
+- **Phase 3:** `ThemeHelper`, customizable swatches/hex, dynamic logo preview, `TenantBrandHeader`.
+- **Phase 4:** Business-scoped notifications, analytics/payments isolation, `AppDrawer` admin menu.
+- **Phase 5:** `multi_tenant_isolation_test.dart` verifying cross-tenant zero data leaks.
+
+## Checks
+
+```bash
+flutter analyze   # 0 errors
+flutter test      # 108/108 passing
+```

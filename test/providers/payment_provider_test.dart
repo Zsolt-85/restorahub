@@ -13,7 +13,7 @@ class FakePaymentRepository implements PaymentRepository {
   }
 
   @override
-  Future<List<Payment>> getPaymentsByProfessional(String professionalId) async {
+  Future<List<Payment>> getPaymentsByProfessional(String professionalId, {String? businessId}) async {
     return payments.where((p) => p.professionalId == professionalId).toList();
   }
 
@@ -22,6 +22,7 @@ class FakePaymentRepository implements PaymentRepository {
     String professionalId,
     DateTime start,
     DateTime end,
+    {String? businessId}
   ) async {
     return payments.where((p) {
       if (p.professionalId != professionalId && professionalId.isNotEmpty) {

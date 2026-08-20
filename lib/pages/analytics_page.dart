@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/business_provider.dart';
 import '../providers/payment_provider.dart';
 import '../helpers/format_helper.dart';
 
@@ -26,11 +27,15 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final professionalId = authProvider.currentUser?.id ?? '';
+      final businessId = Provider.of<BusinessProvider>(context, listen: false).currentBusiness?.id;
+      Provider.of<AppointmentProvider>(context, listen: false)
+          .loadAppointments(businessId: businessId);
       Provider.of<PaymentProvider>(context, listen: false)
           .loadPaymentsForProfessionalInRange(
         professionalId,
         _startOfRange(),
         _endOfRange(),
+        businessId: businessId,
       );
     });
   }

@@ -5,6 +5,7 @@ import '../constants/routes.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
+import '../providers/business_provider.dart';
 import '../providers/notification_provider.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -17,6 +18,8 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final notifProvider = Provider.of<NotificationProvider>(context);
     final unreadCount = notifProvider.unreadCount;
+    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final isAdmin = (user.role == 'business_admin' || user.role == 'super_admin') && businessProvider.hasBusiness;
 
     return Drawer(
       child: ListView(
@@ -83,6 +86,41 @@ class AppDrawer extends StatelessWidget {
               Navigator.pushNamed(context, Routes.pastAppointments);
             },
           ),
+          if (isAdmin) ...[
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.store),
+              title: Text(AppLocalizations.of(context)?.businessSettings ?? 'Business Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, Routes.businessSettings);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.people),
+              title: const Text('Team Management'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, Routes.teamManagement);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.design_services),
+              title: const Text('Services Catalog'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, Routes.services);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Staff Calendar'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, Routes.adminCalendar);
+              },
+            ),
+          ],
           ListTile(
             leading: const Icon(Icons.settings_outlined),
             title: Text(AppLocalizations.of(context)?.menuSettings ?? 'Settings'),

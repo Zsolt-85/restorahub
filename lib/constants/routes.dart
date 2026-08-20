@@ -5,6 +5,7 @@ class Routes {
   static const completeProfile = '/complete-profile';
   static const customerHome = '/user_home';
   static const professionalHome = '/professional_home';
+  static const businessSettings = '/business_settings';
   static const services = '/services';
   static const booking = '/booking';
   static const editAppointment = '/edit-appointment';

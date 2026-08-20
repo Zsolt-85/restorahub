@@ -14,6 +14,16 @@ class FirestorePaymentRepository implements PaymentRepository {
   CollectionReference<Map<String, dynamic>> get _paymentsCol =>
       _firestore.collection('payments');
 
+  Query<Map<String, dynamic>> _withBusinessFilter(
+    Query<Map<String, dynamic>> query,
+    String? businessId,
+  ) {
+    if (businessId != null && businessId.isNotEmpty) {
+      return query.where('businessId', isEqualTo: businessId);
+    }
+    return query;
+  }
+
   @override
   Future<Payment?> getPaymentByAppointment(String appointmentId) async {
     try {
@@ -34,11 +44,12 @@ class FirestorePaymentRepository implements PaymentRepository {
 
   @override
   Future<List<Payment>> getPaymentsByProfessional(
-      String professionalId) async {
+      String professionalId, {String? businessId}) async {
     try {
-      final query = await _paymentsCol
-          .where('professionalId', isEqualTo: professionalId)
-          .get();
+      final query = await _withBusinessFilter(
+        _paymentsCol.where('professionalId', isEqualTo: professionalId),
+        businessId,
+      ).get();
       final payments = <Payment>[];
       for (final doc in query.docs) {
         final data = doc.data();
@@ -58,15 +69,18 @@ class FirestorePaymentRepository implements PaymentRepository {
     String professionalId,
     DateTime start,
     DateTime end,
+    {String? businessId}
   ) async {
     try {
       final startIso = start.toIso8601String();
       final endIso = end.toIso8601String();
-      final query = await _paymentsCol
-          .where('professionalId', isEqualTo: professionalId)
-          .where('appointmentDate', isGreaterThanOrEqualTo: startIso)
-          .where('appointmentDate', isLessThan: endIso)
-          .get();
+      final query = await _withBusinessFilter(
+        _paymentsCol
+            .where('professionalId', isEqualTo: professionalId)
+            .where('appointmentDate', isGreaterThanOrEqualTo: startIso)
+            .where('appointmentDate', isLessThan: endIso),
+        businessId,
+      ).get();
       final payments = <Payment>[];
       for (final doc in query.docs) {
         final data = doc.data();

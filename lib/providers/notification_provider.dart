@@ -21,10 +21,10 @@ class NotificationProvider extends ChangeNotifier {
 
   StreamSubscription<QuerySnapshot>? _subscription;
 
-  Future<void> loadNotifications(String userId) async {
+  Future<void> loadNotifications(String userId, {String? businessId}) async {
     await stopRealtimeNotifications();
     try {
-      _notifications = await _repository.getNotificationsForUser(userId);
+      _notifications = await _repository.getNotificationsForUser(userId, businessId: businessId);
       _unreadCount =
           _notifications.where((n) => n.status == NotificationStatus.unread).length;
       notifyListeners();
@@ -33,9 +33,9 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  void startRealtimeNotifications(String userId) {
+  void startRealtimeNotifications(String userId, {String? businessId}) {
     stopRealtimeNotifications();
-    _subscription = _repository.getNotificationsStream(userId).listen(
+    _subscription = _repository.getNotificationsStream(userId, businessId: businessId).listen(
       (snapshot) {
         final notifications = <AppNotification>[];
         for (final doc in snapshot.docs) {
@@ -76,9 +76,9 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> markAllAsRead(String userId) async {
+  Future<void> markAllAsRead(String userId, {String? businessId}) async {
     try {
-      await _repository.markAllAsRead(userId);
+      await _repository.markAllAsRead(userId, businessId: businessId);
       for (final n in _notifications) {
         n.status = NotificationStatus.read;
       }

@@ -80,11 +80,13 @@ Future<void> main() async {
     final userRepo = FirestoreUserRepository.instance;
     final notificationRepo = FirestoreNotificationRepository.instance;
     final paymentRepo = FirestorePaymentRepository.instance;
+    final businessRepo = FirestoreBusinessRepository.instance;
     final authProvider = AuthProvider(userRepository: userRepo);
     final appointmentProvider = AppointmentProvider(
       bookingRepository: bookingRepo,
       userRepository: userRepo,
       notificationRepository: notificationRepo,
+      businessRepository: businessRepo,
     );
     final themeProvider = ThemeProvider();
     final localeProvider = LocaleProvider();
