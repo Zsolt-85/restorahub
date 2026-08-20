@@ -62,6 +62,17 @@ class AppDrawer extends StatelessWidget {
               Navigator.pushNamed(context, Routes.notifications);
             },
           ),
+          if (user.role == 'super_admin') ...[
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.admin_panel_settings),
+              title: const Text('Super Admin Dashboard'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, Routes.superAdminDashboard);
+              },
+            ),
+          ],
           ListTile(
             leading: const Icon(Icons.bar_chart_outlined),
             title: Text(AppLocalizations.of(context)?.menuAnalytics ?? 'Analytics'),

@@ -20,4 +20,5 @@ class Routes {
   static const professionalManualBooking = '/professional_manual_booking';
   static const teamManagement = '/team_management';
   static const adminCalendar = '/admin_calendar';
+  static const superAdminDashboard = '/super_admin_dashboard';
 }

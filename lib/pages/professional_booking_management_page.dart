@@ -75,9 +75,10 @@ class _ProfessionalBookingManagementPageState
           indicatorSize: TabBarIndicatorSize.tab,
           indicator: BoxDecoration(
             color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(8),
           ),
           labelColor: Theme.of(context).colorScheme.onPrimary,
-          unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           tabs: [
             Tab(text: AppLocalizations.of(context)?.upcoming ?? 'Upcoming'),
             Tab(text: AppLocalizations.of(context)?.history ?? 'Past'),

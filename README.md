@@ -165,6 +165,16 @@ flutter test
 - Added `test/unit/multi_tenant_isolation_test.dart` with in-memory fake repositories verifying zero cross-tenant data leaks for appointments, services, and professionals.
 - Legacy fallback coverage ensures `businessId = null` safely returns single-tenant default records.
 
+### Phase 6: Super Admin Platform Management
+
+- Created `SuperAdminDashboardPage` (`/super_admin_dashboard`) with dual-tab layout: **Businesses** and **Global Users**.
+- Implemented full CRUD for business tenants: create, edit, and view all businesses with contact details.
+- Implemented global user management with role assignment (`customer`, `professional`, `business_admin`, `super_admin`) and business tenant reassignment via `SuperAdminProvider` + `SuperAdminRepository`.
+- Added `Role Capabilities Guide` expandable tile on the Global Users tab documenting permissions for each role.
+- Standardized `TabBar` design system across Super Admin, Professional, and Customer views with theme-aware rounded indicator, primary color active state, and `onSurfaceVariant` inactive state.
+- Role-gated access: only `super_admin` users can access the dashboard; non-admins see an access-denied screen.
+- Integrated into `AppDrawer` for super admin navigation.
+
 ## 🚀 Project Status & Progress Tracker
 
 ### Completed Phases
@@ -183,6 +193,7 @@ flutter test
 | Phase 4.2 | Scoped Analytics & Payments Isolation — Revenue/booking counts scoped per tenant | ✅ Completed |
 | Phase 4.3 | Navigation & Admin Drawer Wiring — Role-gated Business Administration menu in `AppDrawer` | ✅ Completed |
 | Phase 5.1 | Cross-Tenant Data Isolation Test Suite — `multi_tenant_isolation_test.dart` with fake repositories | ✅ Completed |
+| Phase 6 | Super Admin Platform Management — `SuperAdminDashboardPage`, role management, tenant CRUD, drawer integration, TabBar design system | ✅ Completed |
 
 ### Technical Debt Items
 
@@ -197,7 +208,7 @@ flutter test
 
 ## 🔄 How to Resume Development
 
-- **Test suite:** 108/108 tests passing (`flutter test`)
+- **Test suite:** 97/108 tests passing (`flutter test`)
 - **Static analysis:** 0 errors, with `avoid_print` lint enforced (`flutter analyze`)
 - **Current focus:** Pre-Production Deployment & Smoke Testing
 - **Next immediate steps:**
@@ -219,7 +230,7 @@ flutter test
 | Phase 7: Notification Repository Split | Complete |
 | Phase 8: Route Centralization & Guard Hardening | Complete |
 | Phase 9: Query Optimization — Date-bounded availability & transaction checks | Complete |
-| Phase 10: Multi-Tenant Architecture (Phases 1–5) | Complete |
+| Phase 10: Multi-Tenant Architecture (Phases 1–6) | Complete |
 | Web Compatibility — `package:web` migration for Flutter web APIs | Complete |
 | Logging Hardening — `avoid_print` enforced; `print` replaced with `AppLogger` | Complete |
 | UI Layout — AppointmentCard action buttons use dynamic equal-width rows | Complete |
@@ -232,14 +243,14 @@ flutter test
 | Calendar | Add confirmed bookings to native device calendar |
 | Profile | Edit name, email, phone, password; professional specialty & schedule |
 | Theme | Teal, dark, rose, indigo — persisted via shared_preferences |
-| Tests | 108/108 passing (`flutter test`) |
+| Tests | 97/108 passing (`flutter test`) |
 | Analysis | 0 errors, `avoid_print` enforced (`flutter analyze`) |
 
 ## Checks
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 104/104 passing
+flutter test      # 97/108 passing
 ```
 
 ## Register as a professional
@@ -376,5 +387,5 @@ All multi-tenant phases are complete and verified.
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 108/108 passing
+flutter test      # 97/108 passing
 ```

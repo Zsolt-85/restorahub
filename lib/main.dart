@@ -33,6 +33,7 @@ import 'providers/theme_provider.dart';
 import 'providers/payment_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/business_provider.dart';
+import 'providers/super_admin_provider.dart';
 
 import 'pages/analytics_page.dart';
 import 'pages/forgot_password_page.dart';
@@ -53,6 +54,7 @@ import 'pages/add_payment_page.dart';
 import 'pages/receipt_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/admin_calendar_page.dart';
+import 'pages/super_admin_dashboard_page.dart';
 
 Future<void> main() async {
   FlutterError.onError = (details) {
@@ -91,6 +93,7 @@ Future<void> main() async {
     final themeProvider = ThemeProvider();
     final localeProvider = LocaleProvider();
     final businessProvider = BusinessProvider();
+    final superAdminProvider = SuperAdminProvider();
 
     await themeProvider.loadTheme();
     await appointmentProvider.loadAppointments();
@@ -113,8 +116,9 @@ Future<void> main() async {
         appointmentProvider: appointmentProvider,
         themeProvider: themeProvider,
         localeProvider: localeProvider,
-        businessProvider: businessProvider,
-        initialRoute: initialRoute,
+         businessProvider: businessProvider,
+         superAdminProvider: superAdminProvider,
+         initialRoute: initialRoute,
         notificationRepo: notificationRepo,
         paymentRepo: paymentRepo,
       ),
@@ -140,6 +144,7 @@ class MyApp extends StatelessWidget {
     required this.themeProvider,
     required this.localeProvider,
     required this.businessProvider,
+    required this.superAdminProvider,
     required this.initialRoute,
     required this.notificationRepo,
     required this.paymentRepo,
@@ -150,6 +155,7 @@ class MyApp extends StatelessWidget {
   final ThemeProvider themeProvider;
   final LocaleProvider localeProvider;
   final BusinessProvider businessProvider;
+  final SuperAdminProvider superAdminProvider;
   final String initialRoute;
   final NotificationRepository notificationRepo;
   final PaymentRepository paymentRepo;
@@ -195,6 +201,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<LocaleProvider>.value(value: localeProvider),
         ChangeNotifierProvider<BusinessProvider>.value(value: businessProvider),
+        ChangeNotifierProvider<SuperAdminProvider>.value(
+          value: superAdminProvider,
+        ),
       ],
       child: Consumer3<ThemeProvider, LocaleProvider, BusinessProvider>(
         builder: (context, theme, localeProvider, activeBusinessProvider, _) {
@@ -301,6 +310,8 @@ class MyApp extends StatelessWidget {
                       return const TeamManagementPage();
                     case Routes.adminCalendar:
                       return const AdminCalendarPage();
+                    case Routes.superAdminDashboard:
+                      return const SuperAdminDashboardPage();
                     default:
                       return const LoginPage();
                   }

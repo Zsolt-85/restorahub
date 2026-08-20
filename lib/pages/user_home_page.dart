@@ -175,15 +175,13 @@ class _UserHomePageState extends State<UserHomePage> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TabBar(
               isScrollable: false,
-              labelColor: Theme.of(context).colorScheme.primary,
-              unselectedLabelColor: Colors.black87,
-              indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.primary,
-                  width: 3.0,
-                ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicator: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(8),
               ),
-              indicatorSize: TabBarIndicatorSize.label,
+              labelColor: Theme.of(context).colorScheme.onPrimary,
+              unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
               tabs: [
                 Tab(text: AppLocalizations.of(context)?.upcoming ?? 'Upcoming'),
                 Tab(text: AppLocalizations.of(context)?.history ?? 'History'),
