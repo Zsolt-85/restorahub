@@ -26,6 +26,12 @@ class PaymentProvider extends ChangeNotifier {
     return sum;
   }
 
+  String get revenueCurrency {
+    final completed = _payments.where((p) => p.status == PaymentStatus.completed).toList();
+    if (completed.isEmpty) return 'EUR';
+    return completed.last.currency;
+  }
+
   int get completedCount {
     int count = 0;
     for (final p in _payments) {

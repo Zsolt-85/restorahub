@@ -18,6 +18,17 @@ class _FakeBookingRepository implements BookingRepository {
   }
 
   @override
+  Future<List<Appointment>> getAppointmentsForBusinessInRange(String businessId, DateTime start, DateTime end, {String? professionalId}) async {
+    if (businessId.isEmpty) return List.from(_allAppointments);
+    return _allAppointments.where((a) {
+      if (a.customerId != businessId && a.professionalId != businessId) return false;
+      if (a.dateTime.isBefore(start) || a.dateTime.isAfter(end)) return false;
+      if (professionalId != null && professionalId.isNotEmpty && a.professionalId != professionalId) return false;
+      return true;
+    }).toList();
+  }
+
+  @override
   Future<List<Appointment>> getAppointmentsForCustomer(String customerId, {String? businessId}) async {
     if (businessId == null) return _allAppointments.where((a) => a.customerId == customerId).toList();
     return _allAppointments.where((a) => a.customerId == customerId && (a.professionalId == businessId || a.customerId == businessId)).toList();

@@ -101,6 +101,31 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
+  Future<List<Appointment>> getAppointmentsForBusinessInRange(String businessId, DateTime start, DateTime end, {String? professionalId}) async {
+    try {
+      Query<Map<String, dynamic>> query = _appointmentsCol
+          .where('businessId', isEqualTo: businessId)
+          .where('dateTime', isGreaterThanOrEqualTo: start.toIso8601String())
+          .where('dateTime', isLessThanOrEqualTo: end.toIso8601String());
+      if (professionalId != null && professionalId.isNotEmpty) {
+        query = query.where('professionalId', isEqualTo: professionalId);
+      }
+      final snapshot = await query.get();
+      final appointments = <Appointment>[];
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        appointments.add(Appointment.fromMap(data));
+      }
+      appointments.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      return appointments;
+    } catch (e, stack) {
+      AppLogger.error('FirestoreBookingRepository.getAppointmentsForBusinessInRange error: $e\n$stack');
+      throw AppException('Failed to load appointments', cause: e);
+    }
+  }
+
+  @override
   Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId, String? professionalEmail}) async {
     try {
       final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));

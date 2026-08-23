@@ -18,6 +18,7 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 - **Cancellation Snackbar Labels:** `confirmStatusChange` now shows `bookingCancelled` ("Booking cancelled") for `cancelledByCustomer`, `bookingConfirmed` ("Booking confirmed") for `confirmed`, and `completedLabel` ("Completed") for `completed`, replacing the awkward `displayLabel` output (e.g., "Cancelled by Customer").
 - **Notification Test Coverage:** Added `FakeNotificationRepository` and expanded `appointment_provider_test.dart` to verify `bookingRequested`, `bookingConfirmed`, and `bookingCancelled` dispatch across transition paths, plus error-swallowing behavior in `_sendNotification`.
 - **Cancellation Alias:** Added `canBeCancelled()` to `Appointment` as a clearer alias for `canBeCancelledByCustomer()`, used by professional cancellation logic.
+- **Phase 8 Analytics Dashboard:** Replaced generic analytics charts with dedicated `fl_chart` widgets: `RevenueTrendChart` (curved line chart with gradient fill and date/revenue tooltips), `ServiceCategoryPieChart` (interactive pie chart with touch-safe legend), and `PeakHoursBarChart` (vertical bar chart 8 AM–8 PM with peak-slot highlighting). Added operational KPI indicator cards for Completion, Cancellation, and No-Show rates. Implemented cross-platform CSV export utility (`CsvExportHelper`) for appointment and revenue summaries, triggered from the Analytics app bar. Charts respond dynamically to Day/Month/Year range switches via `LayoutBuilder`-based responsive layout stacking.
 
 ## 🔄 Recent System Updates
 
@@ -204,6 +205,7 @@ flutter test
 | Phase 6 / TD-012 | Notification Repository Split — `NotificationRepository` + `FirestoreNotificationRepository` | ✅ Completed |
 | Phase 7 / TD-014 | Route Centralization & Guard Hardening — All routes in `routes.dart`, `onGenerateRoute` registration, named-route navigation | ✅ Completed |
 | Phase 8 | Query Optimization — Date-bounded Firestore availability & transaction checks in `FirestoreBookingRepository` | ✅ Completed |
+| Phase 8.1 | Responsive Analytics Dashboard — fl_chart visualizations, KPI cards, CSV export | ✅ Completed |
 | Phase 4.1 | Business-Scoped Notification Dispatcher — Notifications stamped and filtered by `businessId` | ✅ Completed |
 | Phase 4.2 | Scoped Analytics & Payments Isolation — Revenue/booking counts scoped per tenant | ✅ Completed |
 | Phase 4.3 | Navigation & Admin Drawer Wiring — Role-gated Business Administration menu in `AppDrawer` | ✅ Completed |
@@ -244,6 +246,7 @@ flutter test
 | Phase 6: UI Error Boundaries & Exception Handling | Complete |
 | Phase 7: Notification Repository Split | Complete |
 | Phase 8: Route Centralization & Guard Hardening | Complete |
+| Phase 8.1: Responsive Analytics Dashboard — fl_chart visualizations, KPI cards, CSV export | Complete |
 | Phase 9: Query Optimization — Date-bounded availability & transaction checks | Complete |
 | Phase 10: Multi-Tenant Architecture (Phases 1–6) | Complete |
 | Web Compatibility — `package:web` migration for Flutter web APIs | Complete |

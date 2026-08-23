@@ -91,6 +91,18 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> loadAppointmentsInRange(String businessId, DateTime start, DateTime end, {String? professionalId}) async {
+    _beginLoading();
+    try {
+      _appointments = await _repository.getAppointmentsForBusinessInRange(businessId, start, end, professionalId: professionalId);
+      _endLoading();
+    } on AppException catch (e) {
+      _endLoading(e.message);
+    } catch (e) {
+      _endLoading('Unexpected error loading appointments');
+    }
+  }
+
   Future<void> _reloadAppointments({String? businessId}) async {
     if (currentUser == null) return;
     final userId = currentUser!.id;
