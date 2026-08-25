@@ -85,21 +85,19 @@ class _BookingPageState extends State<BookingPage> {
 
       String resolvedCategory = _category;
 
-      if (!ServiceProvider.defaultServices.any((s) => s.name == resolvedCategory)) {
-        String baseService = appt.service;
-        if (baseService.contains('\u2014')) {
-          baseService = baseService.split('\u2014').first.trim();
-        }
-        resolvedCategory = ServiceProvider.getCategoryForService(baseService);
+      String baseService = appt.service;
+      if (baseService.contains('\u2014')) {
+        baseService = baseService.split('\u2014').first.trim();
       }
+      resolvedCategory = ServiceProvider.getCategoryForService(baseService);
 
       if (appt.professionalId != null && appt.professionalId!.isNotEmpty) {
         try {
           // ignore: use_build_context_synchronously
           final repo = Provider.of<UserRepository>(context, listen: false);
           final professional = await repo.getUserById(appt.professionalId!);
-          if (professional != null && professional.specialty.isNotEmpty) {
-            resolvedCategory = professional.specialty;
+          if (professional != null && professional.category.isNotEmpty) {
+            resolvedCategory = professional.category;
           }
         } catch (_) {
           // keep resolved category
@@ -132,18 +130,18 @@ class _BookingPageState extends State<BookingPage> {
         try {
           final professional = await repo.getUserById(_rescheduleAppointment!.professionalId!);
           if (professional != null) {
-            if (professional.specialty.isNotEmpty) {
-              _category = professional.specialty;
+            if (professional.category.isNotEmpty) {
+              _category = professional.category;
             }
-            professionals = await repo.getProfessionalsBySpecialty(_category);
+            professionals = await repo.getProfessionalsByCategory(_category);
           } else {
-            professionals = await repo.getProfessionalsBySpecialty(_category);
+            professionals = await repo.getProfessionalsByCategory(_category);
           }
         } catch (_) {
-          professionals = await repo.getProfessionalsBySpecialty(_category);
+          professionals = await repo.getProfessionalsByCategory(_category);
         }
       } else {
-        professionals = await repo.getProfessionalsBySpecialty(_category);
+        professionals = await repo.getProfessionalsByCategory(_category);
       }
 
       if (!mounted) return;
@@ -196,24 +194,12 @@ class _BookingPageState extends State<BookingPage> {
       if (professionalServices.isNotEmpty) {
         return professionalServices;
       }
-      final matched = ServiceProvider.defaultServices
-          .where((s) => s.name == _category)
-          .toList();
-      if (matched.isNotEmpty) return matched;
       if (_selectedService != null) {
-        final nameMatch = ServiceProvider.defaultServices
-            .where((s) =>
-                _selectedService!.name == s.name ||
-                _selectedService!.name.startsWith('${s.name} \u2014 ') ||
-                s.name.startsWith('${_selectedService!.name} \u2014 '))
-            .toList();
-        if (nameMatch.isNotEmpty) return nameMatch;
         return [_selectedService!];
       }
-      return matched;
+      return services.where((s) => s.category == _category).toList();
     }
-    final source = services.isEmpty ? ServiceProvider.defaultServices : services;
-    return source
+    return services
         .where((s) => s.assignedProfessionalIds.isEmpty)
         .toList();
   }

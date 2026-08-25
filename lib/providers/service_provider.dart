@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../constants/constants.dart';
 import '../models/service.dart';
 import '../repositories/service_repository.dart';
 
@@ -9,37 +8,20 @@ class ServiceProvider extends ChangeNotifier {
 
   ServiceProvider({required ServiceRepository repository}) : _repository = repository;
 
-  static const List<String> _defaultServiceNames = [
-    'Massage',
-    'Haircut',
-    'Spa',
-    'Facial',
-  ];
-
-  static List<Service> get defaultServices {
-    return _defaultServiceNames.map((name) {
-      return Service(
-        name: name,
-        description: serviceDescriptions[name],
-        subtypes: serviceTypes[name],
-      );
-    }).toList();
-  }
-
   Stream<List<Service>> streamServices({String? businessId}) {
     final effectiveBusinessId =
         (businessId?.isEmpty ?? true) ? null : businessId;
 
-    return _repository.watchServices(businessId: effectiveBusinessId).map((services) {
-      return services.isEmpty ? defaultServices : services;
-    });
+    return _repository.watchServices(businessId: effectiveBusinessId);
   }
 
-  static String getCategoryForService(String serviceName) {
-    for (final service in defaultServices) {
-      if (service.name == serviceName) return serviceName;
-      if (service.subtypes != null && service.subtypes!.contains(serviceName)) {
-        return service.name;
+  static String getCategoryForService(String serviceName, {List<Service>? services}) {
+    if (services != null) {
+      for (final service in services) {
+        if (service.name == serviceName) return service.category ?? serviceName;
+        if (service.subtypes != null && service.subtypes!.contains(serviceName)) {
+          return service.category ?? service.name;
+        }
       }
     }
     return serviceName;

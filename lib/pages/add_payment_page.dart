@@ -48,7 +48,7 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
         professionalPhone: appointment.professionalPhone ?? '',
         professionalEmail: appointment.professionalEmail ?? '',
         service: appointment.service,
-        specialty: ScheduleHelper.parseServiceCategory(appointment.service),
+        staffCategory: ScheduleHelper.parseServiceCategory(appointment.service),
         appointmentDate: appointment.dateTime,
         appointmentTime:
             '${appointment.dateTime.hour.toString().padLeft(2, '0')}:${appointment.dateTime.minute.toString().padLeft(2, '0')}',

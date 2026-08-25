@@ -124,11 +124,11 @@ class FirestoreUserRepository implements UserRepository {
   }
 
   @override
-  Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
+  Future<List<User>> getProfessionalsByCategory(String category) async {
     try {
       final query = await _usersCol
           .where('role', isEqualTo: 'professional')
-          .where('specialty', isEqualTo: specialty)
+          .where('category', isEqualTo: category)
           .get();
 
       final professionals = <User>[];
@@ -140,9 +140,15 @@ class FirestoreUserRepository implements UserRepository {
       professionals.sort((a, b) => a.name.compareTo(b.name));
       return professionals;
     } catch (e, stack) {
-      AppLogger.error('FirestoreUserRepository.getProfessionalsBySpecialty error: $e\n$stack');
+      AppLogger.error('FirestoreUserRepository.getProfessionalsByCategory error: $e\n$stack');
       throw AppException('Failed to load professionals', cause: e);
     }
+  }
+
+  @override
+  @Deprecated('Use getProfessionalsByCategory instead')
+  Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
+    return getProfessionalsByCategory(specialty);
   }
 
   @override

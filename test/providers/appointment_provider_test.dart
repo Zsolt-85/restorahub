@@ -166,8 +166,13 @@ class FakeUserRepository implements UserRepository {
   Future<void> syncUserInAppointments(User user) async {}
 
   @override
+  Future<List<User>> getProfessionalsByCategory(String category) async {
+    return users.values.where((u) => u.role == 'professional' && u.category == category).toList();
+  }
+
+  @override
   Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
-    return users.values.where((u) => u.role == 'professional' && u.specialty == specialty).toList();
+    return getProfessionalsByCategory(specialty);
   }
 
   @override
@@ -387,7 +392,7 @@ void main() {
         email: 'prof@example.com',
         phone: '555-0200',
         role: 'professional',
-        specialty: 'massage',
+        category: 'massage',
       );
       await userRepository.insertUser(prof);
 
@@ -418,7 +423,7 @@ void main() {
         email: 'prof@example.com',
         phone: '555-0200',
         role: 'professional',
-        specialty: 'massage',
+        category: 'massage',
       );
       await userRepository.insertUser(prof);
 

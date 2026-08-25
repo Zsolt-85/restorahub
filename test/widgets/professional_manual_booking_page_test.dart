@@ -122,8 +122,12 @@ class FakeUserRepository implements UserRepository {
   Future<void> syncUserInAppointments(User user) async {}
 
   @override
+  Future<List<User>> getProfessionalsByCategory(String category) async =>
+      users.where((u) => u.role == 'professional' && u.category == category).toList();
+
+  @override
   Future<List<User>> getProfessionalsBySpecialty(String specialty) async =>
-      users.where((u) => u.role == 'professional' && u.specialty == specialty).toList();
+      getProfessionalsByCategory(specialty);
 
   @override
   Future<List<User>> getProfessionals({String? businessId}) async =>
@@ -167,7 +171,7 @@ void main() {
         email: 'prof@example.com',
         phone: '555-0200',
         role: 'professional',
-        specialty: 'Massage',
+        category: 'Massage',
       );
     });
 
@@ -179,7 +183,7 @@ void main() {
           email: 'prof@example.com',
           phone: '555-0200',
           role: 'professional',
-          specialty: 'Massage',
+          category: 'Massage',
         ),
         User(
           id: 'cust-1',
@@ -222,7 +226,7 @@ void main() {
           email: 'prof@example.com',
           phone: '555-0200',
           role: 'professional',
-          specialty: 'Massage',
+          category: 'Massage',
         ),
         User(
           id: 'cust-1',
@@ -273,7 +277,7 @@ void main() {
           email: 'prof@example.com',
           phone: '555-0200',
           role: 'professional',
-          specialty: 'Massage',
+          category: 'Massage',
         ),
         User(
           id: 'cust-1',
@@ -332,7 +336,7 @@ void main() {
           email: 'prof@example.com',
           phone: '555-0200',
           role: 'professional',
-          specialty: 'Massage',
+          category: 'Massage',
         ),
         User(
           id: 'cust-1',
@@ -381,7 +385,7 @@ void main() {
           email: 'prof@example.com',
           phone: '555-0200',
           role: 'professional',
-          specialty: 'Massage',
+          category: 'Massage',
         ),
         User(
           id: 'cust-1',
@@ -436,7 +440,7 @@ void main() {
           email: 'prof@example.com',
           phone: '555-0200',
           role: 'professional',
-          specialty: 'Massage',
+          category: 'Massage',
         ),
       ]);
 

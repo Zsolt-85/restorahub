@@ -194,7 +194,7 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
                   phone: phone,
                   role: 'professional',
                   businessId: businessId,
-                  specialty: specialty,
+                  category: specialty,
                 ));
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -318,8 +318,8 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
             ),
             title: Text(member.name),
             subtitle: Text(
-              member.specialty.isNotEmpty
-                  ? '${member.roleLabel} \u2022 ${member.specialty}'
+              member.category.isNotEmpty
+                  ? '${member.roleLabel} \u2022 ${member.category}'
                   : member.roleLabel,
             ),
             trailing: const Icon(Icons.chevron_right),

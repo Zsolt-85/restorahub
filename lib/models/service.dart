@@ -1,3 +1,5 @@
+enum ResourceType { staff, equipment, room }
+
 class Service {
   String? id;
   String name;
@@ -7,6 +9,11 @@ class Service {
   double? price;
   List<String>? subtypes;
   List<String> assignedProfessionalIds;
+  String? category;
+  ResourceType? resourceType;
+  List<String> locationIds;
+  int? bufferTimeMinutes;
+  int? preparationTimeMinutes;
 
   Service({
     this.id,
@@ -17,13 +24,35 @@ class Service {
     this.price,
     this.subtypes,
     this.assignedProfessionalIds = const [],
+    this.category,
+    this.resourceType,
+    this.locationIds = const [],
+    this.bufferTimeMinutes,
+    this.preparationTimeMinutes,
   });
 
   bool isOfferedBy(String professionalId) =>
       assignedProfessionalIds.isEmpty ||
       assignedProfessionalIds.contains(professionalId);
 
+  bool isAvailableAt(String locationId) =>
+      locationIds.isEmpty || locationIds.contains(locationId);
+
+  int get totalDurationMinutes =>
+      (durationMinutes ?? 0) + (bufferTimeMinutes ?? 0) + (preparationTimeMinutes ?? 0);
+
   factory Service.fromMap(Map<String, dynamic> map) {
+    ResourceType? parsedResourceType;
+    final resourceTypeRaw = map['resourceType']?.toString();
+    if (resourceTypeRaw != null && resourceTypeRaw.isNotEmpty) {
+      for (final type in ResourceType.values) {
+        if (type.name == resourceTypeRaw) {
+          parsedResourceType = type;
+          break;
+        }
+      }
+    }
+
     return Service(
       id: map['id']?.toString(),
       name: map['name']?.toString() ?? '',
@@ -41,6 +70,15 @@ class Service {
               (map['assignedProfessionalIds'] as List<dynamic>).map((e) => e.toString()),
             )
           : const [],
+      category: map['category']?.toString(),
+      resourceType: parsedResourceType,
+      locationIds: map['locationIds'] != null
+          ? List<String>.from(
+              (map['locationIds'] as List<dynamic>).map((e) => e.toString()),
+            )
+          : const [],
+      bufferTimeMinutes: map['bufferTimeMinutes'] as int?,
+      preparationTimeMinutes: map['preparationTimeMinutes'] as int?,
     );
   }
 
@@ -54,6 +92,11 @@ class Service {
       'price': price != null ? price as double : null,
       'subtypes': subtypes,
       'assignedProfessionalIds': assignedProfessionalIds,
+      'category': category,
+      'resourceType': resourceType?.name,
+      'locationIds': locationIds,
+      'bufferTimeMinutes': bufferTimeMinutes,
+      'preparationTimeMinutes': preparationTimeMinutes,
     };
   }
 
@@ -66,6 +109,11 @@ class Service {
     double? price,
     List<String>? subtypes,
     List<String>? assignedProfessionalIds,
+    String? category,
+    ResourceType? resourceType,
+    List<String>? locationIds,
+    int? bufferTimeMinutes,
+    int? preparationTimeMinutes,
   }) {
     return Service(
       id: id ?? this.id,
@@ -76,6 +124,11 @@ class Service {
       price: price ?? this.price,
       subtypes: subtypes ?? this.subtypes,
       assignedProfessionalIds: assignedProfessionalIds ?? this.assignedProfessionalIds,
+      category: category ?? this.category,
+      resourceType: resourceType ?? this.resourceType,
+      locationIds: locationIds ?? this.locationIds,
+      bufferTimeMinutes: bufferTimeMinutes ?? this.bufferTimeMinutes,
+      preparationTimeMinutes: preparationTimeMinutes ?? this.preparationTimeMinutes,
     );
   }
 }

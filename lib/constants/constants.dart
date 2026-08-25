@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+@Deprecated('Load service descriptions from Firestore per-tenant catalog instead')
 final Map<String, String> serviceDescriptions = {
   'Massage': 'Therapeutic bodywork tailored to your needs',
   'Haircut': 'Precision cuts and professional styling',
@@ -8,6 +9,7 @@ final Map<String, String> serviceDescriptions = {
   'Manicure': 'Expert nail care and artistic finishing',
 };
 
+@Deprecated('Load service names from Firestore per-tenant catalog instead')
 const List<String> serviceNames = [
   'Massage',
   'Haircut',
@@ -16,6 +18,7 @@ const List<String> serviceNames = [
   'Manicure',
 ];
 
+@Deprecated('Load service icons from tenant branding config instead')
 final Map<String, IconData> serviceIcons = {
   'Massage': Icons.self_improvement,
   'Haircut': Icons.content_cut,
@@ -24,6 +27,7 @@ final Map<String, IconData> serviceIcons = {
   'Manicure': Icons.back_hand,
 };
 
+@Deprecated('Load service variants from Firestore per-tenant catalog instead')
 final Map<String, List<String>> serviceTypes = {
   'Massage': ['Full Body', 'Facial', 'Head & Neck'],
   'Haircut': ['Men', 'Women', 'Kids'],

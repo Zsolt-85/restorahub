@@ -19,6 +19,9 @@ class _FakeUserRepository implements UserRepository {
   Future<List<User>> getProfessionals({String? businessId}) async => [];
 
   @override
+  Future<List<User>> getProfessionalsByCategory(String category) async => [];
+
+  @override
   Future<List<User>> getProfessionalsBySpecialty(String specialty) async => [];
 
   @override

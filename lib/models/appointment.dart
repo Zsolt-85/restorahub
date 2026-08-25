@@ -62,13 +62,16 @@ class Appointment {
 
   DateTime get endTime => dateTime.add(Duration(minutes: durationMinutes));
 
-  String get serviceType {
+  String get serviceVariant {
     final parts = service.split('\u2014');
     if (parts.length > 1) {
       return parts.last.trim();
     }
     return service;
   }
+
+  @Deprecated('Use serviceVariant instead')
+  String get serviceType => serviceVariant;
 
   bool get isPast => dateTime.isBefore(DateTime.now());
 

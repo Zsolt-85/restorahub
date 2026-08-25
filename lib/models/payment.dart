@@ -13,7 +13,7 @@ class Payment {
   String professionalPhone;
   String professionalEmail;
   String service;
-  String specialty;
+  String staffCategory;
   DateTime appointmentDate;
   String appointmentTime;
   int appointmentDurationMinutes;
@@ -35,7 +35,7 @@ class Payment {
     required this.professionalPhone,
     required this.professionalEmail,
     required this.service,
-    required this.specialty,
+    required this.staffCategory,
     required this.appointmentDate,
     required this.appointmentTime,
     required this.appointmentDurationMinutes,
@@ -83,7 +83,8 @@ class Payment {
       'professionalPhone': professionalPhone,
       'professionalEmail': professionalEmail,
       'service': service,
-      'specialty': specialty,
+      'staffCategory': staffCategory,
+      'specialty': staffCategory,
       'appointmentDate': appointmentDate.toIso8601String(),
       'appointmentTime': appointmentTime,
       'appointmentDurationMinutes': appointmentDurationMinutes,
@@ -96,6 +97,10 @@ class Payment {
   }
 
   factory Payment.fromMap(Map<String, dynamic> map) {
+    final staffCategoryValue = map['staffCategory']?.toString() ?? '';
+    final legacySpecialty = map['specialty']?.toString() ?? '';
+    final resolvedStaffCategory = staffCategoryValue.isNotEmpty ? staffCategoryValue : legacySpecialty;
+
     return Payment(
       id: map['id']?.toString(),
       appointmentId: map['appointmentId']?.toString() ?? '',
@@ -108,7 +113,7 @@ class Payment {
       professionalPhone: map['professionalPhone']?.toString() ?? '',
       professionalEmail: map['professionalEmail']?.toString() ?? '',
       service: map['service']?.toString() ?? '',
-      specialty: map['specialty']?.toString() ?? '',
+      staffCategory: resolvedStaffCategory,
       appointmentDate: DateTime.parse(map['appointmentDate'] as String),
       appointmentTime: map['appointmentTime']?.toString() ?? '',
       appointmentDurationMinutes:
@@ -139,7 +144,8 @@ class Payment {
     String? professionalPhone,
     String? professionalEmail,
     String? service,
-    String? specialty,
+    String? staffCategory,
+    @Deprecated('Use staffCategory instead') String? specialty,
     DateTime? appointmentDate,
     String? appointmentTime,
     int? appointmentDurationMinutes,
@@ -161,7 +167,7 @@ class Payment {
       professionalPhone: professionalPhone ?? this.professionalPhone,
       professionalEmail: professionalEmail ?? this.professionalEmail,
       service: service ?? this.service,
-      specialty: specialty ?? this.specialty,
+      staffCategory: staffCategory ?? specialty ?? this.staffCategory,
       appointmentDate: appointmentDate ?? this.appointmentDate,
       appointmentTime: appointmentTime ?? this.appointmentTime,
       appointmentDurationMinutes:

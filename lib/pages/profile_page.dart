@@ -59,8 +59,8 @@ class _ProfilePageState extends State<ProfilePage> {
     _emailController.text = user.email;
     _phoneController.text = user.phone;
 
-    if (user.isProfessional) {
-      _specialty = user.specialty.isEmpty ? serviceNames.first : user.specialty;
+    if (user.isStaff) {
+      _specialty = user.category.isEmpty ? serviceNames.first : user.category;
       _workStart = user.workStart;
       _workEnd = user.workEnd;
       _slotDurationMinutes = user.slotDurationMinutes;
@@ -73,7 +73,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _loadBusinessServices() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final user = auth.currentUser;
-    if (user == null || !user.isProfessional) return;
+    if (user == null || !user.isStaff) return;
 
     final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
     final businessId = businessProvider.currentBusiness?.id ?? user.businessId;
@@ -376,8 +376,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Text(user.name.substring(0, 1).toUpperCase()),
                 ),
                 title: Text(user.name),
-                subtitle: Text(user.isProfessional
-                    ? '${user.roleLabel} · ${user.specialty}'
+                subtitle: Text(user.isStaff
+                    ? '${user.roleLabel} · ${user.category}'
                     : user.roleLabel),
                 trailing: Chip(label: Text(user.roleLabel)),
               ),

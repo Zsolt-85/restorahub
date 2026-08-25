@@ -201,12 +201,12 @@ class _ProfessionalManualBookingPageState
   }
 
   List<String> _availableServices(User professional) {
-    if (professional.specialty.isEmpty) return const [];
+    if (professional.category.isEmpty) return const [];
     return serviceNames
         .where(
           (s) =>
               ScheduleHelper.parseServiceCategory(s) ==
-              professional.specialty,
+              professional.category,
         )
         .toList();
   }

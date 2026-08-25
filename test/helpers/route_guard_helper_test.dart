@@ -32,10 +32,15 @@ class FakeUserRepository implements UserRepository {
   Future<void> syncUserInAppointments(User user) async {}
 
   @override
-  Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
+  Future<List<User>> getProfessionalsByCategory(String category) async {
     return users.values
-        .where((u) => u.role == 'professional' && u.specialty == specialty)
+        .where((u) => u.role == 'professional' && u.category == category)
         .toList();
+  }
+
+  @override
+  Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
+    return getProfessionalsBySpecialty(specialty);
   }
 
   @override

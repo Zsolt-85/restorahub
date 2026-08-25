@@ -15,7 +15,7 @@ void main() {
 
       final updated = customer.copyWith(name: 'Alex Updated');
       expect(updated.role, 'customer');
-      expect(updated.isProfessional, isFalse);
+      expect(updated.isStaff, isFalse);
     });
 
     test('professional defaults include schedule fields', () {
@@ -24,7 +24,7 @@ void main() {
         email: 'sam@example.com',
         phone: '5559876543',
         role: 'professional',
-        specialty: 'Massage',
+        category: 'Massage',
       );
 
       expect(professional.workStartTime, '09:00');
@@ -46,7 +46,7 @@ void main() {
         email: 'jordan@example.com',
         phone: '5550001111',
         role: 'professional',
-        specialty: 'Spa',
+        category: 'Spa',
         bufferTimeMinutes: 15,
         breakStartTime: '12:00',
         breakEndTime: '13:00',
@@ -61,6 +61,75 @@ void main() {
       final updated = professional.copyWith(bufferTimeMinutes: 30);
       expect(updated.bufferTimeMinutes, 30);
       expect(updated.breakStartTime, '12:00');
+    });
+
+    test('isStaff returns true for professional role', () {
+      final professional = User(
+        name: 'Test',
+        email: 'test@example.com',
+        phone: '5550000000',
+        role: 'professional',
+      );
+      expect(professional.isStaff, isTrue);
+    });
+
+    test('isStaff returns true for staff role', () {
+      final staff = User(
+        name: 'Test',
+        email: 'test@example.com',
+        phone: '5550000000',
+        role: 'staff',
+      );
+      expect(staff.isStaff, isTrue);
+    });
+
+    test('isStaff returns false for customer role', () {
+      final customer = User(
+        name: 'Test',
+        email: 'test@example.com',
+        phone: '5550000000',
+        role: 'customer',
+      );
+      expect(customer.isStaff, isFalse);
+    });
+
+    test('backward compatible fromMap reads specialty as category', () {
+      final user = User.fromMap({
+        'id': '1',
+        'name': 'Test',
+        'email:': 'test@example.com',
+        'phone': '5550000000',
+        'role': 'professional',
+        'specialty': 'Massage',
+      });
+      expect(user.category, 'Massage');
+    });
+
+    test('fromMap prefers category over legacy specialty', () {
+      final user = User.fromMap({
+        'id': '1',
+        'name': 'Test',
+        'email:': 'test@example.com',
+        'phone': '5550000000',
+        'role': 'professional',
+        'category': 'Haircut',
+        'specialty': 'Massage',
+      });
+      expect(user.category, 'Haircut');
+    });
+
+    test('toMap outputs both category and specialty for backward compat', () {
+      final user = User(
+        id: '1',
+        name: 'Test',
+        email: 'test@example.com',
+        phone: '5550000000',
+        role: 'professional',
+        category: 'Haircut',
+      );
+      final map = user.toMap();
+      expect(map['category'], 'Haircut');
+      expect(map['specialty'], 'Haircut');
     });
   });
 }

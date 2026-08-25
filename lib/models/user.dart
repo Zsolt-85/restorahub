@@ -8,7 +8,7 @@ class User {
   final String email;
   final String phone;
   final String role;
-  final String specialty;
+  final String category;
   final String workStartTime;
   final String workEndTime;
   final int slotDurationMinutes;
@@ -24,7 +24,7 @@ class User {
     required this.phone,
     this.businessId,
     required this.role,
-    this.specialty = '',
+    this.category = '',
     this.workStartTime = '09:00',
     this.workEndTime = '17:00',
     this.slotDurationMinutes = 60,
@@ -33,9 +33,12 @@ class User {
     this.breakEndTime,
   });
 
-  bool get isProfessional => role == 'professional';
+  bool get isStaff => role == 'professional' || role == 'staff';
 
-  String get roleLabel => isProfessional ? 'Professional' : 'Customer';
+  @Deprecated('Use isStaff instead')
+  bool get isProfessional => isStaff;
+
+  String get roleLabel => isStaff ? 'Professional' : 'Customer';
 
   TimeOfDay get workStart => _parseTime(workStartTime);
 
@@ -48,6 +51,10 @@ class User {
       breakEndTime != null ? _parseTime(breakEndTime!) : null;
 
   factory User.fromMap(Map<String, dynamic> map) {
+    final categoryValue = map['category']?.toString() ?? '';
+    final legacySpecialty = map['specialty']?.toString() ?? '';
+    final resolvedCategory = categoryValue.isNotEmpty ? categoryValue : legacySpecialty;
+
     return User(
       id: map['id']?.toString(),
       name: map['name']?.toString() ?? '',
@@ -55,7 +62,7 @@ class User {
       phone: map['phone']?.toString() ?? '',
       role: map['role']?.toString() ?? 'customer',
       businessId: map['businessId']?.toString(),
-      specialty: map['specialty']?.toString() ?? '',
+      category: resolvedCategory,
       workStartTime: map['workStartTime']?.toString() ?? '09:00',
       workEndTime: map['workEndTime']?.toString() ?? '17:00',
       slotDurationMinutes: map['slotDurationMinutes'] as int? ?? 60,
@@ -73,7 +80,8 @@ class User {
       'phone': phone,
       'role': role,
       'businessId': businessId,
-      'specialty': specialty,
+      'category': category,
+      'specialty': category,
       'workStartTime': workStartTime,
       'workEndTime': workEndTime,
       'slotDurationMinutes': slotDurationMinutes,
@@ -90,7 +98,8 @@ class User {
     String? phone,
     String? role,
     String? businessId,
-    String? specialty,
+    String? category,
+    @Deprecated('Use category instead') String? specialty,
     String? workStartTime,
     String? workEndTime,
     int? slotDurationMinutes,
@@ -105,7 +114,7 @@ class User {
       phone: phone ?? this.phone,
       role: role ?? this.role,
       businessId: businessId ?? this.businessId,
-      specialty: specialty ?? this.specialty,
+      category: category ?? specialty ?? this.category,
       workStartTime: workStartTime ?? this.workStartTime,
       workEndTime: workEndTime ?? this.workEndTime,
       slotDurationMinutes: slotDurationMinutes ?? this.slotDurationMinutes,

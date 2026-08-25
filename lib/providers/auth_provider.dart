@@ -72,7 +72,7 @@ class AuthProvider extends ChangeNotifier {
         email: fbUser.email!.toLowerCase(),
         phone: phone.trim(),
         role: role,
-        specialty: role == 'professional' ? specialty.trim() : '',
+        category: role == 'professional' ? specialty.trim() : '',
       );
 
       final insertResult = await _userRepository.insertUser(newUser);
@@ -112,7 +112,7 @@ class AuthProvider extends ChangeNotifier {
         email: normalizedEmail,
         phone: phone.trim(),
         role: role,
-        specialty: specialty,
+        category: specialty,
       );
 
       try {
@@ -223,7 +223,7 @@ class AuthProvider extends ChangeNotifier {
       if (newPassword != confirmPassword) return 'Passwords do not match';
     }
 
-    if (user.isProfessional) {
+    if (user.isStaff) {
       if (specialty == null || specialty.trim().isEmpty) {
         return 'Profession is required';
       }
@@ -274,16 +274,16 @@ class AuthProvider extends ChangeNotifier {
       email: trimmedEmail,
       phone: phone.trim(),
       role: user.role,
-      specialty: user.isProfessional ? specialty!.trim() : user.specialty,
-      workStartTime: user.isProfessional
+      category: user.isStaff ? specialty!.trim() : user.category,
+      workStartTime: user.isStaff
           ? User.formatTime(workStart!)
           : user.workStartTime,
       workEndTime:
-          user.isProfessional ? User.formatTime(workEnd!) : user.workEndTime,
+          user.isStaff ? User.formatTime(workEnd!) : user.workEndTime,
       slotDurationMinutes:
-          user.isProfessional ? slotDurationMinutes! : user.slotDurationMinutes,
+          user.isStaff ? slotDurationMinutes! : user.slotDurationMinutes,
       bufferTimeMinutes:
-          user.isProfessional ? bufferTimeMinutes! : user.bufferTimeMinutes,
+          user.isStaff ? bufferTimeMinutes! : user.bufferTimeMinutes,
       breakStartTime: breakStartTime,
       breakEndTime: breakEndTime,
     );

@@ -15,7 +15,7 @@ class CalendarHelper {
     final event = Event(
       title: 'RestoraHub: ${appointment.service} with ${professional.name}',
       description: _buildDescription(appointment, professional),
-      location: professional.specialty,
+      location: professional.category,
       startDate: appointment.dateTime,
       endDate: appointment.endTime,
       iosParams: const IOSParams(
@@ -45,7 +45,7 @@ class CalendarHelper {
     buffer.writeln('');
     buffer.writeln('Service: ${appointment.service}');
     buffer.writeln('Professional: ${professional.name}');
-    buffer.writeln('Specialty: ${professional.specialty}');
+    buffer.writeln('Category: ${professional.category}');
     buffer.writeln('Date: ${_formatDate(appointment.dateTime)}');
     buffer.writeln('Time: ${_formatTime(appointment.dateTime)}');
     buffer.writeln('Duration: ${appointment.durationMinutes} minutes');
