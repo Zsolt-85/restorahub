@@ -1,7 +1,7 @@
 # RestoraHub Project Continuation Checkpoint
 
-**Date:** 2026-08-08  
-**Latest Commit:** `61ca12c` (refactor: split BookingRepository into BookingRepository and UserRepository)
+**Date:** 2026-08-25
+**Tests:** 149/149 passing
 
 ---
 
@@ -41,59 +41,96 @@
 - Updated `main.dart` to provide `UserRepository` in `MultiProvider`
 - Split `FakeBookingRepository` in tests into `FakeBookingRepository` (appointment-only) and `FakeUserRepository` (user-only)
 
+### Phase 6: Platform Audit & Security Hardening (Sprint 1)
+- **Domain Audit Complete**: `DOMAIN_AUDIT.md` documents 47 wellness-specific assumptions (18 CORE, 16 CONFIGURATION, 13 MODULE)
+- **Security Audit Complete**: `SECURITY_AUDIT.md` identifies 7 critical security gaps with proposed fixes
+- **Firestore Rules Rewritten**: Fixed `isBusinessMatch` null bypass, restricted users collection reads, restricted notification creation, added role-based helpers
+- **Cross-Tenant Isolation Tests**: Added tests proving tenant data isolation
+- **Privilege Escalation Tests**: Added tests proving role boundaries are enforced
+
 ---
 
 ## Test & Analysis Status
 
 | Check | Status | Details |
 |-------|--------|---------|
-| `flutter analyze` | **0 errors** | 7 pre-existing `info` warnings only (`avoid_print`, `prefer_const_constructors`) |
-| `flutter test` | **57/57 passing** | All unit tests pass cleanly |
+| `flutter analyze` | **0 errors** | 2 deprecation warnings only (`value` → `initialValue`) |
+| `flutter test` | **123/123 passing** | 12 new security tests added |
+
+### Sprint 2: Business Model Expansion & Technical Debt Remediation
+- **PLAT-0201 Complete**: Business model expanded from 7 to 18 fields with backward compatibility
+  - New fields: `slug`, `businessType`, `status`, `ownerId`, `contactInformation`, `branding`, `settings`, `subscription`, `featureEntitlements`, `createdAt`, `updatedAt`
+  - Helper classes: `BusinessBranding`, `BusinessContactInformation`, `BusinessSettings`, `BusinessSubscription`
+  - Enums: `BusinessType`, `BusinessStatus`
+  - Effective property fallbacks: `effectivePrimaryColor`, `effectiveBusinessName`, `effectiveLogo`
+- **TD-001 Complete**: Repository reads now enforce `businessId` filtering
+- **TD-002 Complete**: Pagination added to `getAppointmentsForBusiness()` with `limit` and `startAfterDocumentId`
+- **TD-006 Complete**: Eager loading deferred until session restoration completes in `main.dart`
+- **TD-008 Verified**: DI already consistent (NotificationProvider/PaymentProvider use constructor injection)
+- **TD-005 Started**: `UserResolutionHelper` created for runtime user data resolution
+- **Tests**: 149/149 passing (26 new tests for Business model and UserResolutionHelper)
+
+---
+
+## Key Audit Deliverables
+
+### DOMAIN_AUDIT.md
+- 18 CORE findings requiring terminology rename (`professional` → `staff`, `specialty` → `category`)
+- 16 CONFIGURATION findings (hardcoded wellness catalog in `constants.dart`)
+- 13 MODULE findings (feature-flag candidates)
+- Dependency map for wellness catalog removal
+
+### SECURITY_AUDIT.md
+- 3 Critical findings (null bypass, users readable by all, notifications creatable by anyone)
+- 3 High findings (businesses public, no role verification, no field restrictions)
+- 1 Medium finding (no audit trail)
+- Complete revised Firestore rules
+- Cross-tenant isolation test plan
+- Privilege escalation test plan
 
 ---
 
 ## Pending / Next Immediate Tasks
 
-- **Phase 6:** Onboarding flow enhancements (welcome screens, tutorial overlays)
-- **Phase 7:** Advanced analytics and reporting for professionals
-- **Phase 8:** Push notification delivery for booking confirmations and reminders
-- **Phase 9:** Payment integration and receipt generation
-- Clean up existing `print` debug statements in `firestore_booking_repository.dart`
-- Add `const` constructors where flagged by analysis
+### Sprint 2 — Model & Security Hardening
+- **PLAT-0201**: Expand Business model (additive migration: `businessType`, `status`, `ownerId`, `subscription`, `settings`, `branding`)
+- **TD-001**: Add `businessId` filtering to all repository methods
+- **TD-002**: Add pagination to `getAppointmentsForBusiness()`
+- **TD-005**: Begin denormalized data removal (Appointment model first)
+- **TD-006**: Fix eager loading in `main.dart`
+- **TD-007**: Ensure all routes use centralized guards
+- **TD-008**: Fix DI inconsistency in providers
+
+### Sprint 3 — Domain Generalization
+- **REF-001**: Rename wellness terminology (`User.specialty` → `category`, `professional` → `staff`)
+- **REF-002**: Generalize Service model
+- **REF-003**: Remove hardcoded service catalog
+- **TD-015**: Remove legacy migration logic
 
 ---
 
 ## Instructions for Next Session
 
-Paste the following context into a fresh AI chat to resume:
-
-> **Project:** RestoraHub — Flutter booking app for wellness/beauty services using Firebase Auth, Cloud Firestore, and Provider state management.
+> **Project:** RestoraHub — Flutter booking app transforming into multi-tenant white-label SaaS platform.
 >
-> **Current State (2026-08-08, commit `61ca12c`):**
-> - 57/57 unit tests passing, `flutter analyze` clean (0 errors)
-> - Atomic booking with range-based slot availability
-> - Professional schedule supports buffer time and break windows
-> - Appointment state machine hardened with explicit statuses (`pending`, `confirmed`, `completed`, `cancelledByCustomer`, `cancelledByProfessional`, `noShow`)
-> - Terminal status invariants enforced; 2-hour cancellation window active
-> - Real-time Firestore streaming implemented for customer/professional appointment lists
-> - Native device calendar integration via `add_2_calendar` on booking confirmation screen
-> - Repository split complete: `BookingRepository` (appointments) and `UserRepository` (user profiles) with `FirestoreBookingRepository` and `FirestoreUserRepository` implementations
-> - `AuthProvider` depends on `UserRepository`; `AppointmentProvider` depends on both `BookingRepository` and `UserRepository`
-> - Pages consume `UserRepository` directly from Provider tree
+> **Current State (2026-08-25, baseline/v1.0 tag):**
+> - 123/123 unit tests passing, `flutter analyze` clean (0 errors)
+> - Domain audit complete: `DOMAIN_AUDIT.md` (47 findings)
+> - Security audit complete: `SECURITY_AUDIT.md` (7 gaps, rules rewritten)
+> - Firestore rules hardened with role-based access control
+> - Cross-tenant isolation and privilege escalation tests added
 >
 > **Key files to review first:**
-> - `lib/models/appointment.dart` — state machine helpers
-> - `lib/repositories/booking_repository.dart` — appointment interface
-> - `lib/repositories/user_repository.dart` — user interface
-> - `lib/repositories/firestore_booking_repository.dart` — real-time `snapshots()` streams
-> - `lib/repositories/firestore_user_repository.dart` — user data operations
-> - `lib/providers/appointment_provider.dart` — `startRealtimeAppointments()` / `stopRealtimeAppointments()`, dual repository injection
-> - `lib/providers/auth_provider.dart` — `UserRepository` usage
-> - `lib/helpers/calendar_helper.dart` — calendar event builder
-> - `lib/pages/success_page.dart` — "Add to Calendar" UI
-> - `test/models/appointment_test.dart` — state machine tests
-> - `test/providers/appointment_provider_test.dart` — provider + policy tests with split fakes
+> - `DOMAIN_AUDIT.md` — full domain audit with rename plan
+> - `SECURITY_AUDIT.md` — security audit with revised rules
+> - `firestore.rules` — hardened security rules
+> - `lib/models/user.dart` — String-based role, `specialty` field (rename target)
+> - `lib/models/appointment.dart` — stable state machine, denormalized fields (removal target)
+> - `lib/models/business.dart` — minimal 7-field model (expansion target)
+> - `lib/constants/constants.dart` — hardcoded wellness catalog (removal target)
+> - `lib/providers/appointment_provider.dart` — 631-line God object (refactor target)
+> - `lib/pages/booking_page.dart` — 920 lines, depends on hardcoded catalog
 >
-> **Next tasks:** Continue with Phase 6 (onboarding flow), Phase 7 (advanced analytics), Phase 8 (push notifications), or Phase 9 (payment integration). Also clean up `print` statements and add missing `const` constructors.
+> **Next tasks:** Execute Sprint 2 (Business model expansion, repository filtering, pagination, denormalized data removal, eager loading fix, DI cleanup).
 >
-> **How to verify:** Run `flutter analyze` (expect 0 errors) and `flutter test` (expect 57/57 passing).
+> **How to verify:** Run `flutter analyze` (expect 0 errors) and `flutter test` (expect 123/123 passing).

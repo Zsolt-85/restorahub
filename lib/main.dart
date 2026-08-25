@@ -18,7 +18,6 @@ import 'repositories/firestore_notification_repository.dart';
 import 'repositories/notification_repository.dart';
 import 'repositories/firestore_payment_repository.dart';
 import 'repositories/payment_repository.dart';
-import 'utils/app_logger.dart';
 import 'helpers/notification_schedule_helper.dart';
 import 'helpers/route_guard_helper.dart';
 import 'constants/routes.dart';
@@ -97,16 +96,12 @@ Future<void> main() async {
     final superAdminProvider = SuperAdminProvider();
 
     await themeProvider.loadTheme();
-    await appointmentProvider.loadAppointments();
-
-    if (appointmentProvider.error != null) {
-      AppLogger.warning(
-          'Initial appointments load failed: ${appointmentProvider.error}');
-    }
 
     final hasSession = await authProvider.restoreSession();
     if (hasSession && authProvider.currentUser != null) {
       appointmentProvider.setCurrentUser(authProvider.currentUser!);
+    } else {
+      await appointmentProvider.loadAppointments();
     }
 
     final initialRoute = _resolveInitialRoute(authProvider);

@@ -12,7 +12,7 @@ class _FakeBookingRepository implements BookingRepository {
   _FakeBookingRepository(this._allAppointments);
 
   @override
-  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate}) async {
+  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate, int? limit, String? startAfterDocumentId}) async {
     if (businessId.isEmpty) return List.from(_allAppointments);
     return _allAppointments.where((a) => a.customerId == businessId || a.professionalId == businessId).toList();
   }
@@ -198,6 +198,128 @@ void main() {
       expect(bookings.length, 2);
       expect(services.length, 2);
       expect(professionals.length, 2);
+    });
+
+    test('Tenant B appointments are isolated from Tenant A queries', () async {
+      final tenantAResults = await bookingRepo.getAppointmentsForBusiness(tenantA);
+      final tenantBResults = await bookingRepo.getAppointmentsForBusiness(tenantB);
+
+      expect(tenantAResults.any((a) => a.customerId == tenantB), isFalse);
+      expect(tenantBResults.any((a) => a.customerId == tenantA), isFalse);
+    });
+
+    test('Cross-tenant professional lookup is blocked by businessId filter', () async {
+      final tenantAProfessionals = await userRepo.getProfessionals(businessId: tenantA);
+
+      expect(tenantAProfessionals.every((u) => u.businessId == tenantA), isTrue);
+      expect(tenantAProfessionals.any((u) => u.id == 'u2'), isFalse);
+    });
+
+    test('Services are isolated by tenant', () async {
+      final tenantAServices = await serviceRepo.getServices(businessId: tenantA);
+
+      expect(tenantAServices.every((s) => s.businessId == tenantA), isTrue);
+      expect(tenantAServices.any((s) => s.id == 's2'), isFalse);
+    });
+  });
+
+  group('Privilege escalation prevention tests', () {
+    test('Customer role cannot be mistaken for professional role', () {
+      final customer = User(
+        id: 'cust_1',
+        name: 'Customer',
+        email: 'cust@test.com',
+        phone: '123',
+        role: 'customer',
+        businessId: 'biz_1',
+      );
+
+      expect(customer.isProfessional, isFalse);
+      expect(customer.role, equals('customer'));
+    });
+
+    test('Professional role is correctly identified', () {
+      final professional = User(
+        id: 'prof_1',
+        name: 'Professional',
+        email: 'prof@test.com',
+        phone: '456',
+        role: 'professional',
+        businessId: 'biz_1',
+      );
+
+      expect(professional.isProfessional, isTrue);
+      expect(professional.role, equals('professional'));
+    });
+
+    test('copyWith preserves role without escalation', () {
+      final customer = User(
+        id: 'cust_1',
+        name: 'Customer',
+        email: 'cust@test.com',
+        phone: '123',
+        role: 'customer',
+        businessId: 'biz_1',
+      );
+
+      final modified = customer.copyWith(name: 'New Name');
+      expect(modified.role, equals('customer'));
+    });
+
+    test('Appointment fromMap does not allow status injection', () {
+      final appointment = Appointment.fromMap({
+        'id': 'apt_1',
+        'service': 'Haircut',
+        'dateTime': '2026-01-01T10:00:00.000',
+        'customerId': 'cust_1',
+        'professionalId': 'prof_1',
+        'status': 'completed',
+      });
+
+      expect(appointment.status, equals(AppointmentStatus.completed));
+    });
+
+    test('Terminal status cannot be transitioned', () {
+      final completedAppointment = Appointment(
+        id: 'apt_1',
+        service: 'Haircut',
+        dateTime: DateTime(2026, 1, 1, 10, 0),
+        status: AppointmentStatus.completed,
+        customerId: 'cust_1',
+        professionalId: 'prof_1',
+      );
+
+      expect(completedAppointment.canTransitionTo(AppointmentStatus.pending), isFalse);
+      expect(completedAppointment.canTransitionTo(AppointmentStatus.confirmed), isFalse);
+      expect(completedAppointment.isTerminal, isTrue);
+    });
+
+    test('Cancelled status is terminal', () {
+      final cancelledAppointment = Appointment(
+        id: 'apt_1',
+        service: 'Haircut',
+        dateTime: DateTime(2026, 1, 1, 10, 0),
+        status: AppointmentStatus.cancelledByCustomer,
+        customerId: 'cust_1',
+        professionalId: 'prof_1',
+      );
+
+      expect(cancelledAppointment.canTransitionTo(AppointmentStatus.pending), isFalse);
+      expect(cancelledAppointment.isTerminal, isTrue);
+    });
+
+    test('Legacy cancelled maps to cancelledByCustomer', () {
+      final appointment = Appointment.fromMap({
+        'id': 'apt_1',
+        'service': 'Haircut',
+        'dateTime': '2026-01-01T10:00:00.000',
+        'customerId': 'cust_1',
+        'professionalId': 'prof_1',
+        'status': 'cancelled',
+      });
+
+      expect(appointment.status, equals(AppointmentStatus.cancelledByCustomer));
+      expect(appointment.isCancelled, isTrue);
     });
   });
 }

@@ -3,7 +3,7 @@ import '../models/appointment.dart';
 abstract class BookingRepository {
   Future<List<Appointment>> getAppointmentsForCustomer(String customerId, {String? businessId});
   Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail});
-  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate});
+  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate, int? limit, String? startAfterDocumentId});
   Future<List<Appointment>> getAppointmentsForBusinessInRange(String businessId, DateTime start, DateTime end, {String? professionalId});
   Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId, String? professionalEmail});
   Future<void> createAppointmentAtomic(Appointment appointment);

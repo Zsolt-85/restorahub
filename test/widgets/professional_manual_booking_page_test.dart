@@ -22,7 +22,7 @@ class FakeBookingRepository implements BookingRepository {
       appointments.where((a) => a.professionalId == professionalId).toList();
 
   @override
-  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate}) async =>
+  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate, int? limit, String? startAfterDocumentId}) async =>
       appointments.where((a) => a.customerId != null || a.professionalId != null).toList();
 
   @override

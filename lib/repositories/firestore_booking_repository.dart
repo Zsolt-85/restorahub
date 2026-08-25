@@ -49,7 +49,11 @@ class FirestoreBookingRepository implements BookingRepository {
   @override
   Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) async {
     try {
-      final byId = await _appointmentsCol.where('professionalId', isEqualTo: professionalId).get();
+      Query<Map<String, dynamic>> baseQuery = _appointmentsCol.where('professionalId', isEqualTo: professionalId);
+      if (businessId != null && businessId.isNotEmpty) {
+        baseQuery = baseQuery.where('businessId', isEqualTo: businessId);
+      }
+      final byId = await baseQuery.get();
       final results = <String, Appointment>{};
       for (final doc in byId.docs) {
         final data = doc.data();
@@ -58,8 +62,12 @@ class FirestoreBookingRepository implements BookingRepository {
       }
 
       if (results.isEmpty && professionalEmail != null && professionalEmail.isNotEmpty) {
-        final byEmail = await _appointmentsCol.where('professionalEmail', isEqualTo: professionalEmail).get();
-        for (final doc in byEmail.docs) {
+        Query<Map<String, dynamic>> emailQuery = _appointmentsCol.where('professionalEmail', isEqualTo: professionalEmail);
+        if (businessId != null && businessId.isNotEmpty) {
+          emailQuery = emailQuery.where('businessId', isEqualTo: businessId);
+        }
+        final byEmailSnapshot = await emailQuery.get();
+        for (final doc in byEmailSnapshot.docs) {
           final data = doc.data();
           data['id'] = doc.id;
           results[doc.id] = Appointment.fromMap(data);
@@ -76,14 +84,27 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate}) async {
+  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate, int? limit, String? startAfterDocumentId}) async {
     try {
+      if (businessId.isEmpty) {
+        throw const AppException('businessId is required for tenant-scoped queries');
+      }
       Query<Map<String, dynamic>> query = _appointmentsCol.where('businessId', isEqualTo: businessId);
       if (startDate != null) {
         query = query.where('dateTime', isGreaterThanOrEqualTo: startDate.toIso8601String());
       }
       if (endDate != null) {
         query = query.where('dateTime', isLessThanOrEqualTo: endDate.toIso8601String());
+      }
+      query = query.orderBy('dateTime');
+      if (limit != null && limit > 0) {
+        query = query.limit(limit);
+      }
+      if (startAfterDocumentId != null && startAfterDocumentId.isNotEmpty) {
+        final startAfterDoc = await _appointmentsCol.doc(startAfterDocumentId).get();
+        if (startAfterDoc.exists) {
+          query = query.startAfterDocument(startAfterDoc);
+        }
       }
       final snapshot = await query.get();
       final appointments = <Appointment>[];
