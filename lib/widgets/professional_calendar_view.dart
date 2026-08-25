@@ -7,6 +7,7 @@ import '../helpers/appointment_actions.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
+import '../pages/professional_manual_booking_page.dart';
 import '../providers/appointment_provider.dart';
 
 class ProfessionalCalendarView extends StatefulWidget {
@@ -136,6 +137,17 @@ class _ProfessionalCalendarViewState extends State<ProfessionalCalendarView> {
           slot: slot,
           appointments: slotAppointments,
           slotDuration: widget.professional.slotDurationMinutes,
+          onEmptySlotTap: slotAppointments.isEmpty
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProfessionalManualBookingPage(initialDateTime: slot),
+                    ),
+                  );
+                }
+              : null,
         );
       },
     );
@@ -148,14 +160,15 @@ class _ProfessionalCalendarViewState extends State<ProfessionalCalendarView> {
     final endHour = int.tryParse(widget.professional.workEndTime.split(':').first) ?? 17;
     final endMinute = int.tryParse(widget.professional.workEndTime.split(':').last) ?? 0;
 
-    final start = DateTime(_focusedDay.year, _focusedDay.month, _focusedDay.day, startHour, startMinute);
-    final end = DateTime(_focusedDay.year, _focusedDay.month, _focusedDay.day, endHour, endMinute);
+    final day = _selectedDay ?? _focusedDay;
+    final start = DateTime(day.year, day.month, day.day, startHour, startMinute);
+    final end = DateTime(day.year, day.month, day.day, endHour, endMinute);
 
-    final slotMinutes = widget.professional.slotDurationMinutes;
+    const slotMinutes = 15;
     var current = start;
     while (current.isBefore(end)) {
       slots.add(current);
-      current = current.add(Duration(minutes: slotMinutes));
+      current = current.add(const Duration(minutes: slotMinutes));
     }
 
     return slots;
@@ -167,11 +180,13 @@ class _TimeSlotRow extends StatelessWidget {
     required this.slot,
     required this.appointments,
     required this.slotDuration,
+    this.onEmptySlotTap,
   });
 
   final DateTime slot;
   final List<Appointment> appointments;
   final int slotDuration;
+  final VoidCallback? onEmptySlotTap;
 
   @override
   Widget build(BuildContext context) {
@@ -200,11 +215,25 @@ class _TimeSlotRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: appointments.isEmpty
-              ? Container(
-                  height: 48,
-                  decoration: BoxDecoration(
+              ? Material(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    onTap: onEmptySlotTap,
                     borderRadius: BorderRadius.circular(8),
-                    color: Colors.grey[50],
+                    child: Container(
+                      height: 48,
+                      alignment: AlignmentDirectional.centerStart,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        '+',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                 )
               : Column(

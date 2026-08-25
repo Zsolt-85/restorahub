@@ -164,5 +164,106 @@ void main() {
         isNotNull,
       );
     });
+
+    test('generateStartTimes produces 15-minute increments', () {
+      final times = ScheduleHelper.generateStartTimes(
+        workStart: const TimeOfDay(hour: 9, minute: 0),
+        workEnd: const TimeOfDay(hour: 10, minute: 0),
+      );
+
+      expect(times.length, 5);
+      expect(times.first, const TimeOfDay(hour: 9, minute: 0));
+      expect(times.last, const TimeOfDay(hour: 10, minute: 0));
+    });
+
+    test('computeEndTime adds duration to start', () {
+      expect(
+        ScheduleHelper.computeEndTime(
+          start: const TimeOfDay(hour: 14, minute: 15),
+          durationMinutes: 90,
+        ),
+        const TimeOfDay(hour: 15, minute: 45),
+      );
+    });
+
+    test('isRangeAvailable requires range within operating hours', () {
+      final day = DateTime(2026, 6, 9, 16, 30);
+      final appointments = <Appointment>[];
+
+      expect(
+        ScheduleHelper.isRangeAvailable(
+          start: day,
+          durationMinutes: 60,
+          workStart: const TimeOfDay(hour: 9, minute: 0),
+          workEnd: const TimeOfDay(hour: 17, minute: 0),
+          appointments: appointments,
+          professionalId: '7',
+        ),
+        isFalse,
+      );
+    });
+
+    test('isRangeAvailable rejects collision with existing appointment', () {
+      final day = DateTime(2026, 6, 9, 10, 0);
+      final appointments = [
+        Appointment(
+          id: '1',
+          service: 'Massage — Full Body',
+          dateTime: day,
+          durationMinutes: 60,
+          professionalId: '7',
+        ),
+      ];
+
+      expect(
+        ScheduleHelper.isRangeAvailable(
+          start: DateTime(2026, 6, 9, 10, 30),
+          durationMinutes: 60,
+          workStart: const TimeOfDay(hour: 9, minute: 0),
+          workEnd: const TimeOfDay(hour: 17, minute: 0),
+          appointments: appointments,
+          professionalId: '7',
+        ),
+        isFalse,
+      );
+
+      expect(
+        ScheduleHelper.isRangeAvailable(
+          start: DateTime(2026, 6, 9, 11, 0),
+          durationMinutes: 60,
+          workStart: const TimeOfDay(hour: 9, minute: 0),
+          workEnd: const TimeOfDay(hour: 17, minute: 0),
+          appointments: appointments,
+          professionalId: '7',
+        ),
+        isTrue,
+      );
+    });
+
+    test('isRangeAvailable ignores excluded appointment', () {
+      final day = DateTime(2026, 6, 9, 10, 0);
+      final appointments = [
+        Appointment(
+          id: '42',
+          service: 'Massage — Full Body',
+          dateTime: day,
+          durationMinutes: 60,
+          professionalId: '7',
+        ),
+      ];
+
+      expect(
+        ScheduleHelper.isRangeAvailable(
+          start: day,
+          durationMinutes: 60,
+          workStart: const TimeOfDay(hour: 9, minute: 0),
+          workEnd: const TimeOfDay(hour: 17, minute: 0),
+          appointments: appointments,
+          professionalId: '7',
+          excludeAppointmentId: '42',
+        ),
+        isTrue,
+      );
+    });
   });
 }

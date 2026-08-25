@@ -30,7 +30,8 @@ class BookingPage extends StatefulWidget {
 
 class _BookingPageState extends State<BookingPage> {
   DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
   List<User> _professionals = [];
   User? _selectedProfessional;
   bool _loadingProfessionals = true;
@@ -40,8 +41,9 @@ class _BookingPageState extends State<BookingPage> {
   bool _loading = false;
   bool _loadingAppointment = false;
   String? _error;
+  String? _rangeError;
 
-  final Set<TimeOfDay> _unavailableSlots = {};
+  List<Appointment> _dayAppointments = [];
 
   late String _category;
   bool get _isReschedule => widget.appointmentId != null && widget.appointmentId!.isNotEmpty;
@@ -109,7 +111,7 @@ class _BookingPageState extends State<BookingPage> {
         _rescheduleAppointment = appt;
         _selectedService = Service(name: appt.service);
         _selectedDate = appt.dateTime;
-        _selectedTime = TimeOfDay.fromDateTime(appt.dateTime);
+        _startTime = TimeOfDay.fromDateTime(appt.dateTime);
         _category = resolvedCategory;
       });
     } catch (e) {
@@ -163,12 +165,13 @@ class _BookingPageState extends State<BookingPage> {
           _selectedProfessional = null;
         }
         if (!_isReschedule) {
-          _selectedTime = null;
+          _startTime = null;
         }
-        _unavailableSlots.clear();
+        _dayAppointments = [];
+        _rangeError = null;
       });
       if (_selectedProfessional != null) {
-        _loadSlotAvailability(_selectedProfessional!);
+        _loadDayAppointments(_selectedProfessional!);
       }
     } on AppException catch (e) {
       if (!mounted) return;
@@ -246,7 +249,12 @@ class _BookingPageState extends State<BookingPage> {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => setState(() => _selectedService = service),
+          onTap: () {
+            setState(() => _selectedService = service);
+            if (_selectedProfessional != null) {
+              _recalculateEndTime(_selectedProfessional!);
+            }
+          },
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -388,11 +396,12 @@ class _BookingPageState extends State<BookingPage> {
     if (date != null) {
       setState(() {
         _selectedDate = date;
-        _selectedTime = null;
-        _unavailableSlots.clear();
+        _startTime = null;
+        _endTime = null;
+        _rangeError = null;
       });
       if (_selectedProfessional != null) {
-        _loadSlotAvailability(_selectedProfessional!);
+        _loadDayAppointments(_selectedProfessional!);
       }
     }
   }
@@ -401,19 +410,94 @@ class _BookingPageState extends State<BookingPage> {
     return DateTime(d.year, d.month, d.day, t.hour, t.minute);
   }
 
-  List<TimeOfDay> _slotsForProfessional(User professional) {
-    return ScheduleHelper.generateSlots(
-      start: professional.workStart,
-      end: professional.workEnd,
-      slotMinutes: professional.slotDurationMinutes,
+  int _selectedDurationMinutes(User professional) {
+    return _selectedService?.durationMinutes ?? professional.slotDurationMinutes;
+  }
+
+  void _recalculateEndTime(User professional) {
+    if (_startTime == null) {
+      setState(() => _endTime = null);
+      return;
+    }
+    final duration = _selectedDurationMinutes(professional);
+    setState(() {
+      _endTime = ScheduleHelper.computeEndTime(
+        start: _startTime!,
+        durationMinutes: duration,
+      );
+    });
+    _validateSelection(professional);
+  }
+
+  void _validateSelection(User professional) {
+    if (_selectedDate == null || _startTime == null) {
+      setState(() => _rangeError = null);
+      return;
+    }
+
+    final start = _combine(_selectedDate!, _startTime!);
+    final duration = _selectedDurationMinutes(professional);
+
+    final available = ScheduleHelper.isRangeAvailable(
+      start: start,
+      durationMinutes: duration,
+      workStart: professional.workStart,
+      workEnd: professional.workEnd,
+      appointments: _dayAppointments,
+      professionalId: professional.id!,
+      bufferTimeMinutes: professional.bufferTimeMinutes,
       breakStart: professional.breakStart,
       breakEnd: professional.breakEnd,
     );
+
+    setState(() {
+      _rangeError = available
+          ? null
+          : 'Selected time conflicts with another appointment or working hours';
+    });
   }
 
-  Future<void> _loadSlotAvailability(User professional) async {
+  Widget _buildTimeBanner(User professional) {
+    final duration = _selectedDurationMinutes(professional);
+    final isConflict = _rangeError != null;
+    return Card(
+      color: isConflict
+          ? Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3)
+          : Theme.of(context)
+              .colorScheme
+              .secondaryContainer
+              .withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(
+              isConflict ? Icons.warning_amber_rounded : Icons.schedule,
+              color: isConflict
+                  ? Theme.of(context).colorScheme.error
+                  : Theme.of(context).colorScheme.onSecondaryContainer,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Selected: ${_startTime!.format(context)} - ${_endTime!.format(context)} ($duration min)',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: isConflict
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadDayAppointments(User professional) async {
     if (_selectedDate == null) {
-      setState(() => _unavailableSlots.clear());
+      setState(() => _dayAppointments = []);
       return;
     }
 
@@ -430,33 +514,12 @@ class _BookingPageState extends State<BookingPage> {
             !(_isReschedule && a.id == widget.appointmentId);
       }).toList();
 
-      final slots = _slotsForProfessional(professional);
-      final unavailable = <TimeOfDay>{};
-
-      for (final slot in slots) {
-        final slotStart = _combine(_selectedDate!, slot);
-        final isAvailable = ScheduleHelper.isSlotAvailable(
-          slotStart: slotStart,
-          slotDuration: professional.slotDurationMinutes,
-          professionalId: professional.id!,
-          appointments: dayAppointments,
-          bufferTimeMinutes: professional.bufferTimeMinutes,
-        );
-
-        if (!isAvailable) {
-          unavailable.add(slot);
-        }
-      }
-
       if (mounted) {
-        setState(() {
-          _unavailableSlots
-            ..clear()
-            ..addAll(unavailable);
-        });
+        setState(() => _dayAppointments = dayAppointments);
+        _validateSelection(professional);
       }
     } catch (e) {
-      // Keep existing unavailable slots on error;
+      // Keep existing appointments on error;
       // the final check before booking still protects against double booking.
     }
   }
@@ -466,9 +529,6 @@ class _BookingPageState extends State<BookingPage> {
     final apptProvider = Provider.of<AppointmentProvider>(context);
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final professional = _selectedProfessional;
-    final timeSlots = professional == null
-        ? <TimeOfDay>[]
-        : _slotsForProfessional(professional);
 
     final loc = AppLocalizations.of(context);
     final serviceSubtype = _serviceSubtype(widget.service ?? '');
@@ -533,12 +593,14 @@ class _BookingPageState extends State<BookingPage> {
                     onChanged: (value) {
                       setState(() {
                         _selectedProfessional = value;
-                        _selectedTime = null;
-                        _unavailableSlots.clear();
+                        _startTime = null;
+                        _endTime = null;
+                        _rangeError = null;
+                        _dayAppointments = [];
                         if (value == null) _selectedService = null;
                       });
                   if (value != null) {
-                    _loadSlotAvailability(value);
+                    _loadDayAppointments(value);
                   }
                 },
               ),
@@ -657,57 +719,44 @@ class _BookingPageState extends State<BookingPage> {
             if (_selectedDate != null && professional != null) ...[
               const SizedBox(height: 16),
               Text(
-                '${AppLocalizations.of(context)?.selectTimeSlot ?? 'Available slots'} (${professional.slotDurationMinutes} ${AppLocalizations.of(context)?.mins ?? 'min each'})',
+                'Start time',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
-              if (timeSlots.isEmpty)
-                Text(AppLocalizations.of(context)?.noAppointments ?? 'No slots fit this professional schedule.')
-              else
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: timeSlots.map((slot) {
-                    final isSelected = _selectedTime == slot;
-                    final isUnavailable = _unavailableSlots.contains(slot);
-
-                     return ChoiceChip(
-                      label: isUnavailable
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  slot.format(context),
-                                  style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.38),
-                                  ),
-                                ),
-                                 const SizedBox(width: 4),
-                                Text(
-                                  AppLocalizations.of(context)?.confirmed ?? 'Booked',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.38),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : isSelected
-                              ? Text(
-                                  slot.format(context),
-                                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-                                )
-                              : Text(slot.format(context)),
-                      selected: isSelected,
-                      onSelected: isUnavailable ? null : (_) => setState(() => _selectedTime = slot),
-                    );
-                  }).toList(),
+              DropdownButtonFormField<TimeOfDay>(
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Start time',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.access_time),
+                ),
+                value: _startTime,
+                items: ScheduleHelper.generateStartTimes(
+                  workStart: professional.workStart,
+                  workEnd: professional.workEnd,
+                ).map((t) {
+                  return DropdownMenuItem(
+                    value: t,
+                    child: Text(t.format(context)),
+                  );
+                }).toList(),
+                onChanged: (t) {
+                  setState(() => _startTime = t);
+                  _recalculateEndTime(professional);
+                },
+              ),
+              const SizedBox(height: 12),
+              if (_startTime != null && _endTime != null)
+                _buildTimeBanner(professional),
+              if (_rangeError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _rangeError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
                 ),
             ],
             const SizedBox(height: 20),
@@ -717,7 +766,9 @@ class _BookingPageState extends State<BookingPage> {
             ElevatedButton(
               onPressed: _loading ||
                       _loadingProfessionals ||
-                      _professionals.isEmpty
+                      _professionals.isEmpty ||
+                      _rangeError != null ||
+                      _startTime == null
                   ? null
                   : () async {
                       if (_selectedProfessional == null) {
@@ -725,21 +776,27 @@ class _BookingPageState extends State<BookingPage> {
                         return;
                       }
 
-                      if (_selectedDate == null || _selectedTime == null) {
+                      if (_selectedDate == null || _startTime == null) {
                         setState(() => _error = AppLocalizations.of(context)?.selectDate ?? 'Please select a date and time slot');
                         return;
                       }
 
                       final pro = _selectedProfessional!;
-                      final dateTime = _combine(_selectedDate!, _selectedTime!);
+                      final duration = _selectedDurationMinutes(pro);
+                      final dateTime = _combine(_selectedDate!, _startTime!);
 
                       final navigator = Navigator.of(context);
                       final scaffoldMessenger = ScaffoldMessenger.of(context);
                       final errorColor = Theme.of(context).colorScheme.error;
 
+                      if (_rangeError != null) {
+                        setState(() => _error = _rangeError);
+                        return;
+                      }
+
                       if (!await apptProvider.isSlotAvailable(
                         slotStart: dateTime,
-                        slotDuration: pro.slotDurationMinutes,
+                        slotDuration: duration,
                         professionalId: pro.id!,
                         bufferTimeMinutes: pro.bufferTimeMinutes,
                         professionalEmail: pro.email,

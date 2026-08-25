@@ -247,7 +247,11 @@ class MyApp extends StatelessWidget {
                     case Routes.professionalHome:
                       return const ProfessionalBookingManagementPage();
                     case Routes.professionalManualBooking:
-                      return const ProfessionalManualBookingPage();
+                      final args = settings.arguments;
+                      final initialDateTime = args is DateTime ? args : null;
+                      return ProfessionalManualBookingPage(
+                        initialDateTime: initialDateTime,
+                      );
                     case Routes.completeProfile:
                       return Scaffold(
                         appBar: AppBar(

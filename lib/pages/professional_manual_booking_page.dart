@@ -15,7 +15,12 @@ import '../providers/service_provider.dart';
 import '../repositories/user_repository.dart';
 
 class ProfessionalManualBookingPage extends StatefulWidget {
-  const ProfessionalManualBookingPage({super.key});
+  const ProfessionalManualBookingPage({
+    super.key,
+    this.initialDateTime,
+  });
+
+  final DateTime? initialDateTime;
 
   @override
   State<ProfessionalManualBookingPage> createState() =>
@@ -35,14 +40,16 @@ class _ProfessionalManualBookingPageState
   Service? _selectedServiceObj;
   bool _isCustomService = false;
   DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _rangeError;
+
+  List<Appointment> _dayAppointments = [];
 
   final TextEditingController _durationController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
-
-  final Set<TimeOfDay> _unavailableSlots = {};
 
   StateSetter? _sheetSetState;
 
@@ -50,6 +57,7 @@ class _ProfessionalManualBookingPageState
   void initState() {
     super.initState();
     _loadCustomers();
+    _applyInitialDateTime();
   }
 
   @override
@@ -75,6 +83,76 @@ class _ProfessionalManualBookingPageState
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  void _applyInitialDateTime() {
+    final initial = widget.initialDateTime;
+    if (initial == null) return;
+
+    final professional = context.read<AuthProvider>().currentUser;
+    if (professional == null) return;
+
+    setState(() {
+      _selectedDate = DateTime(initial.year, initial.month, initial.day);
+      _startTime = TimeOfDay(hour: initial.hour, minute: initial.minute);
+    });
+
+    _loadDayAppointments(professional);
+  }
+
+  void _applyServiceDuration(User professional) {
+    if (_startTime != null) {
+      _recalculateEndTime(professional);
+    }
+  }
+
+  int _selectedDurationMinutes(User professional) {
+    final parsed = int.tryParse(_durationController.text.trim());
+    if (parsed != null && parsed > 0) return parsed;
+    return _selectedServiceObj?.durationMinutes ?? professional.slotDurationMinutes;
+  }
+
+  void _recalculateEndTime(User professional) {
+    if (_startTime == null) {
+      setState(() => _endTime = null);
+      return;
+    }
+    final duration = _selectedDurationMinutes(professional);
+    setState(() {
+      _endTime = ScheduleHelper.computeEndTime(
+        start: _startTime!,
+        durationMinutes: duration,
+      );
+    });
+    _validateSelection(professional);
+  }
+
+  void _validateSelection(User professional) {
+    if (_selectedDate == null || _startTime == null) {
+      setState(() => _rangeError = null);
+      return;
+    }
+
+    final start = _combine(_selectedDate!, _startTime!);
+    final duration = _selectedDurationMinutes(professional);
+
+    final available = ScheduleHelper.isRangeAvailable(
+      start: start,
+      durationMinutes: duration,
+      workStart: professional.workStart,
+      workEnd: professional.workEnd,
+      appointments: _dayAppointments,
+      professionalId: professional.id!,
+      bufferTimeMinutes: professional.bufferTimeMinutes,
+      breakStart: professional.breakStart,
+      breakEnd: professional.breakEnd,
+    );
+
+    setState(() {
+      _rangeError = available
+          ? null
+          : 'Selected time conflicts with another appointment or working hours';
+    });
   }
 
   void _filterCustomers(String query) {
@@ -137,19 +215,47 @@ class _ProfessionalManualBookingPageState
     return DateTime(d.year, d.month, d.day, t.hour, t.minute);
   }
 
-  List<TimeOfDay> _slotsForProfessional(User professional) {
-    return ScheduleHelper.generateSlots(
-      start: professional.workStart,
-      end: professional.workEnd,
-      slotMinutes: professional.slotDurationMinutes,
-      breakStart: professional.breakStart,
-      breakEnd: professional.breakEnd,
+  Widget _buildTimeBanner(User professional) {
+    final duration = _selectedDurationMinutes(professional);
+    final isConflict = _rangeError != null;
+    return Card(
+      color: isConflict
+          ? Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3)
+          : Theme.of(context)
+              .colorScheme
+              .secondaryContainer
+              .withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(
+              isConflict ? Icons.warning_amber_rounded : Icons.schedule,
+              color: isConflict
+                  ? Theme.of(context).colorScheme.error
+                  : Theme.of(context).colorScheme.onSecondaryContainer,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Selected: ${_startTime!.format(context)} - ${_endTime!.format(context)} ($duration min)',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: isConflict
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Future<void> _loadSlotAvailability(User professional) async {
+  Future<void> _loadDayAppointments(User professional) async {
     if (_selectedDate == null) {
-      setState(() => _unavailableSlots.clear());
+      setState(() => _dayAppointments = []);
       return;
     }
 
@@ -167,33 +273,12 @@ class _ProfessionalManualBookingPageState
             !a.isTerminal;
       }).toList();
 
-      final slots = _slotsForProfessional(professional);
-      final unavailable = <TimeOfDay>{};
-
-      for (final slot in slots) {
-        final slotStart = _combine(_selectedDate!, slot);
-        final isAvailable = ScheduleHelper.isSlotAvailable(
-          slotStart: slotStart,
-          slotDuration: professional.slotDurationMinutes,
-          professionalId: professional.id!,
-          appointments: dayAppointments,
-          bufferTimeMinutes: professional.bufferTimeMinutes,
-        );
-
-        if (!isAvailable) {
-          unavailable.add(slot);
-        }
-      }
-
       if (mounted) {
-        setState(() {
-          _unavailableSlots
-            ..clear()
-            ..addAll(unavailable);
-        });
+        setState(() => _dayAppointments = dayAppointments);
+        _validateSelection(professional);
       }
     } catch (e) {
-      // Keep existing unavailable slots on error;
+      // Keep existing appointments on error;
       // the final check before booking still protects against double booking.
     }
   }
@@ -212,10 +297,11 @@ class _ProfessionalManualBookingPageState
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
-        _selectedTime = null;
-        _unavailableSlots.clear();
+        _startTime = null;
+        _endTime = null;
+        _rangeError = null;
       });
-      _loadSlotAvailability(professional);
+      _loadDayAppointments(professional);
     }
   }
 
@@ -234,7 +320,7 @@ class _ProfessionalManualBookingPageState
       );
       return;
     }
-    if (_selectedDate == null || _selectedTime == null) {
+    if (_selectedDate == null || _startTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)?.pleaseSelectDateTime ?? 'Please select date and time')),
       );
@@ -252,16 +338,23 @@ class _ProfessionalManualBookingPageState
       return;
     }
 
+    if (_rangeError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_rangeError!)),
+      );
+      return;
+    }
+
+    final durationMinutes = _selectedDurationMinutes(professional);
+
     final dateTime = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
       _selectedDate!.day,
-      _selectedTime!.hour,
-      _selectedTime!.minute,
+      _startTime!.hour,
+      _startTime!.minute,
     );
 
-    final durationMinutes = int.tryParse(_durationController.text.trim()) ??
-        professional.slotDurationMinutes;
     final price = double.tryParse(_priceController.text.trim());
 
     final newAppt = Appointment(
@@ -470,7 +563,8 @@ class _ProfessionalManualBookingPageState
                       }
                     }
                   });
-                },
+                  _applyServiceDuration(professional);
+                  },
         ),
         if (_selectedService != null || _isCustomService) ...[
           const SizedBox(height: 12),
@@ -496,6 +590,7 @@ class _ProfessionalManualBookingPageState
                   ),
                   controller: _durationController,
                   keyboardType: TextInputType.number,
+                  onChanged: (_) => _recalculateEndTime(professional),
                   validator: (v) {
                     final parsed = int.tryParse(v?.trim() ?? '');
                     if (parsed == null || parsed <= 0) {
@@ -542,8 +637,6 @@ class _ProfessionalManualBookingPageState
       });
       return const Scaffold(body: SizedBox.shrink());
     }
-
-    final timeSlots = _slotsForProfessional(professional);
 
     return Scaffold(
       appBar: AppBar(
@@ -601,65 +694,45 @@ class _ProfessionalManualBookingPageState
                     ),
                     const SizedBox(height: 16),
                     if (_selectedDate != null) ...[
-                        Text(
-                         '${AppLocalizations.of(context)?.availableSlots ?? 'Available slots'} (${_selectedServiceObj?.durationMinutes ?? professional.slotDurationMinutes} ${AppLocalizations.of(context)?.minEach ?? 'min each'})',
-                         style: Theme.of(context).textTheme.titleSmall,
-                        ),
+                      Text(
+                        'Start time',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
                       const SizedBox(height: 8),
-                       if (timeSlots.isEmpty)
-                         Text(AppLocalizations.of(context)?.noAvailableSlots ?? 'No slots fit this professional schedule.')
-                      else
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: timeSlots.map((slot) {
-                            final isSelected = _selectedTime == slot;
-                            final isUnavailable =
-                                _unavailableSlots.contains(slot);
-
-                            return ChoiceChip(
-                              label: isUnavailable
-                                  ? Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          slot.format(context),
-                                          style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: 0.38),
-                                          ),
-                                        ),
-                                 const SizedBox(width: 4),
-                                 Text(
-                                   AppLocalizations.of(context)?.booked ?? 'Booked',
-                                   style: TextStyle(
-                                    fontSize: 10,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.38),
-                                  ),
-                                 ),
-                                      ],
-                                    )
-                                  : isSelected
-                                      ? Text(
-                                          slot.format(context),
-                                          style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onPrimary,
-                                          ),
-                                        )
-                                      : Text(slot.format(context)),
-                              selected: isSelected,
-                              onSelected: isUnavailable
-                                  ? null
-                                  : (_) => setState(() => _selectedTime = slot),
-                            );
-                          }).toList(),
+                      DropdownButtonFormField<TimeOfDay>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Start time',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.access_time),
+                        ),
+                        value: _startTime,
+                        items: ScheduleHelper.generateStartTimes(
+                          workStart: professional.workStart,
+                          workEnd: professional.workEnd,
+                        ).map((t) {
+                          return DropdownMenuItem(
+                            value: t,
+                            child: Text(t.format(context)),
+                          );
+                        }).toList(),
+                        onChanged: (t) {
+                          setState(() => _startTime = t);
+                          _recalculateEndTime(professional);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      if (_startTime != null && _endTime != null)
+                        _buildTimeBanner(professional),
+                      if (_rangeError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            _rangeError!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
                         ),
                     ],
                     const SizedBox(height: 24),
