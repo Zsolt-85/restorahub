@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../models/business.dart';
+
 class ThemeHelper {
   static const _defaultPrimaryColor = Color(0xFF008080);
 
-  static ThemeData generateTenantTheme(String? hexColor, {bool isDark = false}) {
-    final seedColor = _parseHexColor(hexColor) ?? _defaultPrimaryColor;
-    final brightness = isDark ? Brightness.dark : Brightness.light;
+  static ThemeData generateTenantTheme(BusinessBranding? branding, {bool isDark = false}) {
+    final seedColor = _parseHexColor(branding?.primaryColor) ?? _defaultPrimaryColor;
+    final brightness = _resolveBrightness(branding?.themeMode, isDark);
 
     final colorScheme = ColorScheme.fromSeed(
       seedColor: seedColor,
@@ -19,6 +21,20 @@ class ThemeHelper {
       elevatedButtonTheme: _buildElevatedButtonTheme(colorScheme),
       tabBarTheme: _buildTabBarTheme(colorScheme),
     );
+  }
+
+  static Brightness _resolveBrightness(String? themeMode, bool fallbackDark) {
+    if (themeMode == null || themeMode.isEmpty) {
+      return fallbackDark ? Brightness.dark : Brightness.light;
+    }
+    switch (themeMode.toLowerCase()) {
+      case 'dark':
+        return Brightness.dark;
+      case 'light':
+        return Brightness.light;
+      default:
+        return fallbackDark ? Brightness.dark : Brightness.light;
+    }
   }
 
   static Color? _parseHexColor(String? hex) {

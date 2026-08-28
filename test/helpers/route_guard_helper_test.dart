@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restorahub/constants/routes.dart';
 import 'package:restorahub/helpers/route_guard_helper.dart';
+import 'package:restorahub/models/business.dart';
 import 'package:restorahub/models/user.dart';
 import 'package:restorahub/providers/auth_provider.dart';
+import 'package:restorahub/providers/business_provider.dart';
 import 'package:restorahub/repositories/user_repository.dart';
 
 class FakeUserRepository implements UserRepository {
@@ -33,14 +35,12 @@ class FakeUserRepository implements UserRepository {
 
   @override
   Future<List<User>> getProfessionalsByCategory(String category) async {
-    return users.values
-        .where((u) => u.role == 'professional' && u.category == category)
-        .toList();
+    return users.values.where((u) => u.role == 'professional' && u.category == category).toList();
   }
 
   @override
   Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
-    return getProfessionalsBySpecialty(specialty);
+    return getProfessionalsByCategory(specialty);
   }
 
   @override
@@ -232,6 +232,138 @@ void main() {
         isProfileCompleteOverride: true,
       );
       expect(redirect, Routes.customerHome);
+    });
+
+    test('authenticated super_admin on login redirects to super admin dashboard', () {
+      final user = User(
+        id: '3',
+        name: 'Super Admin',
+        email: 'admin@test.com',
+        phone: '555-0300',
+        role: 'super_admin',
+      );
+      final auth = _authProviderWithUser(user);
+      final redirect = RouteGuardHelper.evaluateRedirect(
+        currentRoute: Routes.login,
+        authProvider: auth,
+        isAuthenticatedOverride: true,
+        isProfileCompleteOverride: true,
+      );
+      expect(redirect, Routes.superAdminDashboard);
+    });
+
+    test('business_admin with trial business on login redirects to setup wizard', () {
+      final user = User(
+        id: '4',
+        name: 'Biz Admin',
+        email: 'biz@test.com',
+        phone: '555-0400',
+        role: 'business_admin',
+        businessId: 'biz_1',
+      );
+      final auth = _authProviderWithUser(user);
+      final businessProvider = BusinessProvider()
+        ..setBusiness(Business(id: 'biz_1', name: 'Test', status: BusinessStatus.trial));
+
+      final redirect = RouteGuardHelper.evaluateRedirect(
+        currentRoute: Routes.login,
+        authProvider: auth,
+        businessProvider: businessProvider,
+        isAuthenticatedOverride: true,
+        isProfileCompleteOverride: true,
+      );
+      expect(redirect, Routes.setupWizard);
+    });
+
+    test('business_admin with active business on login redirects to admin dashboard', () {
+      final user = User(
+        id: '5',
+        name: 'Biz Admin',
+        email: 'biz2@test.com',
+        phone: '555-0500',
+        role: 'business_admin',
+        businessId: 'biz_2',
+      );
+      final auth = _authProviderWithUser(user);
+      final businessProvider = BusinessProvider()
+        ..setBusiness(Business(id: 'biz_2', name: 'Active Biz', status: BusinessStatus.active));
+
+      final redirect = RouteGuardHelper.evaluateRedirect(
+        currentRoute: Routes.login,
+        authProvider: auth,
+        businessProvider: businessProvider,
+        isAuthenticatedOverride: true,
+        isProfileCompleteOverride: true,
+      );
+      expect(redirect, Routes.adminDashboard);
+    });
+
+    test('business_admin with null business on login redirects to setup wizard', () {
+      final user = User(
+        id: '6',
+        name: 'Biz Admin',
+        email: 'biz3@test.com',
+        phone: '555-0600',
+        role: 'business_admin',
+        businessId: 'biz_3',
+      );
+      final auth = _authProviderWithUser(user);
+      final businessProvider = BusinessProvider();
+
+      final redirect = RouteGuardHelper.evaluateRedirect(
+        currentRoute: Routes.login,
+        authProvider: auth,
+        businessProvider: businessProvider,
+        isAuthenticatedOverride: true,
+        isProfileCompleteOverride: true,
+      );
+      expect(redirect, Routes.setupWizard);
+    });
+
+    test('business_admin on customer home redirects to setup wizard when trial', () {
+      final user = User(
+        id: '7',
+        name: 'Biz Admin',
+        email: 'biz4@test.com',
+        phone: '555-0700',
+        role: 'business_admin',
+        businessId: 'biz_4',
+      );
+      final auth = _authProviderWithUser(user);
+      final businessProvider = BusinessProvider()
+        ..setBusiness(Business(id: 'biz_4', name: 'Trial Biz', status: BusinessStatus.trial));
+
+      final redirect = RouteGuardHelper.evaluateRedirect(
+        currentRoute: Routes.customerHome,
+        authProvider: auth,
+        businessProvider: businessProvider,
+        isAuthenticatedOverride: true,
+        isProfileCompleteOverride: true,
+      );
+      expect(redirect, Routes.setupWizard);
+    });
+
+    test('business_admin on customer home redirects to admin dashboard when active', () {
+      final user = User(
+        id: '8',
+        name: 'Biz Admin',
+        email: 'biz5@test.com',
+        phone: '555-0800',
+        role: 'business_admin',
+        businessId: 'biz_5',
+      );
+      final auth = _authProviderWithUser(user);
+      final businessProvider = BusinessProvider()
+        ..setBusiness(Business(id: 'biz_5', name: 'Active Biz', status: BusinessStatus.active));
+
+      final redirect = RouteGuardHelper.evaluateRedirect(
+        currentRoute: Routes.customerHome,
+        authProvider: auth,
+        businessProvider: businessProvider,
+        isAuthenticatedOverride: true,
+        isProfileCompleteOverride: true,
+      );
+      expect(redirect, Routes.adminDashboard);
     });
   });
 }

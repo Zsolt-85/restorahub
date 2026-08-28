@@ -66,19 +66,42 @@ class SuperAdminProvider extends ChangeNotifier {
     String? phone,
     String? address,
     BusinessType? businessType,
+    String? ownerEmail,
   }) async {
     _beginLoading();
     try {
+      final now = DateTime.now();
+      final slug = _generateSlug(name.trim());
+      final effectiveOwnerId = ownerEmail?.trim().toLowerCase();
+
       final business = Business(
         id: '',
         name: name.trim(),
-        email: email,
+        email: email?.trim().toLowerCase(),
         logoUrl: logoUrl,
         primaryColorHex: primaryColorHex,
-        phone: phone,
-        address: address,
+        phone: phone?.trim(),
+        address: address?.trim(),
+        slug: slug,
         businessType: businessType,
         status: BusinessStatus.trial,
+        ownerId: effectiveOwnerId,
+        contactInformation: BusinessContactInformation(
+          address: address?.trim(),
+          phone: phone?.trim(),
+          email: email?.trim().toLowerCase(),
+        ),
+        branding: BusinessBranding(
+          primaryColor: primaryColorHex,
+        ),
+        settings: BusinessSettings(),
+        subscription: BusinessSubscription(
+          status: 'trial',
+          startDate: now,
+        ),
+        featureEntitlements: const [],
+        createdAt: now,
+        updatedAt: now,
       );
       await _repository.createBusiness(business);
       await loadAllBusinesses();
@@ -88,8 +111,16 @@ class SuperAdminProvider extends ChangeNotifier {
       return e.message;
     } catch (e) {
       _endLoading('Unexpected error creating business');
-      return 'Unexpected error creating business';
+      return 'Unexpected error creating business: ${e.toString()}';
     }
+  }
+
+  String _generateSlug(String name) {
+    final lower = name.toLowerCase().trim();
+    final slug = lower
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    return slug.isEmpty ? 'business' : slug;
   }
 
   Future<String?> updateBusiness({

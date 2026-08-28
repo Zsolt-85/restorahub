@@ -34,6 +34,7 @@ import 'providers/locale_provider.dart';
 import 'providers/business_provider.dart';
 import 'providers/super_admin_provider.dart';
 import 'providers/service_provider.dart';
+import 'providers/setup_wizard_provider.dart';
 
 import 'pages/analytics_page.dart';
 import 'pages/forgot_password_page.dart';
@@ -55,6 +56,8 @@ import 'pages/receipt_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/admin_calendar_page.dart';
 import 'pages/super_admin_dashboard_page.dart';
+import 'pages/setup_wizard_page.dart';
+import 'pages/admin_dashboard_page.dart';
 
 Future<void> main() async {
   FlutterError.onError = (details) {
@@ -94,17 +97,26 @@ Future<void> main() async {
     final localeProvider = LocaleProvider();
     final businessProvider = BusinessProvider();
     final superAdminProvider = SuperAdminProvider();
+    final setupWizardProvider = SetupWizardProvider();
 
     await themeProvider.loadTheme();
 
     final hasSession = await authProvider.restoreSession();
     if (hasSession && authProvider.currentUser != null) {
       appointmentProvider.setCurrentUser(authProvider.currentUser!);
+
+      final currentUser = authProvider.currentUser!;
+      if (currentUser.role == 'business_admin' && currentUser.businessId != null) {
+        final business = await businessRepo.getBusinessById(currentUser.businessId!);
+        if (business != null) {
+          businessProvider.setBusiness(business);
+        }
+      }
     } else {
       await appointmentProvider.loadAppointments();
     }
 
-    final initialRoute = _resolveInitialRoute(authProvider);
+    final initialRoute = _resolveInitialRoute(authProvider, businessProvider);
 
     runApp(
       MyApp(
@@ -114,6 +126,7 @@ Future<void> main() async {
         localeProvider: localeProvider,
          businessProvider: businessProvider,
          superAdminProvider: superAdminProvider,
+         setupWizardProvider: setupWizardProvider,
          initialRoute: initialRoute,
         notificationRepo: notificationRepo,
         paymentRepo: paymentRepo,
@@ -124,10 +137,11 @@ Future<void> main() async {
   });
 }
 
-String _resolveInitialRoute(AuthProvider authProvider) {
+String _resolveInitialRoute(AuthProvider authProvider, BusinessProvider businessProvider) {
   return RouteGuardHelper.evaluateRedirect(
         currentRoute: Routes.login,
         authProvider: authProvider,
+        businessProvider: businessProvider,
       ) ??
       Routes.login;
 }
@@ -141,6 +155,7 @@ class MyApp extends StatelessWidget {
     required this.localeProvider,
     required this.businessProvider,
     required this.superAdminProvider,
+    required this.setupWizardProvider,
     required this.initialRoute,
     required this.notificationRepo,
     required this.paymentRepo,
@@ -152,6 +167,7 @@ class MyApp extends StatelessWidget {
   final LocaleProvider localeProvider;
   final BusinessProvider businessProvider;
   final SuperAdminProvider superAdminProvider;
+  final SetupWizardProvider setupWizardProvider;
   final String initialRoute;
   final NotificationRepository notificationRepo;
   final PaymentRepository paymentRepo;
@@ -203,6 +219,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<ServiceProvider>(
           create: (_) => ServiceProvider(repository: FirestoreServiceRepository.instance),
         ),
+        ChangeNotifierProvider<SetupWizardProvider>(
+          create: (_) => SetupWizardProvider(),
+        ),
       ],
       child: Consumer3<ThemeProvider, LocaleProvider, BusinessProvider>(
         builder: (context, theme, localeProvider, activeBusinessProvider, _) {
@@ -224,6 +243,7 @@ class MyApp extends StatelessWidget {
               final redirect = RouteGuardHelper.evaluateRedirect(
                 currentRoute: route,
                 authProvider: authProvider,
+                businessProvider: businessProvider,
               );
 
               final targetRoute = redirect ?? route;
@@ -329,9 +349,13 @@ class MyApp extends StatelessWidget {
                       return const TeamManagementPage();
                     case Routes.adminCalendar:
                       return const AdminCalendarPage();
-                    case Routes.superAdminDashboard:
-                      return const SuperAdminDashboardPage();
-                    default:
+                     case Routes.superAdminDashboard:
+                       return const SuperAdminDashboardPage();
+                     case Routes.setupWizard:
+                       return const SetupWizardPage();
+                     case Routes.adminDashboard:
+                       return const AdminDashboardPage();
+                     default:
                       return const LoginPage();
                   }
                 },

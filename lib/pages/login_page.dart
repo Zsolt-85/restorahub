@@ -7,6 +7,8 @@ import '../l10n/app_localizations.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/business_provider.dart';
+import '../models/business.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -121,10 +123,21 @@ class _LoginPageState extends State<LoginPage> {
                         Provider.of<AppointmentProvider>(context, listen: false)
                             .setCurrentUser(auth.currentUser!);
 
-                        final route = auth.currentUser!.isProfessional
-                            ? Routes.professionalHome
-                            : Routes.customerHome;
-                        Navigator.pushReplacementNamed(context, route);
+                        final user = auth.currentUser!;
+                        if (user.role == 'business_admin') {
+                          final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+                          final business = businessProvider.currentBusiness;
+                          if (business == null || business.status == BusinessStatus.trial) {
+                            Navigator.pushReplacementNamed(context, Routes.setupWizard);
+                          } else {
+                            Navigator.pushReplacementNamed(context, Routes.adminDashboard);
+                          }
+                        } else {
+                          final route = user.isProfessional
+                              ? Routes.professionalHome
+                              : Routes.customerHome;
+                          Navigator.pushReplacementNamed(context, route);
+                        }
                       } else if (result == LoginResult.needsProfile) {
                         setState(() => _loading = false);
                         _showProfileCompletionDialog(auth);

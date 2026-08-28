@@ -57,8 +57,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isOwner(userId) || isSameBusiness(userId) || isSuperAdmin();
       allow create: if isOwner(userId);
-      allow update: if (isOwner(userId) || isSuperAdmin()) &&
-        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'businessId']));
+      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'businessId'])) || isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
 
@@ -74,10 +73,7 @@ service cloud.firestore {
                     isSuperAdmin();
       allow list: if isSignedIn();
       allow create: if isSignedIn() &&
-        request.resource.data.customerId != null &&
-        request.resource.data.professionalId != null &&
-        request.resource.data.dateTime != null &&
-        request.resource.data.service != null;
+        request.resource.data.keys().hasAll(['customerId', 'professionalId', 'dateTime', 'service']);
       allow update: if isOwner(resource.data.customerId) ||
                     isOwner(resource.data.professionalId) ||
                     isBusinessMatch(resource.data.businessId) ||
@@ -102,7 +98,7 @@ service cloud.firestore {
       allow get: if true;
       allow list: if isSuperAdmin();
       allow create: if isSuperAdmin();
-      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid || isSuperAdmin();
+      allow update: if isSuperAdmin() || (isSignedIn() && isBusinessMatch(businessId));
       allow delete: if isSuperAdmin();
     }
   }

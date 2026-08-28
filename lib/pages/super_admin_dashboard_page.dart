@@ -70,7 +70,9 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
     final addressController = TextEditingController();
+    final ownerEmailController = TextEditingController();
     BusinessType selectedBusinessType = BusinessType.wellness;
+    bool isSaving = false;
 
     await showDialog(
       context: context,
@@ -95,9 +97,20 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                 TextField(
                   controller: emailController,
                   decoration: const InputDecoration(
-                    labelText: 'Email',
+                    labelText: 'Business Email',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: ownerEmailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Owner Email',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person_outlined),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
@@ -153,38 +166,55 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
+              onPressed: isSaving ? null : () => Navigator.pop(dialogContext),
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
-                if (name.isEmpty) {
-                  ErrorHandler.showErrorSnackBar(dialogContext, 'Business name is required');
-                  return;
-                }
+              onPressed: isSaving
+                  ? null
+                  : () async {
+                      final name = nameController.text.trim();
+                      if (name.isEmpty) {
+                        ErrorHandler.showErrorSnackBar(dialogContext, 'Business name is required');
+                        return;
+                      }
 
-                Navigator.pop(dialogContext);
+                      setDialogState(() => isSaving = true);
 
-                final provider = Provider.of<SuperAdminProvider>(context, listen: false);
-                final error = await provider.createBusiness(
-                  name: name,
-                  email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
-                  phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
-                  address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
-                  businessType: selectedBusinessType,
-                );
+                      final provider = Provider.of<SuperAdminProvider>(context, listen: false);
+                      final error = await provider.createBusiness(
+                        name: name,
+                        email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
+                        phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+                        address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
+                        businessType: selectedBusinessType,
+                        ownerEmail: ownerEmailController.text.trim().isEmpty ? null : ownerEmailController.text.trim(),
+                      );
 
-                if (!mounted) return;
-                if (error == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Business created')),
-                  );
-                } else {
-                  ErrorHandler.showErrorSnackBar(context, error);
-                }
-              },
-              child: const Text('Save'),
+                      if (!mounted) return;
+
+                      if (error == null) {
+                        Navigator.pop(dialogContext);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Business created')),
+                        );
+                      } else {
+                        setDialogState(() => isSaving = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to create business: $error')),
+                        );
+                      }
+                    },
+              child: isSaving
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text('Save'),
             ),
           ],
         ),

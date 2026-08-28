@@ -53,9 +53,9 @@ class FirestoreSuperAdminRepository implements SuperAdminRepository {
   @override
   Future<void> createBusiness(Business business) async {
     try {
-      final docRef = business.id.isNotEmpty
-          ? _businessesCol.doc(business.id)
-          : _businessesCol.doc();
+      final docRef = business.id.isEmpty
+          ? _businessesCol.doc()
+          : _businessesCol.doc(business.id);
 
       final data = business.toMap();
       data['id'] = docRef.id;
@@ -64,7 +64,7 @@ class FirestoreSuperAdminRepository implements SuperAdminRepository {
       AppLogger.error(
         'FirestoreSuperAdminRepository.createBusiness error: $e\n$stack',
       );
-      throw AppException('Failed to create business', cause: e);
+      throw AppException('Failed to create business: $e', cause: e);
     }
   }
 

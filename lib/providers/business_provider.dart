@@ -10,7 +10,7 @@ class BusinessProvider extends ChangeNotifier {
 
   bool get hasBusiness => _currentBusiness != null;
 
-  ThemeData get tenantTheme => ThemeHelper.generateTenantTheme(_currentBusiness?.primaryColorHex);
+  ThemeData get tenantTheme => ThemeHelper.generateTenantTheme(_currentBusiness?.branding);
 
   void setBusiness(Business? business) {
     _currentBusiness = business;

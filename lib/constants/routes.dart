@@ -21,4 +21,6 @@ class Routes {
   static const teamManagement = '/team_management';
   static const adminCalendar = '/admin_calendar';
   static const superAdminDashboard = '/super_admin_dashboard';
+  static const setupWizard = '/setup_wizard';
+  static const adminDashboard = '/admin/dashboard';
 }

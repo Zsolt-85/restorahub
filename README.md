@@ -201,7 +201,7 @@ flutter test
 | Sprint 2 | Model & Security — Business model expansion (18 fields), Repository scoping, Pagination | ✅ Complete | 149/149 |
 | Sprint 3 | Domain Generalization — Rename professional→staff, specialty→category, Service catalog decoupling | ✅ Complete | 155/155 |
 | Sprint 4 | Business Lifecycle — State machine (trial→active→suspended→cancelled→archived), BusinessType selection | ✅ Complete | 179/179 |
-| Sprint 5 | Onboarding & White-Label — Setup wizard, BusinessBranding, Tenant theme resolution | ⏳ Pending | — |
+| Sprint 5 | Onboarding & White-Label — Setup wizard, BusinessBranding, Tenant theme resolution | ✅ Complete | 210/210 |
 | Sprint 6 | Feature Entitlements — FeatureGate service, Plan definitions | ⏳ Pending | — |
 | Sprint 7 | Pilot Hardening — Documentation, End-to-end testing | ⏳ Pending | — |
 
@@ -247,10 +247,10 @@ flutter test
 
 ## 🔄 How to Resume Development
 
-- **Test suite:** 179/179 tests passing (`flutter test`)
+- **Test suite:** 210/210 tests passing (`flutter test`)
 - **Static analysis:** 0 errors (`flutter analyze`)
-- **Current focus:** Platform Transformation — Sprints 1-4 Complete
-- **Next immediate steps:** Sprint 5 — Onboarding & White-Label (Setup wizard, BusinessBranding, Tenant theme resolution)
+- **Current focus:** Platform Transformation — Sprints 1-5 Complete
+- **Next immediate steps:** Sprint 6 — Feature Entitlements (FeatureGate service, Plan definitions)
 
 ## Project status
 
@@ -286,7 +286,7 @@ flutter test
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 108/108 passing
+flutter test      # 210/210 passing
 ```
 
 ## Register as a professional
@@ -423,5 +423,5 @@ All multi-tenant phases are complete and verified.
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 108/108 passing
+flutter test      # 210/210 passing
 ```
