@@ -66,11 +66,27 @@ class RouteGuardHelper {
         return Routes.setupWizard;
       }
 
-      if (!isTrial && currentRoute != Routes.adminDashboard) {
+      if (!isTrial && !_isAdminRoute(currentRoute)) {
         return Routes.adminDashboard;
       }
     }
 
     return null;
+  }
+
+  static bool _isAdminRoute(String route) {
+    const adminRoutes = <String>{
+      Routes.adminDashboard,
+      Routes.businessSettings,
+      Routes.teamManagement,
+      Routes.services,
+      Routes.adminCalendar,
+      Routes.profile,
+      Routes.settings,
+      Routes.notifications,
+      Routes.analytics,
+      Routes.pastAppointments,
+    };
+    return adminRoutes.contains(route);
   }
 }
