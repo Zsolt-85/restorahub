@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../exceptions/app_exception.dart';
+import '../helpers/feature_gate.dart';
 import '../models/business.dart';
 import '../models/user.dart';
 import '../repositories/super_admin_repository.dart';
@@ -99,7 +100,7 @@ class SuperAdminProvider extends ChangeNotifier {
           status: 'trial',
           startDate: now,
         ),
-        featureEntitlements: const [],
+        featureEntitlements: FeatureGate.entitlementsForPlan('trial'),
         createdAt: now,
         updatedAt: now,
       );
