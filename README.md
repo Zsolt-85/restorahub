@@ -20,6 +20,7 @@ RestoraHub is a Flutter booking app for wellness and beauty services. Customers 
 - **Cancellation Alias:** Added `canBeCancelled()` to `Appointment` as a clearer alias for `canBeCancelledByCustomer()`, used by professional cancellation logic.
 - **Phase 8 Analytics Dashboard:** Replaced generic analytics charts with dedicated `fl_chart` widgets: `RevenueTrendChart` (curved line chart with gradient fill and date/revenue tooltips), `ServiceCategoryPieChart` (interactive pie chart with touch-safe legend), and `PeakHoursBarChart` (vertical bar chart 8 AM–8 PM with peak-slot highlighting). Added operational KPI indicator cards for Completion, Cancellation, and No-Show rates. Implemented cross-platform CSV export utility (`CsvExportHelper`) for appointment and revenue summaries, triggered from the Analytics app bar. Charts respond dynamically to Day/Month/Year range switches via `LayoutBuilder`-based responsive layout stacking.
 - **Feature Entitlements (Sprint 6):** Added `Plan` model (`lib/models/plan.dart`) with four built-in plans (`trial`, `basic`, `pro`, `enterprise`) and `PlanDefinitions` static registry. Added `FeatureGate` helper (`lib/helpers/feature_gate.dart`) with `isAvailable(Business, feature)`, `isAvailableForPlan(planId, feature)`, and `entitlementsForPlan(planId)`. Super admin business creation now seeds `featureEntitlements` from the trial plan definition instead of an empty list. 18 new tests added (12 in `test/models/plan_test.dart`, 6 in `test/helpers/feature_gate_test.dart`).
+- **Pilot Hardening (Sprint 7):** Added `ARCHITECTURE.md` documenting the current multi-tenant architecture, `AGENTS.md` with project-specific AI coding guidance, and `ROADMAP.md` with sprint history and forward milestones. Added smoke test (`test/unit/smoke_test.dart`) validating end-to-end business lifecycle, plan transitions, and FeatureGate integration (5 new tests).
 
 ## 🔄 Recent System Updates
 
@@ -203,8 +204,9 @@ flutter test
 | Sprint 3 | Domain Generalization — Rename professional→staff, specialty→category, Service catalog decoupling | ✅ Complete | 155/155 |
 | Sprint 4 | Business Lifecycle — State machine (trial→active→suspended→cancelled→archived), BusinessType selection | ✅ Complete | 179/179 |
 | Sprint 5 | Onboarding & White-Label — Setup wizard, BusinessBranding, Tenant theme resolution | ✅ Complete | 210/210 |
-| Sprint 6 | Feature Entitlements — FeatureGate service, Plan definitions | ✅ Complete | 228/228 |
-| Sprint 7 | Pilot Hardening — Documentation, End-to-end testing | ⏳ Pending | — |
+| Sprint 6 | Feature Entitlements — FeatureGate service, Plan definitions | ✅ Complete | 233/233 |
+| Sprint 7 | Pilot Hardening — Documentation, End-to-end testing | ✅ Complete | 233/233 |
+| Sprint 8 | UI Feature Gating — Consume FeatureGate in pages/routes | ⏳ Pending | — |
 
 ### Key Deliverables Completed
 
@@ -248,10 +250,10 @@ flutter test
 
 ## 🔄 How to Resume Development
 
-- **Test suite:** 228/228 tests passing (`flutter test`)
+- **Test suite:** 233/233 tests passing (`flutter test`)
 - **Static analysis:** 0 errors (`flutter analyze`)
-- **Current focus:** Platform Transformation — Sprints 1-6 Complete
-- **Next immediate steps:** Sprint 7 — Pilot Hardening (Documentation, End-to-end testing)
+- **Current focus:** Platform Transformation — Sprints 1-7 Complete
+- **Next immediate steps:** Sprint 8 — UI Feature Gating (Consume FeatureGate in pages/routes)
 
 ## Project status
 
@@ -287,7 +289,7 @@ flutter test
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 228/228 passing
+flutter test      # 233/233 passing
 ```
 
 ## Register as a professional
@@ -424,5 +426,5 @@ All multi-tenant phases are complete and verified.
 
 ```bash
 flutter analyze   # 0 errors
-flutter test      # 228/228 passing
+flutter test      # 233/233 passing
 ```
