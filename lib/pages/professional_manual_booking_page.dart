@@ -706,7 +706,7 @@ class _ProfessionalManualBookingPageState
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.access_time),
                         ),
-                        value: _startTime,
+                        initialValue: _startTime,
                         items: ScheduleHelper.generateStartTimes(
                           workStart: professional.workStart,
                           workEnd: professional.workEnd,

@@ -118,17 +118,19 @@ class _SetupWizardPageState extends State<SetupWizardPage> {
                 onPressed: wizard.isLoading
                     ? null
                     : () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final theme = Theme.of(context);
                         final error = await wizard.saveProgress(businessId);
                         if (!mounted) return;
                         if (error == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(content: Text('Progress saved')),
                           );
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text(error),
-                              backgroundColor: Theme.of(context).colorScheme.error,
+                              backgroundColor: theme.colorScheme.error,
                             ),
                           );
                         }
@@ -200,22 +202,26 @@ class _SetupWizardPageState extends State<SetupWizardPage> {
     final businessId = auth.currentUser?.businessId;
     if (businessId == null) return;
 
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final repository = Provider.of<BusinessRepository>(context, listen: false);
+
     if (wizard.isLastStep) {
       final error = await wizard.completeSetup(businessId);
       if (!mounted) return;
       if (error == null) {
-        final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
-        final repository = Provider.of<BusinessRepository>(context, listen: false);
         final refreshed = await repository.getBusinessById(businessId);
         if (refreshed != null) {
           businessProvider.setBusiness(refreshed);
         }
-        Navigator.pushNamedAndRemoveUntil(context, Routes.customerHome, (_) => false);
+        navigator.pushNamedAndRemoveUntil(Routes.customerHome, (_) => false);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(error),
-            backgroundColor: Theme.of(context).colorScheme.error,
+            backgroundColor: theme.colorScheme.error,
           ),
         );
       }
@@ -363,27 +369,29 @@ class _SetupWizardPageState extends State<SetupWizardPage> {
       subtitle: Text(WizardStep.businessType.subtitle),
       isActive: wizard.currentStepIndex >= WizardStep.businessType.index,
       state: _stepState(wizard, WizardStep.businessType),
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: BusinessType.values.map((type) {
-          final isSelected = wizard.state.businessType == type;
-          return Card(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primaryContainer
-                : null,
-            child: RadioListTile<BusinessType>(
-              title: Text(_businessTypeLabel(type)),
-              subtitle: Text(_businessTypeDescription(type)),
-              value: type,
-              groupValue: wizard.state.businessType,
-              onChanged: (value) {
-                if (value != null) {
-                  wizard.updateState(wizard.state.copyWith(businessType: value));
-                }
-              },
-            ),
-          );
-        }).toList(),
+      content: RadioGroup<BusinessType>(
+        groupValue: wizard.state.businessType,
+        onChanged: (value) {
+          if (value != null) {
+            wizard.updateState(wizard.state.copyWith(businessType: value));
+          }
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: BusinessType.values.map((type) {
+            final isSelected = wizard.state.businessType == type;
+            return Card(
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : null,
+              child: RadioListTile<BusinessType>(
+                title: Text(_businessTypeLabel(type)),
+                subtitle: Text(_businessTypeDescription(type)),
+                value: type,
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -469,7 +477,7 @@ class _SetupWizardPageState extends State<SetupWizardPage> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<int>(
-            value: wizard.state.cancellationWindowHours,
+            initialValue: wizard.state.cancellationWindowHours,
             items: const [
               DropdownMenuItem(value: 2, child: Text('2 hours')),
               DropdownMenuItem(value: 12, child: Text('12 hours')),
@@ -491,7 +499,7 @@ class _SetupWizardPageState extends State<SetupWizardPage> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<int>(
-            value: wizard.state.bufferTimeMinutes,
+            initialValue: wizard.state.bufferTimeMinutes,
             items: const [
               DropdownMenuItem(value: 0, child: Text('None')),
               DropdownMenuItem(value: 10, child: Text('10 minutes')),
@@ -597,7 +605,7 @@ class _SetupWizardPageState extends State<SetupWizardPage> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'All settings have been configured. Click Finish to activate your account.',
             textAlign: TextAlign.center,
           ),
@@ -763,7 +771,7 @@ class _ColorField extends StatelessWidget {
           decoration: InputDecoration(
             labelText: '$label (hex)',
             border: const OutlineInputBorder(),
-            prefixIcon: Icon(Icons.palette_outlined),
+            prefixIcon: const Icon(Icons.palette_outlined),
             suffixIcon: selectedColor != null
                 ? Container(
                     width: 24,

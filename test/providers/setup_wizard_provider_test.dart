@@ -31,7 +31,6 @@ class FakeServiceRepository implements ServiceRepository {
     services.add(service);
   }
 
-  @override
   Future<List<Service>> getServicesForBusiness(String businessId) async {
     return services.where((s) => s.businessId == businessId).toList();
   }
@@ -39,15 +38,6 @@ class FakeServiceRepository implements ServiceRepository {
   @override
   Future<List<Service>> getServices({String? businessId}) async {
     return getServicesForBusiness(businessId ?? '');
-  }
-
-  @override
-  Future<Service?> getServiceById(String id) async {
-    try {
-      return services.firstWhere((s) => s.id == id);
-    } catch (_) {
-      return null;
-    }
   }
 
   @override
@@ -61,11 +51,6 @@ class FakeServiceRepository implements ServiceRepository {
   @override
   Future<void> deleteService(String id) async {
     services.removeWhere((s) => s.id == id);
-  }
-
-  @override
-  Future<List<Service>> getServicesForProfessional(String professionalId) async {
-    return services.where((s) => s.assignedProfessionalIds.contains(professionalId)).toList();
   }
 
   @override
@@ -327,7 +312,7 @@ void main() {
 
   group('WizardState', () {
     test('copyWith preserves unchanged fields', () {
-      final original = WizardState(
+      const original = WizardState(
         businessName: 'Test',
         businessEmail: 'test@example.com',
         primaryColor: '#FF5733',

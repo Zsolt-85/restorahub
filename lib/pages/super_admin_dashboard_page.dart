@@ -139,7 +139,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<BusinessType>(
-                  value: selectedBusinessType,
+                  initialValue: selectedBusinessType,
                   decoration: const InputDecoration(
                     labelText: 'Business Type',
                     border: OutlineInputBorder(),
@@ -182,6 +182,9 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                       setDialogState(() => isSaving = true);
 
                       final provider = Provider.of<SuperAdminProvider>(context, listen: false);
+                      final pageMessenger = ScaffoldMessenger.of(context);
+                      final dialogMessenger = ScaffoldMessenger.of(dialogContext);
+                      final dialogNavigator = Navigator.of(dialogContext);
                       final error = await provider.createBusiness(
                         name: name,
                         email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
@@ -194,13 +197,13 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                       if (!mounted) return;
 
                       if (error == null) {
-                        Navigator.pop(dialogContext);
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        dialogNavigator.pop();
+                        pageMessenger.showSnackBar(
                           const SnackBar(content: Text('Business created')),
                         );
                       } else {
                         setDialogState(() => isSaving = false);
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        dialogMessenger.showSnackBar(
                           SnackBar(content: Text('Failed to create business: $error')),
                         );
                       }
