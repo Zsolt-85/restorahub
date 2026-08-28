@@ -193,6 +193,28 @@ flutter test
 
 ## 🚀 Project Status & Progress Tracker
 
+### Platform Transformation Sprints (2026-08-25 to 2026-08-28)
+
+| Sprint | Description | Status | Tests |
+|--------|-------------|--------|-------|
+| Sprint 1 | Foundation — Baseline tag, Domain audit, Security audit, Firestore rules | ✅ Complete | 123/123 |
+| Sprint 2 | Model & Security — Business model expansion (18 fields), Repository scoping, Pagination | ✅ Complete | 149/149 |
+| Sprint 3 | Domain Generalization — Rename professional→staff, specialty→category, Service catalog decoupling | ✅ Complete | 155/155 |
+| Sprint 4 | Business Lifecycle — State machine (trial→active→suspended→cancelled→archived), BusinessType selection | ✅ Complete | 179/179 |
+| Sprint 5 | Onboarding & White-Label — Setup wizard, BusinessBranding, Tenant theme resolution | ⏳ Pending | — |
+| Sprint 6 | Feature Entitlements — FeatureGate service, Plan definitions | ⏳ Pending | — |
+| Sprint 7 | Pilot Hardening — Documentation, End-to-end testing | ⏳ Pending | — |
+
+### Key Deliverables Completed
+
+- **DOMAIN_AUDIT.md** — 47 wellness-specific assumptions documented
+- **SECURITY_AUDIT.md** — 7 security gaps identified and fixed
+- **firestore.rules** — Rewritten with role-based access control
+- **Business model** — Expanded from 7 to 18 fields with backward compatibility
+- **BusinessLifecycleHelper** — State machine with full transition validation
+- **UserResolutionHelper** — Runtime user data resolution
+- **Cross-tenant isolation tests** — Verified zero data leaks
+
 ### Completed Phases
 
 | Phase | Description | Status |
@@ -225,14 +247,10 @@ flutter test
 
 ## 🔄 How to Resume Development
 
-- **Test suite:** 108/108 tests passing (`flutter test`)
-- **Static analysis:** 0 errors, with `avoid_print` lint enforced (`flutter analyze`)
-- **Current focus:** Pre-Production Deployment & Smoke Testing
-- **Next immediate steps:**
-  1. Review Firestore security rules against the updated `UserRepository` and `NotificationRepository` queries.
-  2. Run smoke tests on physical devices (Android/iOS) to validate real-time streams and calendar integration.
-  3. Prepare release build (`flutter build apk` / `flutter build ios`) and verify ProGuard / obfuscation settings if applicable.
-  4. Tag a release candidate and deploy to Firebase App Distribution or TestFlight.
+- **Test suite:** 179/179 tests passing (`flutter test`)
+- **Static analysis:** 0 errors (`flutter analyze`)
+- **Current focus:** Platform Transformation — Sprints 1-4 Complete
+- **Next immediate steps:** Sprint 5 — Onboarding & White-Label (Setup wizard, BusinessBranding, Tenant theme resolution)
 
 ## Project status
 
