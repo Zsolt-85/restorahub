@@ -70,96 +70,124 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
     final addressController = TextEditingController();
+    BusinessType selectedBusinessType = BusinessType.wellness;
 
     await showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Add Business'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Business Name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.business_outlined),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add Business'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Business Name',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.business_outlined),
+                  ),
+                  autofocus: true,
+                  textInputAction: TextInputAction.next,
                 ),
-                autofocus: true,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email_outlined),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                 ),
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone_outlined),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
                 ),
-                keyboardType: TextInputType.phone,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Address',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.location_on_outlined),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: addressController,
+                  decoration: const InputDecoration(
+                    labelText: 'Address',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.location_on_outlined),
+                  ),
+                  maxLines: 3,
+                  textInputAction: TextInputAction.done,
                 ),
-                maxLines: 3,
-                textInputAction: TextInputAction.done,
-              ),
-            ],
+                const SizedBox(height: 12),
+                DropdownButtonFormField<BusinessType>(
+                  value: selectedBusinessType,
+                  decoration: const InputDecoration(
+                    labelText: 'Business Type',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: BusinessType.wellness,
+                      child: Text('Wellness'),
+                    ),
+                    DropdownMenuItem(
+                      value: BusinessType.custom,
+                      child: Text('Custom'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setDialogState(() => selectedBusinessType = value);
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) {
-                ErrorHandler.showErrorSnackBar(dialogContext, 'Business name is required');
-                return;
-              }
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                if (name.isEmpty) {
+                  ErrorHandler.showErrorSnackBar(dialogContext, 'Business name is required');
+                  return;
+                }
 
-              Navigator.pop(dialogContext);
+                Navigator.pop(dialogContext);
 
-              final provider = Provider.of<SuperAdminProvider>(context, listen: false);
-              final error = await provider.createBusiness(
-                name: name,
-                email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
-                phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
-                address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
-              );
-
-              if (!mounted) return;
-              if (error == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Business created')),
+                final provider = Provider.of<SuperAdminProvider>(context, listen: false);
+                final error = await provider.createBusiness(
+                  name: name,
+                  email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
+                  phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+                  address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
+                  businessType: selectedBusinessType,
                 );
-              } else {
-                ErrorHandler.showErrorSnackBar(context, error);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
+
+                if (!mounted) return;
+                if (error == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Business created')),
+                  );
+                } else {
+                  ErrorHandler.showErrorSnackBar(context, error);
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
       ),
     );
   }

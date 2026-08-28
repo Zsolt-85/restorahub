@@ -65,6 +65,7 @@ class SuperAdminProvider extends ChangeNotifier {
     String? primaryColorHex,
     String? phone,
     String? address,
+    BusinessType? businessType,
   }) async {
     _beginLoading();
     try {
@@ -76,6 +77,8 @@ class SuperAdminProvider extends ChangeNotifier {
         primaryColorHex: primaryColorHex,
         phone: phone,
         address: address,
+        businessType: businessType,
+        status: BusinessStatus.trial,
       );
       await _repository.createBusiness(business);
       await loadAllBusinesses();
