@@ -280,6 +280,13 @@ class Business {
   bool get isTrial => status == BusinessStatus.trial;
   bool get isSuspended => status == BusinessStatus.suspended;
 
+  bool get isOnboarded {
+    if (status == BusinessStatus.active) return true;
+    final progress = settings?.onboardingProgress;
+    if (progress == null) return false;
+    return progress['isCompleted'] == true;
+  }
+
   String? get effectivePrimaryColor => branding?.primaryColor ?? primaryColorHex;
   String? get effectiveBusinessName => branding?.businessName ?? name;
   String? get effectiveLogo => branding?.logo ?? logoUrl;

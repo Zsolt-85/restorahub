@@ -237,7 +237,9 @@ void main() {
       expect(business.status, BusinessStatus.active);
       expect(business.settings?.cancellationWindowHours, 24);
       expect(business.settings?.bufferTimeMinutes, 15);
-      expect(business.settings?.onboardingProgress, isNull);
+      expect(business.settings?.onboardingProgress, isNotNull);
+      expect(business.settings?.onboardingProgress?['isCompleted'], isTrue);
+      expect(business.settings?.onboardingProgress?['completedAt'], isNotNull);
     });
 
     test('loadProgress restores wizard state from business settings', () async {

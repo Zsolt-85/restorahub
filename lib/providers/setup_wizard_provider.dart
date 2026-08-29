@@ -296,7 +296,10 @@ class SetupWizardProvider extends ChangeNotifier {
         settings: (business.settings ?? BusinessSettings()).copyWith(
           cancellationWindowHours: _state.cancellationWindowHours ?? business.settings?.cancellationWindowHours,
           bufferTimeMinutes: _state.bufferTimeMinutes ?? business.settings?.bufferTimeMinutes,
-          onboardingProgress: null,
+          onboardingProgress: {
+            'isCompleted': true,
+            'completedAt': DateTime.now().toIso8601String(),
+          },
         ),
       );
 
