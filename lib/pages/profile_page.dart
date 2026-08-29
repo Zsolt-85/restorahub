@@ -46,7 +46,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _loadUser();
-    if (Provider.of<AuthProvider>(context, listen: false).currentUser?.isProfessional ?? false) {
+    if (Provider.of<AuthProvider>(context, listen: false).currentUser?.isStaff ?? false) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadBusinessServices());
     }
   }
@@ -144,7 +144,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _createCustomService() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final user = auth.currentUser;
-    if (user == null || !user.isProfessional || user.id == null) {
+    if (user == null || !user.isStaff || user.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('User not authenticated. Please log in again.'),
@@ -324,7 +324,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _toggleProfessionalAssignment(Service service) async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final user = auth.currentUser;
-    if (user == null || !user.isProfessional || user.id == null) return;
+    if (user == null || !user.isStaff || user.id == null) return;
 
     final isAssigned = service.assignedProfessionalIds.contains(user.id);
     final updatedIds = List<String>.from(service.assignedProfessionalIds);
@@ -416,7 +416,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               keyboardType: TextInputType.phone,
             ),
-            if (user.isProfessional) ...[
+            if (user.isStaff) ...[
               const SizedBox(height: 24),
               Text(
                 AppLocalizations.of(context)?.professionalSettings ?? 'Professional settings',
@@ -526,7 +526,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ..._businessServices.map((service) {
-                final isAssigned = user.isProfessional && user.id != null
+                final isAssigned = user.isStaff && user.id != null
                     ? service.assignedProfessionalIds.contains(user.id)
                     : false;
                 return Card(
@@ -609,17 +609,17 @@ class _ProfilePageState extends State<ProfilePage> {
                             _confirmPasswordController.text.trim().isEmpty
                                 ? null
                                 : _confirmPasswordController.text,
-                        specialty: user.isProfessional ? _specialty : null,
-                        workStart: user.isProfessional ? _workStart : null,
-                        workEnd: user.isProfessional ? _workEnd : null,
+                        specialty: user.isStaff ? _specialty : null,
+                        workStart: user.isStaff ? _workStart : null,
+                        workEnd: user.isStaff ? _workEnd : null,
                         slotDurationMinutes:
-                            user.isProfessional ? _slotDurationMinutes : null,
+                            user.isStaff ? _slotDurationMinutes : null,
                         bufferTimeMinutes:
-                            user.isProfessional ? _bufferTimeMinutes : null,
-                        breakStartTime: user.isProfessional && _breakStart != null
+                            user.isStaff ? _bufferTimeMinutes : null,
+                        breakStartTime: user.isStaff && _breakStart != null
                             ? User.formatTime(_breakStart!)
                             : null,
-                        breakEndTime: user.isProfessional && _breakEnd != null
+                        breakEndTime: user.isStaff && _breakEnd != null
                             ? User.formatTime(_breakEnd!)
                             : null,
                       );

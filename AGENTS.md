@@ -69,6 +69,16 @@ RestoraHub is a Flutter booking app transforming into a multi-tenant white-label
 - Do not bypass authentication for convenience
 - Do not commit to `.kilo/` directory (gitignored)
 
+## Role Migration Guide
+
+RestoraHub has transitioned from legacy `'professional'` role strings to a typed `Role` enum (`superAdmin`, `businessAdmin`, `staff`, `customer`).
+
+- **Primary getter**: `user.isStaff` — returns `true` for both legacy `'professional'` and new `'staff'` role values.
+- **Deprecated getter**: `user.isProfessional` — retained for backward compatibility but should not be used in new code.
+- **Enum parsing**: `user.roleEnum` safely converts the stored role string to a `Role?` enum value, returning `null` for unknown roles.
+- **Firestore queries**: Staff lookups now use `whereIn: ['professional', 'staff']` to maintain backward compatibility with existing documents.
+- **New user creation**: Use `Role.staff.name` when assigning the staff role to new users.
+
 ## How to Resume
 
 1. Pull latest from `origin/main`

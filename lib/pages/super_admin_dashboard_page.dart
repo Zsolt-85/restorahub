@@ -344,11 +344,11 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                   labelText: 'Role',
                   border: OutlineInputBorder(),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'customer', child: Text('Customer')),
-                  DropdownMenuItem(value: 'professional', child: Text('Professional')),
-                  DropdownMenuItem(value: 'business_admin', child: Text('Business Admin')),
-                  DropdownMenuItem(value: 'super_admin', child: Text('Super Admin')),
+                items: [
+                  const DropdownMenuItem(value: 'customer', child: Text('Customer')),
+                  DropdownMenuItem(value: Role.staff.name, child: const Text('Staff Member')),
+                  const DropdownMenuItem(value: 'business_admin', child: Text('Business Admin')),
+                  const DropdownMenuItem(value: 'super_admin', child: Text('Super Admin')),
                 ],
                 onChanged: (value) {
                   if (value != null) selectedRole = value;
@@ -716,7 +716,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
       case 'business_admin':
         return 'Business Admin';
       case 'professional':
-        return 'Professional';
+      case 'staff':
+        return 'Staff Member';
       case 'customer':
       default:
         return 'Customer';

@@ -126,7 +126,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retry => 'Retry';
 
   @override
-  String get showingProfessionalsOnly => 'Showing professionals only';
+  String get showingProfessionalsOnly => 'Showing staff members only';
 
   @override
   String get personalInformation => 'Personal information';
@@ -172,7 +172,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notSet => 'Not set';
 
   @override
-  String get professionalSettings => 'Professional settings';
+  String get professionalSettings => 'Staff settings';
 
   @override
   String get drawerHeader => 'RestoraHub';
@@ -442,7 +442,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseSelectDateTime => 'Please select date and time';
 
   @override
-  String get mustBeProfessional => 'You must be logged in as a professional';
+  String get mustBeProfessional => 'You must be logged in as a staff member';
 
   @override
   String get manualBookingCreated => 'Manual booking created successfully';
@@ -518,7 +518,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get analyticsProfessionalOnly =>
-      'Analytics is available for professionals only';
+      'Analytics is available for staff members only';
 
   @override
   String get addToCalendar => 'Add to Calendar';
@@ -565,20 +565,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myOfferedServices => 'My Offered Services';
 
   @override
-  String get staffUtilization => 'Staff Utilization';
+  String get selectLocation => 'Select Location';
 
   @override
-  String get peakHours => 'Peak Hours';
-
-  @override
-  String get featureNotAvailable => 'This feature is not available on your current plan.';
+  String get allLocations => 'All Locations';
 
   @override
   String get analyticsDashboard => 'Analytics Dashboard';
 
   @override
-  String get selectLocation => 'Select Location';
+  String get featureNotAvailable =>
+      'This feature is not available on your current plan.';
 
   @override
-  String get allLocations => 'All Locations';
+  String get peakHours => 'Peak Hours';
+
+  @override
+  String get staffUtilization => 'Staff Utilization';
 }

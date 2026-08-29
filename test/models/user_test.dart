@@ -93,6 +93,46 @@ void main() {
       expect(customer.isStaff, isFalse);
     });
 
+    test('roleEnum returns Role.staff for professional role', () {
+      final user = User(
+        name: 'Test',
+        email: 'test@example.com',
+        phone: '5550000000',
+        role: 'professional',
+      );
+      expect(user.roleEnum, Role.staff);
+    });
+
+    test('roleEnum returns Role.staff for staff role', () {
+      final user = User(
+        name: 'Test',
+        email: 'test@example.com',
+        phone: '5550000000',
+        role: 'staff',
+      );
+      expect(user.roleEnum, Role.staff);
+    });
+
+    test('roleEnum returns Role.customer for customer role', () {
+      final user = User(
+        name: 'Test',
+        email: 'test@example.com',
+        phone: '5550000000',
+        role: 'customer',
+      );
+      expect(user.roleEnum, Role.customer);
+    });
+
+    test('roleEnum returns null for unknown role', () {
+      final user = User(
+        name: 'Test',
+        email: 'test@example.com',
+        phone: '5550000000',
+        role: 'unknown',
+      );
+      expect(user.roleEnum, isNull);
+    });
+
     test('backward compatible fromMap reads specialty as category', () {
       final user = User.fromMap({
         'id': '1',

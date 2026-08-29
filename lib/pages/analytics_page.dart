@@ -81,7 +81,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     final paymentProvider = Provider.of<PaymentProvider>(context);
     final user = auth.currentUser;
 
-    if (user == null || !user.isProfessional) {
+    if (user == null || !user.isStaff) {
       return Scaffold(
         appBar: AppBar(title: Text(AppLocalizations.of(context)?.analytics ?? 'Analytics')),
         body: Center(

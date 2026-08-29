@@ -126,7 +126,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get retry => 'Újrapróbálás';
 
   @override
-  String get showingProfessionalsOnly => 'Csak szakemberek megjelenítése';
+  String get showingProfessionalsOnly => 'Csak csapattagok megjelenítése';
 
   @override
   String get personalInformation => 'Személyes információk';
@@ -171,7 +171,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get notSet => 'Nincs beállítva';
 
   @override
-  String get professionalSettings => 'Szakember beállítások';
+  String get professionalSettings => 'Csapattag beállítások';
 
   @override
   String get drawerHeader => 'RestoraHub';
@@ -440,7 +440,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get pleaseSelectDateTime => 'Válasszon dátumot és időpontot';
 
   @override
-  String get mustBeProfessional => 'Bejelentkezve kell lennie szakemberként';
+  String get mustBeProfessional => 'Bejelentkezve kell lennie csapattagként';
 
   @override
   String get manualBookingCreated => 'Kézi foglalás sikeresen létrehozva';
@@ -518,7 +518,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get analyticsProfessionalOnly =>
-      'Az elemzés csak szakemberek számára érhető el';
+      'Az elemzés csak csapattagok számára érhető el';
 
   @override
   String get addToCalendar => 'Hozzáadás a naptárhoz';
@@ -565,20 +565,21 @@ class AppLocalizationsHu extends AppLocalizations {
   String get myOfferedServices => 'Ajánlott szolgáltatások';
 
   @override
-  String get staffUtilization => 'Személyzet kihasználtsága';
+  String get selectLocation => 'Hely kiválasztása';
 
   @override
-  String get peakHours => 'Csúcsidőpontok';
+  String get allLocations => 'Összes hely';
 
   @override
-  String get featureNotAvailable => 'Ez a funkció nem érhető el az aktuális csomagban.';
+  String get analyticsDashboard => 'Elemzési irányítópult';
 
   @override
-  String get analyticsDashboard => 'Analitikai irányítópult';
+  String get featureNotAvailable =>
+      'Ez a funkció nem elérhető az aktuális csomagban.';
 
   @override
-  String get selectLocation => 'Válasszon helyszínt';
+  String get peakHours => 'Csúcsidő';
 
   @override
-  String get allLocations => 'Összes helyszín';
+  String get staffUtilization => 'Csapat kihasználtság';
 }

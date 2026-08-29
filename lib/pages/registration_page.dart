@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../models/user.dart';
 import '../utils/error_handler.dart';
 
 class RegistrationPage extends StatefulWidget {
@@ -47,7 +48,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     var validationError =
         nameError ?? emailError ?? phoneError ?? passwordError;
 
-    if (_role == 'professional' &&
+    if (_role == Role.staff.name &&
         (_specialty == null || _specialty!.isEmpty)) {
       validationError = 'Please select your profession';
     }
@@ -74,7 +75,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         role: _role,
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
-        specialty: _role == 'professional' ? _specialty! : '',
+        specialty: _role == Role.staff.name ? _specialty! : '',
       );
 
       if (!mounted) return;
@@ -90,7 +91,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
         Navigator.pushReplacementNamed(
           context,
-          auth.currentUser!.isProfessional
+          auth.currentUser!.isStaff
               ? Routes.professionalHome
               : Routes.customerHome,
         );
@@ -149,20 +150,20 @@ class _RegistrationPageState extends State<RegistrationPage> {
             const SizedBox(height: 16),
             const Text('Account type'),
             SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'customer', label: Text('Customer')),
-                ButtonSegment(value: 'professional', label: Text('Professional')),
+              segments: [
+                const ButtonSegment(value: 'customer', label: Text('Customer')),
+                ButtonSegment(value: Role.staff.name, label: const Text('Staff Member')),
               ],
               selected: {_role},
               onSelectionChanged: (selection) {
                 setState(() {
                   _role = selection.first;
                   _specialty =
-                      _role == 'professional' ? serviceNames.first : null;
+                      _role == Role.staff.name ? serviceNames.first : null;
                 });
               },
             ),
-            if (_role == 'professional') ...[
+            if (_role == Role.staff.name) ...[
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: _specialty,

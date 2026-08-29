@@ -339,7 +339,7 @@ abstract class AppLocalizations {
   /// No description provided for @showingProfessionalsOnly.
   ///
   /// In en, this message translates to:
-  /// **'Showing professionals only'**
+  /// **'Showing staff members only'**
   String get showingProfessionalsOnly;
 
   /// No description provided for @personalInformation.
@@ -429,7 +429,7 @@ abstract class AppLocalizations {
   /// No description provided for @professionalSettings.
   ///
   /// In en, this message translates to:
-  /// **'Professional settings'**
+  /// **'Staff settings'**
   String get professionalSettings;
 
   /// No description provided for @drawerHeader.
@@ -963,7 +963,7 @@ abstract class AppLocalizations {
   /// No description provided for @mustBeProfessional.
   ///
   /// In en, this message translates to:
-  /// **'You must be logged in as a professional'**
+  /// **'You must be logged in as a staff member'**
   String get mustBeProfessional;
 
   /// No description provided for @manualBookingCreated.
@@ -1113,7 +1113,7 @@ abstract class AppLocalizations {
   /// No description provided for @analyticsProfessionalOnly.
   ///
   /// In en, this message translates to:
-  /// **'Analytics is available for professionals only'**
+  /// **'Analytics is available for staff members only'**
   String get analyticsProfessionalOnly;
 
   /// No description provided for @addToCalendar.
@@ -1194,29 +1194,11 @@ abstract class AppLocalizations {
   /// **'Duration (minutes)'**
   String get durationMinutes;
 
-  /// No description provided for @staffUtilization.
+  /// No description provided for @myOfferedServices.
   ///
   /// In en, this message translates to:
-  /// **'Staff Utilization'**
-  String get staffUtilization;
-
-  /// No description provided for @peakHours.
-  ///
-  /// In en, this message translates to:
-  /// **'Peak Hours'**
-  String get peakHours;
-
-  /// No description provided for @featureNotAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'This feature is not available on your current plan.'**
-  String get featureNotAvailable;
-
-  /// No description provided for @analyticsDashboard.
-  ///
-  /// In en, this message translates to:
-  /// **'Analytics Dashboard'**
-  String get analyticsDashboard;
+  /// **'My Offered Services'**
+  String get myOfferedServices;
 
   /// No description provided for @selectLocation.
   ///
@@ -1230,11 +1212,29 @@ abstract class AppLocalizations {
   /// **'All Locations'**
   String get allLocations;
 
-  /// No description provided for @myOfferedServices.
+  /// No description provided for @analyticsDashboard.
   ///
   /// In en, this message translates to:
-  /// **'My Offered Services'**
-  String get myOfferedServices;
+  /// **'Analytics Dashboard'**
+  String get analyticsDashboard;
+
+  /// No description provided for @featureNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is not available on your current plan.'**
+  String get featureNotAvailable;
+
+  /// No description provided for @peakHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Peak Hours'**
+  String get peakHours;
+
+  /// No description provided for @staffUtilization.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff Utilization'**
+  String get staffUtilization;
 }
 
 class _AppLocalizationsDelegate

@@ -108,8 +108,8 @@ class _FakeUserRepository implements UserRepository {
 
   @override
   Future<List<User>> getProfessionals({String? businessId}) async {
-    if (businessId == null) return _allUsers.where((u) => u.role == 'professional').toList();
-    return _allUsers.where((u) => u.role == 'professional' && u.businessId == businessId).toList();
+    if (businessId == null) return _allUsers.where((u) => u.isStaff).toList();
+    return _allUsers.where((u) => u.isStaff && u.businessId == businessId).toList();
   }
 
   @override
@@ -237,7 +237,7 @@ void main() {
         businessId: 'biz_1',
       );
 
-      expect(customer.isProfessional, isFalse);
+      expect(customer.isStaff, isFalse);
       expect(customer.role, equals('customer'));
     });
 
@@ -251,7 +251,7 @@ void main() {
         businessId: 'biz_1',
       );
 
-      expect(professional.isProfessional, isTrue);
+      expect(professional.isStaff, isTrue);
       expect(professional.role, equals('professional'));
     });
 

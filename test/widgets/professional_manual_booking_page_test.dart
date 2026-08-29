@@ -123,7 +123,7 @@ class FakeUserRepository implements UserRepository {
 
   @override
   Future<List<User>> getProfessionalsByCategory(String category) async =>
-      users.where((u) => u.role == 'professional' && u.category == category).toList();
+      users.where((u) => u.isStaff && u.category == category).toList();
 
   @override
   Future<List<User>> getProfessionalsBySpecialty(String specialty) async =>
@@ -132,7 +132,7 @@ class FakeUserRepository implements UserRepository {
   @override
   Future<List<User>> getProfessionals({String? businessId}) async =>
       users
-          .where((u) => u.role == 'professional')
+          .where((u) => u.isStaff)
           .where((u) => businessId == null || u.businessId == businessId)
           .toList();
 
@@ -140,7 +140,7 @@ class FakeUserRepository implements UserRepository {
   Stream<List<User>> watchProfessionals({String? businessId}) =>
       Stream.value(
         users
-            .where((u) => u.role == 'professional')
+            .where((u) => u.isStaff)
             .where((u) => businessId == null || u.businessId == businessId)
             .toList(),
       );

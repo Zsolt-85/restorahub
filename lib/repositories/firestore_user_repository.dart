@@ -127,7 +127,7 @@ class FirestoreUserRepository implements UserRepository {
   Future<List<User>> getProfessionalsByCategory(String category) async {
     try {
       final query = await _usersCol
-          .where('role', isEqualTo: 'professional')
+          .where('role', whereIn: ['professional', 'staff'])
           .where('category', isEqualTo: category)
           .get();
 
@@ -155,7 +155,7 @@ class FirestoreUserRepository implements UserRepository {
   Future<List<User>> getProfessionals({String? businessId}) async {
     try {
       final query = await _withBusinessFilter(
-        _usersCol.where('role', isEqualTo: 'professional'),
+        _usersCol.where('role', whereIn: ['professional', 'staff']),
         businessId,
       ).get();
 
@@ -176,7 +176,7 @@ class FirestoreUserRepository implements UserRepository {
   @override
   Stream<List<User>> watchProfessionals({String? businessId}) {
     return _withBusinessFilter(
-      _usersCol.where('role', isEqualTo: 'professional'),
+      _usersCol.where('role', whereIn: ['professional', 'staff']),
       businessId,
     ).snapshots().map((snapshot) {
       final professionals = <User>[];

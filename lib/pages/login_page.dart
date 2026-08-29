@@ -9,6 +9,7 @@ import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/business_provider.dart';
 import '../models/business.dart';
+import '../models/user.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -132,8 +133,8 @@ class _LoginPageState extends State<LoginPage> {
                           } else {
                             Navigator.pushReplacementNamed(context, Routes.adminDashboard);
                           }
-                        } else {
-                          final route = user.isProfessional
+                         } else {
+                          final route = user.isStaff
                               ? Routes.professionalHome
                               : Routes.customerHome;
                           Navigator.pushReplacementNamed(context, route);
@@ -215,9 +216,9 @@ class _LoginPageState extends State<LoginPage> {
                           value: 'customer',
                           label: Text(AppLocalizations.of(context)?.customer ?? 'Customer'),
                         ),
-                        ButtonSegment(
-                          value: 'professional',
-                          label: Text(AppLocalizations.of(context)?.professional ?? 'Professional'),
+                         ButtonSegment(
+                          value: Role.staff.name,
+                          label: const Text('Staff Member'),
                         ),
                       ],
                       selected: {role},
@@ -227,7 +228,7 @@ class _LoginPageState extends State<LoginPage> {
                         });
                       },
                     ),
-                    if (role == 'professional') ...[
+                    if (role == Role.staff.name) ...[
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         initialValue: specialty,
@@ -277,7 +278,7 @@ class _LoginPageState extends State<LoginPage> {
                       name: nameController.text.trim(),
                       phone: phoneController.text.trim(),
                       role: role,
-                      specialty: role == 'professional' ? specialty ?? '' : '',
+                      specialty: role == Role.staff.name ? specialty ?? '' : '',
                     );
                     
                     if (success && context.mounted) {
@@ -285,9 +286,9 @@ class _LoginPageState extends State<LoginPage> {
                           .setCurrentUser(auth.currentUser!);
                       Navigator.pop(context); // close dialog
                        
-                       final route = auth.currentUser!.isProfessional
-                           ? Routes.professionalHome
-                           : Routes.customerHome;
+                        final route = auth.currentUser!.isStaff
+                            ? Routes.professionalHome
+                            : Routes.customerHome;
                        Navigator.pushReplacementNamed(context, route);
                     } else if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(

@@ -126,7 +126,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get retry => 'Reîncearcă';
 
   @override
-  String get showingProfessionalsOnly => 'Se afișează numai profesioniști';
+  String get showingProfessionalsOnly => 'Se afișează numai membri ai echipei';
 
   @override
   String get personalInformation => 'Informații personale';
@@ -171,7 +171,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get notSet => 'Nesetat';
 
   @override
-  String get professionalSettings => 'Setări profesionale';
+  String get professionalSettings => 'Setări echipă';
 
   @override
   String get drawerHeader => 'RestoraHub';
@@ -442,7 +442,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get mustBeProfessional =>
-      'Trebuie să fii autentificat ca profesionist';
+      'Trebuie să fii autentificat ca membru al echipei';
 
   @override
   String get manualBookingCreated => 'Rezervare manuală creată cu succes';
@@ -520,7 +520,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get analyticsProfessionalOnly =>
-      'Analiza este disponibilă doar pentru profesioniști';
+      'Analiza este disponibilă doar pentru membrii echipei';
 
   @override
   String get addToCalendar => 'Adaugă în calendar';
@@ -568,20 +568,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get myOfferedServices => 'Serviciile mele oferite';
 
   @override
-  String get staffUtilization => 'Utilizare personal';
+  String get selectLocation => 'Selectează locația';
+
+  @override
+  String get allLocations => 'Toate locațiile';
+
+  @override
+  String get analyticsDashboard => 'Tablou de bord analitice';
+
+  @override
+  String get featureNotAvailable =>
+      'Această funcționalitate nu este disponibilă pentru planul curent.';
 
   @override
   String get peakHours => 'Ore de vârf';
 
   @override
-  String get featureNotAvailable => 'Această funcție nu este disponibilă în planul curent.';
-
-  @override
-  String get analyticsDashboard => 'Panou de analiză';
-
-  @override
-  String get selectLocation => 'Selectați locația';
-
-  @override
-  String get allLocations => 'Toate locațiile';
+  String get staffUtilization => 'Utilizarea echipei';
 }

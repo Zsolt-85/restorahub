@@ -38,6 +38,17 @@ class User {
   @Deprecated('Use isStaff instead')
   bool get isProfessional => isStaff;
 
+  Role? get roleEnum {
+    const mapping = <String, Role>{
+      'super_admin': Role.superAdmin,
+      'business_admin': Role.businessAdmin,
+      'staff': Role.staff,
+      'professional': Role.staff,
+      'customer': Role.customer,
+    };
+    return mapping[role];
+  }
+
   String get roleLabel => isStaff ? 'Professional' : 'Customer';
 
   TimeOfDay get workStart => _parseTime(workStartTime);

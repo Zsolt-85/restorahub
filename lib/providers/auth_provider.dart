@@ -72,7 +72,7 @@ class AuthProvider extends ChangeNotifier {
         email: fbUser.email!.toLowerCase(),
         phone: phone.trim(),
         role: role,
-        category: role == 'professional' ? specialty.trim() : '',
+        category: role == Role.staff.name ? specialty.trim() : '',
       );
 
       final insertResult = await _userRepository.insertUser(newUser);

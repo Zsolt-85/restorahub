@@ -192,7 +192,7 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
                   name: name,
                   email: email,
                   phone: phone,
-                  role: 'professional',
+                  role: Role.staff.name,
                   businessId: businessId,
                   category: specialty,
                 ));

@@ -126,7 +126,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get retry => 'Wiederholen';
 
   @override
-  String get showingProfessionalsOnly => 'Nur Profis anzeigen';
+  String get showingProfessionalsOnly => 'Nur Teammitglieder anzeigen';
 
   @override
   String get personalInformation => 'Persönliche Informationen';
@@ -171,7 +171,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get notSet => 'Nicht festgelegt';
 
   @override
-  String get professionalSettings => 'Profi-Einstellungen';
+  String get professionalSettings => 'Teammitglied-Einstellungen';
 
   @override
   String get drawerHeader => 'RestoraHub';
@@ -441,7 +441,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pleaseSelectDateTime => 'Bitte wählen Sie Datum und Uhrzeit';
 
   @override
-  String get mustBeProfessional => 'Sie müssen als Profi angemeldet sein';
+  String get mustBeProfessional =>
+      'Sie müssen als Teammitglied angemeldet sein';
 
   @override
   String get manualBookingCreated => 'Manuelle Buchung erfolgreich erstellt';
@@ -519,7 +520,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get analyticsProfessionalOnly =>
-      'Analysen sind nur für Profis verfügbar';
+      'Analysen sind nur für Teammitglieder verfügbar';
 
   @override
   String get addToCalendar => 'Zum Kalender hinzufügen';
@@ -567,20 +568,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get myOfferedServices => 'Meine angebotenen Dienstleistungen';
 
   @override
-  String get staffUtilization => 'Personaleinsatz';
-
-  @override
-  String get peakHours => 'Spitzenzeiten';
-
-  @override
-  String get featureNotAvailable => 'Diese Funktion ist in Ihrem aktuellen Plan nicht verfügbar.';
-
-  @override
-  String get analyticsDashboard => 'Analytics Dashboard';
-
-  @override
-  String get selectLocation => 'Standort wählen';
+  String get selectLocation => 'Standort auswählen';
 
   @override
   String get allLocations => 'Alle Standorte';
+
+  @override
+  String get analyticsDashboard => 'Analyse-Dashboard';
+
+  @override
+  String get featureNotAvailable =>
+      'Diese Funktion ist in Ihrem aktuellen Plan nicht verfügbar.';
+
+  @override
+  String get peakHours => 'Hauptgeschäftszeiten';
+
+  @override
+  String get staffUtilization => 'Teammitglied-Auslastung';
 }

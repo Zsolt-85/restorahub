@@ -109,7 +109,7 @@ class AppointmentProvider extends ChangeNotifier {
     if (userId == null) return;
     if (currentUser!.role == 'customer') {
       _appointments = await _repository.getAppointmentsForCustomer(userId, businessId: businessId);
-    } else if (currentUser!.isProfessional) {
+    } else if (currentUser!.isStaff) {
       _appointments = await _repository.getAppointmentsForProfessional(userId, businessId: businessId, professionalEmail: currentUser!.email);
     }
   }
@@ -122,7 +122,7 @@ class AppointmentProvider extends ChangeNotifier {
 
     if (currentUser!.role == 'customer') {
       _appointmentsStream = _repository.watchAppointmentsForCustomer(userId, businessId: businessId);
-    } else if (currentUser!.isProfessional) {
+    } else if (currentUser!.isStaff) {
       _appointmentsStream = _repository.watchAppointmentsForProfessional(userId, businessId: businessId, professionalEmail: currentUser!.email);
     } else {
       return;
@@ -590,7 +590,7 @@ class AppointmentProvider extends ChangeNotifier {
           .toList();
     }
 
-    if (currentUser!.isProfessional) {
+    if (currentUser!.isStaff) {
       final userId = currentUser!.id;
       final userEmail = currentUser!.email;
       return appointments
