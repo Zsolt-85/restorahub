@@ -53,26 +53,41 @@ class AppNotification {
   }
 
   factory AppNotification.fromMap(Map<String, dynamic> map) {
-    final typeRaw = map['type'] as String;
-    final statusRaw = map['status'] as String?;
+    final typeRaw = map['type']?.toString();
+    final statusRaw = map['status']?.toString();
     return AppNotification(
       id: map['id']?.toString(),
-      type: NotificationType.values.firstWhere((t) => t.name == typeRaw),
-      title: map['title'] as String,
-      message: map['message'] as String,
+      type: NotificationType.values.firstWhere(
+        (t) => t.name == typeRaw,
+        orElse: () => NotificationType.bookingRequested,
+      ),
+      title: map['title']?.toString() ?? '',
+      message: map['message']?.toString() ?? '',
       appointmentId: map['appointmentId']?.toString(),
-      receiverId: map['receiverId'] as String,
-      senderId: map['senderId'] as String,
+      receiverId: map['receiverId']?.toString() ?? '',
+      senderId: map['senderId']?.toString() ?? '',
       status: statusRaw != null
           ? NotificationStatus.values.firstWhere(
               (s) => s.name == statusRaw,
               orElse: () => NotificationStatus.unread,
             )
           : NotificationStatus.unread,
-      createdAt: DateTime.parse(map['createdAt'] as String),
+      createdAt: _parseDateTime(map['createdAt']),
       businessId: map['businessId']?.toString(),
       businessName: map['businessName']?.toString(),
     );
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    try {
+      return (value as dynamic).toDate() as DateTime;
+    } catch (_) {
+      return DateTime.now();
+    }
   }
 
   AppNotification copyWith({

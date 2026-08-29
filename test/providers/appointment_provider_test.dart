@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restorahub/exceptions/app_exception.dart';
 import 'package:restorahub/models/appointment.dart';
@@ -223,7 +222,7 @@ class FakeNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Stream<QuerySnapshot> getNotificationsStream(String userId, {String? businessId}) {
+  Stream<List<AppNotification>> watchNotifications(String userId, {String? businessId}) {
     throw UnimplementedError();
   }
 }
@@ -264,7 +263,7 @@ class _FailingNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Stream<QuerySnapshot> getNotificationsStream(String userId, {String? businessId}) {
+  Stream<List<AppNotification>> watchNotifications(String userId, {String? businessId}) {
     throw UnimplementedError();
   }
 }

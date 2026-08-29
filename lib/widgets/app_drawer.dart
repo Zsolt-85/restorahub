@@ -7,6 +7,7 @@ import '../models/user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/business_provider.dart';
 import '../providers/notification_provider.dart';
+import '../helpers/feature_gate.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key, required this.user, required this.auth});
@@ -73,13 +74,23 @@ class AppDrawer extends StatelessWidget {
               },
             ),
           ],
-          if (user.role == 'professional' || user.role == 'admin') ...[
+          if (user.isStaff || user.role == 'business_admin') ...[
             ListTile(
               leading: const Icon(Icons.bar_chart_outlined),
               title: Text(AppLocalizations.of(context)?.menuAnalytics ?? 'Analytics'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, Routes.analytics);
+              },
+            ),
+          ],
+          if (isAdmin && businessProvider.currentBusiness != null && FeatureGate.isAvailable(businessProvider.currentBusiness!, 'analytics')) ...[
+            ListTile(
+              leading: const Icon(Icons.dashboard_outlined),
+              title: Text(AppLocalizations.of(context)?.analyticsDashboard ?? 'Analytics Dashboard'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, Routes.analyticsDashboard);
               },
             ),
           ],

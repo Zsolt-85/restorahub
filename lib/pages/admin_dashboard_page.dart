@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
+import '../helpers/feature_gate.dart';
+import '../l10n/app_localizations.dart';
+import '../models/location.dart';
 import '../providers/auth_provider.dart';
 import '../providers/business_provider.dart';
 import '../widgets/app_drawer.dart';
@@ -22,9 +25,40 @@ class AdminDashboardPage extends StatelessWidget {
       );
     }
 
+    final hasMultiLocation = business != null && FeatureGate.isAvailable(business, 'multiLocation');
+    final locations = business?.locations ?? const <Location>[];
+    final activeLocation = businessProvider.activeLocation;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
+        actions: [
+          if (hasMultiLocation && locations.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: activeLocation?.id,
+                  hint: Text(AppLocalizations.of(context)?.selectLocation ?? 'Select Location'),
+                  items: [
+                    DropdownMenuItem<String>(
+                      value: null,
+                      child: Text(AppLocalizations.of(context)?.allLocations ?? 'All Locations'),
+                    ),
+                    ...locations.map((location) {
+                      return DropdownMenuItem<String>(
+                        value: location.id,
+                        child: Text(location.name),
+                      );
+                    }),
+                  ],
+                  onChanged: (locationId) {
+                    businessProvider.setActiveLocation(locationId);
+                  },
+                ),
+              ),
+            ),
+        ],
       ),
       drawer: AppDrawer(user: user, auth: auth),
       body: Center(
@@ -55,6 +89,13 @@ class AdminDashboardPage extends StatelessWidget {
                   'Status: ${business.status.name}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
+                if (hasMultiLocation && activeLocation != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Active Location: ${activeLocation.name}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
               ],
               const SizedBox(height: 24),
               ElevatedButton(

@@ -19,13 +19,13 @@ class FakePaymentRepository implements PaymentRepository {
 
   @override
   Future<List<Payment>> getPaymentsByProfessionalInRange(
-    String professionalId,
+    String? professionalId,
     DateTime start,
     DateTime end,
     {String? businessId}
   ) async {
     return payments.where((p) {
-      if (p.professionalId != professionalId && professionalId.isNotEmpty) {
+      if (professionalId != null && professionalId.isNotEmpty && p.professionalId != professionalId) {
         return false;
       }
       return p.appointmentDate.isAfter(start.subtract(const Duration(seconds: 1))) &&

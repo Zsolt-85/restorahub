@@ -563,4 +563,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get myOfferedServices => 'My Offered Services';
+
+  @override
+  String get staffUtilization => 'Staff Utilization';
+
+  @override
+  String get peakHours => 'Peak Hours';
+
+  @override
+  String get featureNotAvailable => 'This feature is not available on your current plan.';
+
+  @override
+  String get analyticsDashboard => 'Analytics Dashboard';
+
+  @override
+  String get selectLocation => 'Select Location';
+
+  @override
+  String get allLocations => 'All Locations';
 }

@@ -563,4 +563,22 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get myOfferedServices => 'Ajánlott szolgáltatások';
+
+  @override
+  String get staffUtilization => 'Személyzet kihasználtsága';
+
+  @override
+  String get peakHours => 'Csúcsidőpontok';
+
+  @override
+  String get featureNotAvailable => 'Ez a funkció nem érhető el az aktuális csomagban.';
+
+  @override
+  String get analyticsDashboard => 'Analitikai irányítópult';
+
+  @override
+  String get selectLocation => 'Válasszon helyszínt';
+
+  @override
+  String get allLocations => 'Összes helyszín';
 }

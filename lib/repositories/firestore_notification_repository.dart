@@ -93,13 +93,21 @@ class FirestoreNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Stream<QuerySnapshot> getNotificationsStream(String userId, {String? businessId}) {
+  Stream<List<AppNotification>> watchNotifications(String userId, {String? businessId}) {
     Query<Map<String, dynamic>> query = _notificationsCol
         .where('receiverId', isEqualTo: userId)
         .orderBy('createdAt', descending: true);
     if (businessId != null && businessId.isNotEmpty) {
       query = query.where('businessId', isEqualTo: businessId);
     }
-    return query.snapshots();
+    return query.snapshots().map((snapshot) {
+      final list = <AppNotification>[];
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        list.add(AppNotification.fromMap(data));
+      }
+      return list;
+    });
   }
 }

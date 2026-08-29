@@ -565,4 +565,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get myOfferedServices => 'Meine angebotenen Dienstleistungen';
+
+  @override
+  String get staffUtilization => 'Personaleinsatz';
+
+  @override
+  String get peakHours => 'Spitzenzeiten';
+
+  @override
+  String get featureNotAvailable => 'Diese Funktion ist in Ihrem aktuellen Plan nicht verfügbar.';
+
+  @override
+  String get analyticsDashboard => 'Analytics Dashboard';
+
+  @override
+  String get selectLocation => 'Standort wählen';
+
+  @override
+  String get allLocations => 'Alle Standorte';
 }

@@ -34,7 +34,7 @@ class RouteGuardHelper {
           return Routes.adminDashboard;
         }
 
-        return user.isProfessional
+        return user.isStaff
             ? Routes.professionalHome
             : Routes.customerHome;
       }
@@ -54,7 +54,7 @@ class RouteGuardHelper {
     if (user.role == 'customer' && currentRoute == Routes.professionalHome) {
       return Routes.customerHome;
     }
-    if (user.role == 'professional' && currentRoute == Routes.customerHome) {
+    if (user.isStaff && currentRoute == Routes.customerHome) {
       return Routes.professionalHome;
     }
 
@@ -86,6 +86,7 @@ class RouteGuardHelper {
       Routes.notifications,
       Routes.analytics,
       Routes.pastAppointments,
+      Routes.analyticsDashboard,
     };
     return adminRoutes.contains(route);
   }

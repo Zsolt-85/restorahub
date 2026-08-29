@@ -197,6 +197,45 @@ void main() {
           expect(restored.status, status);
         }
       });
+
+      test('locationId roundtrips correctly', () {
+        final appt = Appointment(
+          id: 'test',
+          service: 'Massage',
+          dateTime: DateTime(2026, 8, 1, 10, 0),
+          locationId: 'loc_1',
+        );
+        final map = appt.toMap();
+        final restored = Appointment.fromMap(map);
+        expect(restored.locationId, 'loc_1');
+      });
+    });
+
+    group('fromMap Safety', () {
+      test('handles null/missing fields gracefully', () {
+        final map = <String, dynamic>{};
+        final appt = Appointment.fromMap(map);
+        expect(appt.service, '');
+        expect(appt.status, AppointmentStatus.pending);
+        expect(appt.dateTime, isNotNull);
+      });
+
+      test('parses Timestamp-like dynamic object for dateTime', () {
+        final date = DateTime(2026, 8, 15, 14, 30);
+        final mockTimestamp = _MockTimestamp(date);
+        final map = {
+          'service': 'Massage',
+          'dateTime': mockTimestamp,
+        };
+        final appt = Appointment.fromMap(map);
+        expect(appt.dateTime, date);
+      });
     });
   });
+}
+
+class _MockTimestamp {
+  final DateTime _date;
+  _MockTimestamp(this._date);
+  DateTime toDate() => _date;
 }

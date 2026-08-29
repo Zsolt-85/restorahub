@@ -40,6 +40,7 @@ class Appointment {
   String? professionalName;
   String? professionalPhone;
   String? professionalEmail;
+  String? locationId;
 
   Appointment({
     this.id,
@@ -58,6 +59,7 @@ class Appointment {
     this.professionalName,
     this.professionalPhone,
     this.professionalEmail,
+    this.locationId,
   });
 
   DateTime get endTime => dateTime.add(Duration(minutes: durationMinutes));
@@ -158,12 +160,13 @@ class Appointment {
       'professionalName': professionalName,
       'professionalPhone': professionalPhone,
       'professionalEmail': professionalEmail,
+      'locationId': locationId,
     };
   }
 
   factory Appointment.fromMap(Map<String, dynamic> map) {
-    final rawService = map['service'] as String;
-    final type = map['type'] as String?;
+    final rawService = map['service']?.toString() ?? '';
+    final type = map['type']?.toString();
     String service;
     if (type != null && type.isNotEmpty && type != 'Default' && type != 'Standard') {
       service = '$rawService \u2014 $type';
@@ -171,7 +174,7 @@ class Appointment {
       service = rawService;
     }
 
-    final statusRaw = map['status'] as String?;
+    final statusRaw = map['status']?.toString();
     AppointmentStatus status;
     if (statusRaw == null) {
       status = AppointmentStatus.pending;
@@ -189,18 +192,31 @@ class Appointment {
       serviceId: map['serviceId']?.toString(),
       paymentId: map['paymentId']?.toString(),
       service: service,
-      dateTime: DateTime.parse(map['dateTime'] as String),
+      dateTime: _parseDateTime(map['dateTime']),
       durationMinutes: map['durationMinutes'] as int? ?? 60,
       status: status,
       customerId: map['customerId']?.toString(),
-      customerName: map['customerName'] as String?,
-      customerPhone: map['customerPhone'] as String?,
-      customerEmail: map['customerEmail'] as String?,
+      customerName: map['customerName']?.toString(),
+      customerPhone: map['customerPhone']?.toString(),
+      customerEmail: map['customerEmail']?.toString(),
       professionalId: map['professionalId']?.toString(),
-      professionalName: map['professionalName'] as String?,
-      professionalPhone: map['professionalPhone'] as String?,
-      professionalEmail: map['professionalEmail'] as String?,
+      professionalName: map['professionalName']?.toString(),
+      professionalPhone: map['professionalPhone']?.toString(),
+      professionalEmail: map['professionalEmail']?.toString(),
+      locationId: map['locationId']?.toString(),
     );
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    try {
+      return (value as dynamic).toDate() as DateTime;
+    } catch (_) {
+      return DateTime.now();
+    }
   }
 
   Appointment copyWith({
@@ -220,6 +236,7 @@ class Appointment {
     String? professionalName,
     String? professionalPhone,
     String? professionalEmail,
+    String? locationId,
   }) {
     return Appointment(
       id: id ?? this.id,
@@ -238,6 +255,7 @@ class Appointment {
       professionalName: professionalName ?? this.professionalName,
       professionalPhone: professionalPhone ?? this.professionalPhone,
       professionalEmail: professionalEmail ?? this.professionalEmail,
+      locationId: locationId ?? this.locationId,
     );
   }
 }

@@ -66,7 +66,7 @@ class FirestorePaymentRepository implements PaymentRepository {
 
   @override
   Future<List<Payment>> getPaymentsByProfessionalInRange(
-    String professionalId,
+    String? professionalId,
     DateTime start,
     DateTime end,
     {String? businessId}
@@ -74,15 +74,18 @@ class FirestorePaymentRepository implements PaymentRepository {
     try {
       final startIso = start.toIso8601String();
       final endIso = end.toIso8601String();
-      final query = await _withBusinessFilter(
+      var query = _withBusinessFilter(
         _paymentsCol
-            .where('professionalId', isEqualTo: professionalId)
             .where('appointmentDate', isGreaterThanOrEqualTo: startIso)
             .where('appointmentDate', isLessThan: endIso),
         businessId,
-      ).get();
+      );
+      if (professionalId != null && professionalId.isNotEmpty) {
+        query = query.where('professionalId', isEqualTo: professionalId);
+      }
+      final snapshot = await query.get();
       final payments = <Payment>[];
-      for (final doc in query.docs) {
+      for (final doc in snapshot.docs) {
         final data = doc.data();
         data['id'] = doc.id;
         payments.add(Payment.fromMap(data));

@@ -23,4 +23,5 @@ class Routes {
   static const superAdminDashboard = '/super_admin_dashboard';
   static const setupWizard = '/setup_wizard';
   static const adminDashboard = '/admin/dashboard';
+  static const analyticsDashboard = '/admin/analytics';
 }

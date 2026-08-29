@@ -50,7 +50,7 @@ class PaymentProvider extends ChangeNotifier {
   }
 
   Future<void> loadPaymentsForProfessionalInRange(
-    String professionalId,
+    String? professionalId,
     DateTime start,
     DateTime end,
     {String? businessId}

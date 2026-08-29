@@ -58,6 +58,7 @@ import 'pages/admin_calendar_page.dart';
 import 'pages/super_admin_dashboard_page.dart';
 import 'pages/setup_wizard_page.dart';
 import 'pages/admin_dashboard_page.dart';
+import 'pages/analytics_dashboard_page.dart';
 
 Future<void> main() async {
   FlutterError.onError = (details) {
@@ -355,7 +356,9 @@ class MyApp extends StatelessWidget {
                        return const SetupWizardPage();
                      case Routes.adminDashboard:
                        return const AdminDashboardPage();
-                     default:
+                     case Routes.analyticsDashboard:
+                       return const AnalyticsDashboardPage();
+                      default:
                       return const LoginPage();
                   }
                 },

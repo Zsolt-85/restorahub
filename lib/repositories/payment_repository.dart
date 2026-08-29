@@ -4,7 +4,7 @@ abstract class PaymentRepository {
   Future<Payment?> getPaymentByAppointment(String appointmentId);
   Future<List<Payment>> getPaymentsByProfessional(String professionalId, {String? businessId});
   Future<List<Payment>> getPaymentsByProfessionalInRange(
-    String professionalId,
+    String? professionalId,
     DateTime start,
     DateTime end,
     {String? businessId}

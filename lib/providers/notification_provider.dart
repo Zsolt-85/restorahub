@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../models/notification.dart';
@@ -19,7 +18,7 @@ class NotificationProvider extends ChangeNotifier {
   List<AppNotification> get notifications => _notifications;
   int get unreadCount => _unreadCount;
 
-  StreamSubscription<QuerySnapshot>? _subscription;
+  StreamSubscription<List<AppNotification>>? _subscription;
 
   Future<void> loadNotifications(String userId, {String? businessId}) async {
     await stopRealtimeNotifications();
@@ -35,18 +34,13 @@ class NotificationProvider extends ChangeNotifier {
 
   void startRealtimeNotifications(String userId, {String? businessId}) {
     stopRealtimeNotifications();
-    _subscription = _repository.getNotificationsStream(userId, businessId: businessId).listen(
-      (snapshot) {
-        final notifications = <AppNotification>[];
-        for (final doc in snapshot.docs) {
-          final data = doc.data() as Map<String, dynamic>;
-          data['id'] = doc.id;
-          notifications.add(AppNotification.fromMap(data));
-        }
-        notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        _notifications = notifications;
+    _subscription = _repository.watchNotifications(userId, businessId: businessId).listen(
+      (notifications) {
+        final sortedNotifications = List<AppNotification>.from(notifications);
+        sortedNotifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        _notifications = sortedNotifications;
         _unreadCount =
-            notifications.where((n) => n.status == NotificationStatus.unread).length;
+            sortedNotifications.where((n) => n.status == NotificationStatus.unread).length;
         notifyListeners();
       },
       onError: (e) {

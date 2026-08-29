@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restorahub/models/business.dart';
+import 'package:restorahub/models/location.dart';
 
 void main() {
   group('Business', () {
@@ -119,6 +120,12 @@ void main() {
       expect(business.hasFeature('analytics'), isTrue);
       expect(business.hasFeature('payments'), isFalse);
     });
+
+    test('locations and activeLocationId default empty', () {
+      final business = Business(id: 'biz_1', name: 'Test');
+      expect(business.locations, isEmpty);
+      expect(business.activeLocationId, isNull);
+    });
   });
 
   group('Business fromMap', () {
@@ -164,6 +171,17 @@ void main() {
           'status': 'active',
         },
         'featureEntitlements': ['onlineBooking'],
+        'locations': [
+          {
+            'id': 'loc_1',
+            'name': 'Main Office',
+            'address': '123 Main St',
+            'phone': '5551234567',
+            'email': 'main@example.com',
+            'isActive': true,
+          },
+        ],
+        'activeLocationId': 'loc_1',
         'createdAt': '2026-01-01T00:00:00.000',
         'updatedAt': '2026-01-15T00:00:00.000',
       };
@@ -178,6 +196,9 @@ void main() {
       expect(business.settings?.cancellationWindowHours, 24);
       expect(business.subscription?.plan, 'starter');
       expect(business.featureEntitlements, ['onlineBooking']);
+      expect(business.locations.length, 1);
+      expect(business.locations.first.name, 'Main Office');
+      expect(business.activeLocationId, 'loc_1');
     });
 
     test('defaults status to trial for unknown values', () {
@@ -207,6 +228,8 @@ void main() {
       expect(business.settings, isNull);
       expect(business.subscription, isNull);
       expect(business.featureEntitlements, isEmpty);
+      expect(business.locations, isEmpty);
+      expect(business.activeLocationId, isNull);
     });
   });
 
@@ -220,6 +243,10 @@ void main() {
         status: BusinessStatus.active,
         ownerId: 'owner_1',
         featureEntitlements: ['onlineBooking'],
+        locations: [
+          Location(id: 'loc_1', name: 'Main Office'),
+        ],
+        activeLocationId: 'loc_1',
         createdAt: DateTime(2026, 1, 1),
         updatedAt: DateTime(2026, 1, 15),
       );
@@ -233,6 +260,8 @@ void main() {
       expect(map['status'], 'active');
       expect(map['ownerId'], 'owner_1');
       expect(map['featureEntitlements'], ['onlineBooking']);
+      expect(map['locations'], isNotNull);
+      expect(map['activeLocationId'], 'loc_1');
       expect(map['createdAt'], isNotNull);
       expect(map['updatedAt'], isNotNull);
     });
@@ -262,6 +291,24 @@ void main() {
       final activated = business.copyWith(status: BusinessStatus.active);
       expect(activated.status, BusinessStatus.active);
       expect(activated.isActive, isTrue);
+    });
+
+    test('copyWith updates locations and activeLocationId', () {
+      final business = Business(
+        id: 'biz_1',
+        name: 'Test',
+        locations: [Location(id: 'loc_1', name: 'Main')],
+        activeLocationId: 'loc_1',
+      );
+
+      final updated = business.copyWith(
+        locations: [Location(id: 'loc_2', name: 'Branch')],
+        activeLocationId: 'loc_2',
+      );
+
+      expect(updated.locations.length, 1);
+      expect(updated.locations.first.name, 'Branch');
+      expect(updated.activeLocationId, 'loc_2');
     });
   });
 
@@ -300,4 +347,35 @@ void main() {
       expect(restored.status, 'active');
     });
   });
+
+  group('Business fromMap Safety', () {
+    test('handles missing/null fields and parsing Timestamp-like dates', () {
+      final date = DateTime(2026, 8, 20, 12, 0);
+      final mockTimestamp = _MockTimestamp(date);
+      final map = {
+        'id': 'biz_1',
+        'name': 'Test Business',
+        'createdAt': mockTimestamp,
+        'updatedAt': mockTimestamp,
+        'subscription': {
+          'plan': 'starter',
+          'startDate': mockTimestamp,
+          'endDate': mockTimestamp,
+          'status': 'active',
+        },
+      };
+      
+      final business = Business.fromMap(map);
+      expect(business.createdAt, date);
+      expect(business.updatedAt, date);
+      expect(business.subscription?.startDate, date);
+      expect(business.subscription?.endDate, date);
+    });
+  });
+}
+
+class _MockTimestamp {
+  final DateTime _date;
+  _MockTimestamp(this._date);
+  DateTime toDate() => _date;
 }

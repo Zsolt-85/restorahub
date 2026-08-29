@@ -114,22 +114,34 @@ class Payment {
       professionalEmail: map['professionalEmail']?.toString() ?? '',
       service: map['service']?.toString() ?? '',
       staffCategory: resolvedStaffCategory,
-      appointmentDate: DateTime.parse(map['appointmentDate'] as String),
+      appointmentDate: _parseDateTime(map['appointmentDate']),
       appointmentTime: map['appointmentTime']?.toString() ?? '',
       appointmentDurationMinutes:
           map['appointmentDurationMinutes'] as int? ?? 60,
       amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
       currency: map['currency']?.toString() ?? 'EUR',
       method: PaymentMethod.values.firstWhere(
-        (m) => m.name == (map['method'] as String?),
+        (m) => m.name == map['method']?.toString(),
         orElse: () => PaymentMethod.cash,
       ),
       status: PaymentStatus.values.firstWhere(
-        (s) => s.name == (map['status'] as String?),
+        (s) => s.name == map['status']?.toString(),
         orElse: () => PaymentStatus.pending,
       ),
       receiptGenerated: map['receiptGenerated'] as bool? ?? false,
     );
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    try {
+      return (value as dynamic).toDate() as DateTime;
+    } catch (_) {
+      return DateTime.now();
+    }
   }
 
   Payment copyWith({

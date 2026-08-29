@@ -566,4 +566,22 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get myOfferedServices => 'Serviciile mele oferite';
+
+  @override
+  String get staffUtilization => 'Utilizare personal';
+
+  @override
+  String get peakHours => 'Ore de vârf';
+
+  @override
+  String get featureNotAvailable => 'Această funcție nu este disponibilă în planul curent.';
+
+  @override
+  String get analyticsDashboard => 'Panou de analiză';
+
+  @override
+  String get selectLocation => 'Selectați locația';
+
+  @override
+  String get allLocations => 'Toate locațiile';
 }

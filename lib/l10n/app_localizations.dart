@@ -1194,6 +1194,42 @@ abstract class AppLocalizations {
   /// **'Duration (minutes)'**
   String get durationMinutes;
 
+  /// No description provided for @staffUtilization.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff Utilization'**
+  String get staffUtilization;
+
+  /// No description provided for @peakHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Peak Hours'**
+  String get peakHours;
+
+  /// No description provided for @featureNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is not available on your current plan.'**
+  String get featureNotAvailable;
+
+  /// No description provided for @analyticsDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics Dashboard'**
+  String get analyticsDashboard;
+
+  /// No description provided for @selectLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Location'**
+  String get selectLocation;
+
+  /// No description provided for @allLocations.
+  ///
+  /// In en, this message translates to:
+  /// **'All Locations'**
+  String get allLocations;
+
   /// No description provided for @myOfferedServices.
   ///
   /// In en, this message translates to:

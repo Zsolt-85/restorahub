@@ -1,3 +1,5 @@
+import 'package:restorahub/models/location.dart';
+
 enum BusinessType { wellness, beauty, fitness, automotive, healthcare, custom }
 
 enum BusinessStatus { trial, active, suspended, cancelled, archived }
@@ -186,10 +188,22 @@ class BusinessSubscription {
   factory BusinessSubscription.fromMap(Map<String, dynamic> map) {
     return BusinessSubscription(
       plan: map['plan']?.toString(),
-      startDate: map['startDate'] != null ? DateTime.parse(map['startDate'] as String) : null,
-      endDate: map['endDate'] != null ? DateTime.parse(map['endDate'] as String) : null,
+      startDate: _parseNullableDateTime(map['startDate']),
+      endDate: _parseNullableDateTime(map['endDate']),
       status: map['status']?.toString(),
     );
+  }
+
+  static DateTime? _parseNullableDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+    try {
+      return (value as dynamic).toDate() as DateTime;
+    } catch (_) {
+      return null;
+    }
   }
 
   Map<String, dynamic> toMap() {
@@ -234,6 +248,8 @@ class Business {
   final BusinessSettings? settings;
   final BusinessSubscription? subscription;
   final List<String> featureEntitlements;
+  final List<Location> locations;
+  final String? activeLocationId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -254,6 +270,8 @@ class Business {
     this.settings,
     this.subscription,
     this.featureEntitlements = const [],
+    this.locations = const [],
+    this.activeLocationId,
     this.createdAt,
     this.updatedAt,
   });
@@ -315,9 +333,27 @@ class Business {
       featureEntitlements: map['featureEntitlements'] != null
           ? List<String>.from((map['featureEntitlements'] as List<dynamic>).map((e) => e.toString()))
           : const [],
-      createdAt: map['createdAt'] != null ? DateTime.tryParse(map['createdAt'] as String) : null,
-      updatedAt: map['updatedAt'] != null ? DateTime.tryParse(map['updatedAt'] as String) : null,
+      locations: map['locations'] != null
+          ? List<Location>.from(
+              (map['locations'] as List<dynamic>).map((e) => Location.fromMap(e as Map<String, dynamic>)),
+            )
+          : const [],
+      activeLocationId: map['activeLocationId']?.toString(),
+      createdAt: _parseNullableDateTime(map['createdAt']),
+      updatedAt: _parseNullableDateTime(map['updatedAt']),
     );
+  }
+
+  static DateTime? _parseNullableDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+    try {
+      return (value as dynamic).toDate() as DateTime;
+    } catch (_) {
+      return null;
+    }
   }
 
   Map<String, dynamic> toMap() {
@@ -338,6 +374,8 @@ class Business {
       'settings': settings?.toMap(),
       'subscription': subscription?.toMap(),
       'featureEntitlements': featureEntitlements,
+      'locations': locations.map((l) => l.toMap()).toList(),
+      'activeLocationId': activeLocationId,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -360,6 +398,8 @@ class Business {
     BusinessSettings? settings,
     BusinessSubscription? subscription,
     List<String>? featureEntitlements,
+    List<Location>? locations,
+    String? activeLocationId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -380,6 +420,8 @@ class Business {
       settings: settings ?? this.settings,
       subscription: subscription ?? this.subscription,
       featureEntitlements: featureEntitlements ?? this.featureEntitlements,
+      locations: locations ?? this.locations,
+      activeLocationId: activeLocationId ?? this.activeLocationId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
