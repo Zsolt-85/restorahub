@@ -5,6 +5,7 @@ import '../exceptions/app_exception.dart';
 import '../l10n/app_localizations.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/schedule_helper.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../models/appointment.dart';
 import '../models/payment.dart';
 import '../providers/appointment_provider.dart';
@@ -40,7 +41,10 @@ class AppointmentActions {
             child: Text(
               AppLocalizations.of(context)?.cancelBookingAction ??
                   'Cancel booking',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(
+                color: SemanticColorHelper.errorOf(
+                    Theme.of(context).colorScheme),
+              ),
             ),
           ),
         ],
@@ -205,7 +209,9 @@ class AppointmentActions {
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               AppLocalizations.of(context)?.decline ?? 'Decline',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(
+                color: SemanticColorHelper.errorOf(
+                    Theme.of(context).colorScheme)),
             ),
           ),
           TextButton(
@@ -371,7 +377,8 @@ class AppointmentActions {
               actionLabel,
               style: TextStyle(
                 color: newStatus == AppointmentStatus.cancelledByCustomer
-                    ? Colors.red
+                    ? SemanticColorHelper.errorOf(
+                        Theme.of(context).colorScheme)
                     : null,
               ),
             ),

@@ -8,6 +8,7 @@ import '../providers/auth_provider.dart';
 import '../providers/business_provider.dart';
 import '../providers/notification_provider.dart';
 import '../helpers/feature_gate.dart';
+import '../helpers/semantic_color_helper.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key, required this.user, required this.auth});
@@ -48,8 +49,9 @@ class AppDrawer extends StatelessWidget {
             trailing: unreadCount > 0
                 ? Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
+                    decoration: BoxDecoration(
+                      color: SemanticColorHelper.errorOf(
+                          Theme.of(context).colorScheme),
                       shape: BoxShape.circle,
                     ),
                     child: Text(

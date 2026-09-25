@@ -5,6 +5,7 @@ import '../constants/constants.dart';
 import '../exceptions/app_exception.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/schedule_helper.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/service.dart';
@@ -203,7 +204,9 @@ class _ProfessionalManualBookingPageState
           ],
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.clear, color: Colors.red),
+          icon: Icon(Icons.clear,
+              color: SemanticColorHelper.errorOf(
+                  Theme.of(context).colorScheme)),
           tooltip:
               AppLocalizations.of(context)?.changeCustomer ?? 'Change customer',
           onPressed: _clearCustomer,

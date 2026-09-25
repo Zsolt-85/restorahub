@@ -5,6 +5,7 @@ import '../constants/routes.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../l10n/app_localizations.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -136,7 +137,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 Text(flag, style: const TextStyle(fontSize: 24)),
                 const SizedBox(width: 16),
                 Expanded(child: Text(name)),
-                if (isSelected) const Icon(Icons.check, color: Colors.green),
+                if (isSelected)
+                  Icon(Icons.check,
+                      color: SemanticColorHelper.successOf(
+                          Theme.of(context).colorScheme)),
               ],
             ),
           );
@@ -164,8 +168,11 @@ class _ThemeTile extends StatelessWidget {
     return ListTile(
       leading: Icon(Icons.color_lens, color: iconColor),
       title: Text(title),
-      trailing:
-          selected ? const Icon(Icons.check_circle, color: Colors.green) : null,
+      trailing: selected
+          ? Icon(Icons.check_circle,
+              color: SemanticColorHelper.successOf(
+                  Theme.of(context).colorScheme))
+          : null,
       onTap: () =>
           Provider.of<ThemeProvider>(context, listen: false).setTheme(theme),
     );

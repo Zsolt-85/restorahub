@@ -5,24 +5,45 @@ import '../models/business.dart';
 class ThemeHelper {
   static const _defaultPrimaryColor = Color(0xFF008080);
 
-  static ThemeData generateTenantTheme(BusinessBranding? branding,
-      {bool isDark = false}) {
-    final seedColor =
-        _parseHexColor(branding?.primaryColor) ?? _defaultPrimaryColor;
-    final brightness = _resolveBrightness(branding?.themeMode, isDark);
-
-    final colorScheme = ColorScheme.fromSeed(
+  static ThemeData buildThemeData({
+    required Color seedColor,
+    required Brightness brightness,
+    Color? surface,
+    Color? onSurface,
+  }) {
+    var colorScheme = ColorScheme.fromSeed(
       seedColor: seedColor,
       brightness: brightness,
     );
 
+    if (surface != null || onSurface != null) {
+      colorScheme = colorScheme.copyWith(surface: surface, onSurface: onSurface);
+    }
     return ThemeData(
       colorScheme: colorScheme,
       scaffoldBackgroundColor: colorScheme.surface,
+      cardTheme: CardThemeData(
+        margin: const EdgeInsets.only(bottom: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        border: OutlineInputBorder(),
+      ),
+      appBarTheme: const AppBarTheme(centerTitle: false),
+      textTheme: Typography.material2021().englishLike.apply(
+            bodyColor: colorScheme.onSurface,
+            displayColor: colorScheme.onSurface,
+          ),
       chipTheme: _buildChipTheme(colorScheme),
       elevatedButtonTheme: _buildElevatedButtonTheme(colorScheme),
       tabBarTheme: _buildTabBarTheme(colorScheme),
     );
+  }
+
+  static ThemeData generateTenantTheme(BusinessBranding? branding, {bool isDark = false}) {
+    final seedColor = _parseHexColor(branding?.primaryColor) ?? _defaultPrimaryColor;
+    final brightness = _resolveBrightness(branding?.themeMode, isDark);
+    return buildThemeData(seedColor: seedColor, brightness: brightness);
   }
 
   static Brightness _resolveBrightness(String? themeMode, bool fallbackDark) {

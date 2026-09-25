@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../constants/routes.dart';
 import '../constants/constants.dart';
 import '../l10n/app_localizations.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../models/service.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
@@ -635,7 +636,10 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 20),
             if (_error != null)
-              Text(_error!, style: const TextStyle(color: Colors.red)),
+              Text(_error!,
+                  style: TextStyle(
+                      color: SemanticColorHelper.errorOf(
+                          Theme.of(context).colorScheme))),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loading

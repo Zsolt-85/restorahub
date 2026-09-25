@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../helpers/format_helper.dart';
 import '../helpers/status_color_helper.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../helpers/appointment_actions.dart';
 import '../helpers/calendar_export_helper.dart';
 import '../l10n/app_localizations.dart';
@@ -194,14 +195,18 @@ class AppointmentCard extends StatelessWidget {
             appointment,
             AppointmentStatus.cancelledByCustomer,
           ),
-          icon: const Icon(Icons.delete_outline, color: Colors.red),
+          icon: Icon(Icons.delete_outline,
+              color: SemanticColorHelper.errorOf(
+                  Theme.of(context).colorScheme)),
           label: FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               AppLocalizations.of(context)?.delete ?? 'Remove',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(
+                  color: SemanticColorHelper.errorOf(
+                      Theme.of(context).colorScheme)),
             ),
           ),
         ),
