@@ -6,6 +6,7 @@ import '../widgets/tenant_brand_header.dart';
 import '../exceptions/app_exception.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/schedule_helper.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/booking_summary.dart';
@@ -747,7 +748,10 @@ class _BookingPageState extends State<BookingPage> {
             ],
             const SizedBox(height: 20),
             if (_error != null)
-              Text(_error!, style: const TextStyle(color: Colors.red)),
+              Text(_error!,
+                  style: TextStyle(
+                      color: SemanticColorHelper.errorOf(
+                          Theme.of(context).colorScheme))),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loading ||

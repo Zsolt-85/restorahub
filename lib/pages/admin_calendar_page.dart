@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../constants/routes.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
@@ -221,13 +222,13 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
     return grouped;
   }
 
-  Color _professionalColor(String? professionalId) {
-    if (professionalId == null) return Colors.grey;
+  Color _professionalColor(String? professionalId, ColorScheme scheme) {
+    if (professionalId == null) return scheme.onSurfaceVariant;
     final index = _staff.indexWhere((s) => s.id == professionalId);
     if (index >= 0 && index < _professionalColors.length) {
       return _professionalColors[index];
     }
-    return Colors.grey;
+    return scheme.onSurfaceVariant;
   }
 
   @override
@@ -488,7 +489,8 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
           (s) => s.id == professionalId,
           orElse: () => User(name: AppLocalizations.of(context)?.unknownValue ?? 'Unknown', email: '', phone: '', role: ''),
         );
-        final color = _professionalColor(professionalId);
+        final color =
+            _professionalColor(professionalId, Theme.of(context).colorScheme);
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 20),
@@ -589,7 +591,8 @@ class _AdminAppointmentTile extends StatelessWidget {
     );
     final startFormatted = _formatTimeOfDay(startTime);
     final endFormatted = _formatTimeOfDay(endTime);
-    final statusColor = _statusColor(appointment.status);
+    final statusColor =
+        _statusColor(appointment.status, Theme.of(context).colorScheme);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -678,19 +681,19 @@ class _AdminAppointmentTile extends StatelessWidget {
   }
 }
 
-Color _statusColor(AppointmentStatus status) {
+Color _statusColor(AppointmentStatus status, ColorScheme scheme) {
   switch (status) {
     case AppointmentStatus.pending:
-      return Colors.orange;
+      return SemanticColorHelper.warningOf(scheme);
     case AppointmentStatus.confirmed:
-      return Colors.green;
+      return SemanticColorHelper.successOf(scheme);
     case AppointmentStatus.completed:
-      return Colors.blue;
+      return SemanticColorHelper.infoOf(scheme);
     case AppointmentStatus.cancelledByCustomer:
     case AppointmentStatus.cancelledByProfessional:
-      return Colors.red;
+      return SemanticColorHelper.errorOf(scheme);
     case AppointmentStatus.noShow:
-      return Colors.grey;
+      return scheme.onSurfaceVariant;
   }
 }
 

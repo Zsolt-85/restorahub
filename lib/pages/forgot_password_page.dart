@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/auth_provider.dart';
 
@@ -67,7 +68,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
                     _error!,
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(
+                        color: SemanticColorHelper.errorOf(
+                            Theme.of(context).colorScheme)),
                   ),
                 ),
               ElevatedButton(

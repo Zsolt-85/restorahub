@@ -23,17 +23,13 @@ class ServiceCategoryPieChart extends StatelessWidget {
     }
 
     final total = appointments.length;
+    final scheme = Theme.of(context).colorScheme;
     final colors = [
-      Colors.blue,
-      Colors.orange,
-      Colors.green,
-      Colors.red,
-      Colors.purple,
-      Colors.teal,
-      Colors.amber,
-      Colors.indigo,
-      Colors.pink,
-      Colors.cyan,
+      scheme.primary,
+      scheme.secondary,
+      scheme.tertiary,
+      scheme.primaryContainer,
+      scheme.secondaryContainer,
     ];
 
     final sections = categoryMap.entries.map((entry) {

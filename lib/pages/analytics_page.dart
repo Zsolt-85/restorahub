@@ -8,6 +8,7 @@ import '../providers/auth_provider.dart';
 import '../providers/business_provider.dart';
 import '../providers/payment_provider.dart';
 import '../helpers/format_helper.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../helpers/csv_export_helper.dart' show exportAppointmentsCsv;
 import '../widgets/charts/revenue_trend_chart.dart';
 import '../widgets/charts/service_category_pie_chart.dart';
@@ -178,7 +179,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                      )
                    else
                      ...apptProvider.currentAppointments.map((appt) {
-                       return _buildAppointmentTile(appt);
+                      return _buildAppointmentTile(context, appt);
                      }),
                    const SizedBox(height: 24),
                     LayoutBuilder(
@@ -236,6 +237,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Widget _buildStatCard(String title, String value, IconData icon) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -243,7 +245,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(icon, size: 32, color: Colors.blueGrey),
+            Icon(icon, size: 32, color: scheme.onSurfaceVariant),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -251,8 +253,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.grey,
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
                       fontSize: 12,
                     ),
                   ),
@@ -273,6 +275,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Widget _buildRateCard(String title, String value, Color color, IconData icon) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -288,8 +291,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.grey,
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
                       fontSize: 12,
                     ),
                   ),
@@ -348,7 +351,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  Widget _buildAppointmentTile(Appointment appt) {
+  Widget _buildAppointmentTile(BuildContext context, Appointment appt) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -364,26 +367,26 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: _statusColor(appt.status),
+            color: _statusColor(appt.status, Theme.of(context).colorScheme),
           ),
         ),
       ),
     );
   }
 
-  Color _statusColor(AppointmentStatus status) {
+  Color _statusColor(AppointmentStatus status, ColorScheme scheme) {
     switch (status) {
       case AppointmentStatus.pending:
-        return Colors.orange;
+        return SemanticColorHelper.warningOf(scheme);
       case AppointmentStatus.confirmed:
-        return Colors.green;
+        return SemanticColorHelper.successOf(scheme);
       case AppointmentStatus.completed:
-        return Colors.blue;
+        return SemanticColorHelper.infoOf(scheme);
       case AppointmentStatus.cancelledByCustomer:
       case AppointmentStatus.cancelledByProfessional:
-        return Colors.red;
+        return SemanticColorHelper.errorOf(scheme);
       case AppointmentStatus.noShow:
-        return Colors.grey;
+        return scheme.onSurfaceVariant;
     }
   }
 

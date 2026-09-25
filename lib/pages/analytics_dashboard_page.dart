@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../helpers/analytics_service.dart';
 import '../helpers/feature_gate.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
@@ -118,9 +119,9 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _buildRateCard(AppLocalizations.of(context)?.completedLabel ?? 'Completion Rate', '${(metrics.completionRate * 100).toStringAsFixed(1)}%', Colors.green)),
+              Expanded(child: _buildRateCard(AppLocalizations.of(context)?.completedLabel ?? 'Completion Rate', '${(metrics.completionRate * 100).toStringAsFixed(1)}%', SemanticColorHelper.successOf(Theme.of(context).colorScheme))),
               const SizedBox(width: 16),
-              Expanded(child: _buildRateCard(AppLocalizations.of(context)?.statusCancelled ?? 'Cancellation Rate', '${(metrics.cancellationRate * 100).toStringAsFixed(1)}%', Colors.red)),
+              Expanded(child: _buildRateCard(AppLocalizations.of(context)?.statusCancelled ?? 'Cancellation Rate', '${(metrics.cancellationRate * 100).toStringAsFixed(1)}%', SemanticColorHelper.errorOf(Theme.of(context).colorScheme))),
             ],
           ),
           const SizedBox(height: 24),
@@ -137,6 +138,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
   }
 
   Widget _buildMetricCard(String title, String value, IconData icon) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -144,13 +146,13 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(icon, size: 32, color: Colors.blueGrey),
+            Icon(icon, size: 32, color: scheme.onSurfaceVariant),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(title, style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
                   Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -162,6 +164,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
   }
 
   Widget _buildRateCard(String title, String value, Color color) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -175,7 +178,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(title, style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
                   Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
                 ],
               ),
@@ -194,6 +197,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
   }
 
   Widget _buildPeakHoursChart(Map<int, int> peakHours) {
+    final scheme = Theme.of(context).colorScheme;
     if (peakHours.isEmpty) {
       return const Card(
         child: Padding(
@@ -228,7 +232,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
                           Container(
                             height: 20,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
+                              color: scheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -237,7 +241,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
                             child: Container(
                               height: 20,
                               decoration: BoxDecoration(
-                                color: Colors.blue.shade400,
+                                color: scheme.primary,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),

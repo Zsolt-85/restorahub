@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../constants/routes.dart';
 import '../constants/constants.dart';
 import '../l10n/app_localizations.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
@@ -89,7 +90,9 @@ class _LoginPageState extends State<LoginPage> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
                   _error!,
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(
+                      color: SemanticColorHelper.errorOf(
+                          Theme.of(context).colorScheme)),
                 ),
               ),
             ElevatedButton(

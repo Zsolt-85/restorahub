@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../helpers/format_helper.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../helpers/appointment_actions.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
@@ -411,7 +412,8 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _statusColorFromLabel(label);
+    final color =
+        _statusColorFromLabel(label, Theme.of(context).colorScheme);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -430,13 +432,13 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-Color _statusColorFromLabel(String label) {
+Color _statusColorFromLabel(String label, ColorScheme scheme) {
   final l = label.toLowerCase();
-  if (l.contains('pending') || l.contains('függő') || l.contains('ausstehend') || l.contains('în așteptare')) return Colors.orange;
-  if (l.contains('confirmed') || l.contains('megerősített') || l.contains('bestätigt') || l.contains('confirmată')) return Colors.green;
-  if (l.contains('completed') || l.contains('befejezett') || l.contains('abgeschlossen') || l.contains('finalizată')) return Colors.blue;
-  if (l.contains('cancelled') || l.contains('törölve') || l.contains('storniert') || l.contains('anulată')) return Colors.red;
-  return Colors.grey;
+  if (l.contains('pending') || l.contains('függő') || l.contains('ausstehend') || l.contains('în așteptare')) return SemanticColorHelper.warningOf(scheme);
+  if (l.contains('confirmed') || l.contains('megerősített') || l.contains('bestätigt') || l.contains('confirmată')) return SemanticColorHelper.successOf(scheme);
+  if (l.contains('completed') || l.contains('befejezett') || l.contains('abgeschlossen') || l.contains('finalizată')) return SemanticColorHelper.infoOf(scheme);
+  if (l.contains('cancelled') || l.contains('törölve') || l.contains('storniert') || l.contains('anulată')) return SemanticColorHelper.errorOf(scheme);
+  return scheme.onSurfaceVariant;
 }
 
 class _DetailRow extends StatelessWidget {

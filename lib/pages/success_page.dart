@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
 import '../helpers/calendar_helper.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../helpers/format_helper.dart';
 import '../models/booking_summary.dart';
 import '../l10n/app_localizations.dart';
@@ -64,7 +65,10 @@ class SuccessPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.check_circle, size: 88, color: Colors.green),
+              Icon(Icons.check_circle,
+                  size: 88,
+                  color: SemanticColorHelper.successOf(
+                      Theme.of(context).colorScheme)),
               const SizedBox(height: 20),
               Text(
                 AppLocalizations.of(context)?.bookingConfirmed ?? 'Booking confirmed!',

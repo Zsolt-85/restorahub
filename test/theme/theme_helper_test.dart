@@ -81,5 +81,16 @@ void main() {
       expect(theme.elevatedButtonTheme, isNotNull);
       expect(theme.tabBarTheme, isNotNull);
     });
+
+    test('applies shared card, input, and app bar themes', () {
+      final theme = ThemeHelper.generateTenantTheme(
+        BusinessBranding(primaryColor: '#008080'),
+      );
+
+      expect(theme.cardTheme.margin, const EdgeInsets.only(bottom: 12));
+      expect(theme.inputDecorationTheme.border, isA<OutlineInputBorder>());
+      expect(theme.appBarTheme.centerTitle, isFalse);
+      expect(theme.textTheme.bodyMedium?.fontSize, 14);
+    });
   });
 }

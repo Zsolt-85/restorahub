@@ -6,6 +6,7 @@ import '../models/notification.dart';
 import '../providers/auth_provider.dart';
 import '../providers/business_provider.dart';
 import '../providers/notification_provider.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../widgets/empty_state_widget.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -117,27 +118,28 @@ class _NotificationTile extends StatelessWidget {
     }
   }
 
-  Color get _iconColor {
+  Color _iconColor(ColorScheme scheme) {
     switch (notification.type) {
       case NotificationType.bookingConfirmed:
-        return Colors.green;
+        return SemanticColorHelper.successOf(scheme);
       case NotificationType.bookingCancelled:
-        return Colors.red;
+        return SemanticColorHelper.errorOf(scheme);
       case NotificationType.bookingCompleted:
-        return Colors.blue;
+        return SemanticColorHelper.infoOf(scheme);
       case NotificationType.upcomingReminder:
-        return Colors.orange;
+        return SemanticColorHelper.warningOf(scheme);
       default:
-        return Colors.grey;
+        return scheme.onSurfaceVariant;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: _iconColor.withValues(alpha: 0.1),
-        child: Icon(_icon, color: _iconColor),
+        backgroundColor: _iconColor(scheme).withValues(alpha: 0.1),
+        child: Icon(_icon, color: _iconColor(scheme)),
       ),
       title: Text(
         notification.title,

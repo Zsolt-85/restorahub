@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../exceptions/app_exception.dart';
 import '../l10n/app_localizations.dart';
 import '../helpers/format_helper.dart';
+import '../helpers/semantic_color_helper.dart';
 import '../models/appointment.dart';
 import '../providers/appointment_provider.dart';
 import '../utils/error_handler.dart';
@@ -31,7 +32,10 @@ class AppointmentActions {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               AppLocalizations.of(context)?.cancelBookingAction ?? 'Cancel booking',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(
+                color: SemanticColorHelper.errorOf(
+                    Theme.of(context).colorScheme),
+              ),
             ),
           ),
         ],
@@ -83,7 +87,10 @@ class AppointmentActions {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               AppLocalizations.of(context)?.cancelBookingAction ?? 'Cancel booking',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(
+                color: SemanticColorHelper.errorOf(
+                    Theme.of(context).colorScheme),
+              ),
             ),
           ),
         ],
@@ -213,7 +220,9 @@ class AppointmentActions {
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               AppLocalizations.of(context)?.decline ?? 'Decline',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(
+                color: SemanticColorHelper.errorOf(
+                    Theme.of(context).colorScheme)),
             ),
           ),
           TextButton(
@@ -307,7 +316,8 @@ class AppointmentActions {
               actionLabel,
               style: TextStyle(
                  color: newStatus == AppointmentStatus.cancelledByCustomer
-                    ? Colors.red
+                    ? SemanticColorHelper.errorOf(
+                        Theme.of(context).colorScheme)
                     : null,
               ),
             ),

@@ -84,7 +84,10 @@ class RevenueTrendChart extends StatelessWidget {
         lineTouchData: LineTouchData(
           enabled: true,
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (touchedSpot) => Colors.blueGrey.withValues(alpha: 0.8),
+            getTooltipColor: (touchedSpot) => Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.8),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 final index = spot.x.toInt();
@@ -94,10 +97,13 @@ class RevenueTrendChart extends StatelessWidget {
                   final revenue = dayMap[key] ?? 0;
                   return LineTooltipItem(
                     '${date.month}/${date.day}/${date.year}\n${FormatHelper.formatCurrency(revenue, currency: currency)}',
-                    const TextStyle(color: Colors.white, fontSize: 12),
+                    TextStyle(
+                        color: Theme.of(context).colorScheme.surface,
+                        fontSize: 12),
                   );
                 }
-                return const LineTooltipItem('', TextStyle(color: Colors.white));
+                return LineTooltipItem(
+                    '', TextStyle(color: Theme.of(context).colorScheme.surface));
               }).toList();
             },
           ),

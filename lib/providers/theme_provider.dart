@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../helpers/theme_preferences.dart';
+import '../theme/theme_helper.dart';
 
 enum AppTheme { teal, dark, rose, indigo }
 
@@ -57,62 +58,11 @@ class ThemeProvider extends ChangeNotifier {
     Color? surface,
     Color? onSurface,
   }) {
-    final colorScheme = ColorScheme.fromSeed(
+    return ThemeHelper.buildThemeData(
       seedColor: seedColor,
       brightness: brightness,
-    ).copyWith(
       surface: surface,
       onSurface: onSurface,
-    );
-
-    return ThemeData(
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.surface,
-      chipTheme: _buildChipTheme(colorScheme),
-      elevatedButtonTheme: _buildElevatedButtonTheme(colorScheme),
-      tabBarTheme: _buildTabBarTheme(colorScheme),
-    );
-  }
-
-  ChipThemeData _buildChipTheme(ColorScheme colorScheme) {
-    final onSurface = colorScheme.onSurface;
-    return ChipThemeData(
-      selectedColor: colorScheme.primary,
-      backgroundColor: colorScheme.surface,
-      disabledColor: onSurface.withValues(alpha: 0.12),
-      labelStyle: TextStyle(color: colorScheme.onSurface),
-      secondaryLabelStyle: TextStyle(color: colorScheme.onSurface),
-    );
-  }
-
-  ElevatedButtonThemeData _buildElevatedButtonTheme(ColorScheme colorScheme) {
-    final onSurface = colorScheme.onSurface;
-    return ElevatedButtonThemeData(
-      style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) {
-            return onSurface.withValues(alpha: 0.12);
-          }
-          return colorScheme.primary;
-        }),
-        foregroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) {
-            return onSurface.withValues(alpha: 0.38);
-          }
-          return colorScheme.onPrimary;
-        }),
-      ),
-    );
-  }
-
-  TabBarThemeData _buildTabBarTheme(ColorScheme colorScheme) {
-    final onSurface = colorScheme.onSurface;
-    return TabBarThemeData(
-      indicator: BoxDecoration(color: colorScheme.primary),
-      indicatorColor: colorScheme.primary,
-      labelColor: colorScheme.onPrimary,
-      unselectedLabelColor: onSurface.withValues(alpha: 0.6),
-      unselectedLabelStyle: TextStyle(color: onSurface.withValues(alpha: 0.6)),
     );
   }
 
