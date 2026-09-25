@@ -33,7 +33,8 @@ class _ProfessionalBookingManagementPageState
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _appointmentProvider = Provider.of<AppointmentProvider>(context, listen: false);
+    _appointmentProvider =
+        Provider.of<AppointmentProvider>(context, listen: false);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.currentUser != null) {
@@ -65,7 +66,8 @@ class _ProfessionalBookingManagementPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.manageBookings ?? 'Manage bookings'),
+        title: Text(
+            AppLocalizations.of(context)?.manageBookings ?? 'Manage bookings'),
         actions: const [
           UserProfileAvatar(),
         ],
@@ -99,12 +101,14 @@ class _ProfessionalBookingManagementPageState
           Navigator.pushNamed(context, Routes.professionalManualBooking);
         },
         icon: const Icon(Icons.add),
-        label: Text(AppLocalizations.of(context)?.createManualBooking ?? 'Create Manual Booking'),
+        label: Text(AppLocalizations.of(context)?.createManualBooking ??
+            'Create Manual Booking'),
       ),
     );
   }
 
-  Widget _buildUpcoming(BuildContext context, AppointmentProvider apptProvider) {
+  Widget _buildUpcoming(
+      BuildContext context, AppointmentProvider apptProvider) {
     if (apptProvider.isLoading) {
       return ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -120,12 +124,14 @@ class _ProfessionalBookingManagementPageState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
+              const Icon(Icons.wifi_off_rounded,
+                  size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
-               Text(
-                 AppLocalizations.of(context)?.failedToLoadBookings ?? 'Could not load bookings',
-                 style: Theme.of(context).textTheme.titleMedium,
-               ),
+              Text(
+                AppLocalizations.of(context)?.failedToLoadBookings ??
+                    'Could not load bookings',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               Text(
                 apptProvider.error!,
@@ -147,14 +153,17 @@ class _ProfessionalBookingManagementPageState
     if (appointments.isEmpty) {
       return EmptyStateWidget(
         icon: Icons.event_busy,
-        title: AppLocalizations.of(context)?.noUpcomingBookings ?? 'No upcoming requests',
-        subtitle: AppLocalizations.of(context)?.upcomingBookingsSubtitle ?? 'When customers book services with you, their requests will appear here.',
+        title: AppLocalizations.of(context)?.noUpcomingBookings ??
+            'No upcoming requests',
+        subtitle: AppLocalizations.of(context)?.upcomingBookingsSubtitle ??
+            'When customers book services with you, their requests will appear here.',
         actionButton: ElevatedButton.icon(
           onPressed: () {
             Navigator.pushNamed(context, Routes.profile);
           },
           icon: const Icon(Icons.person_outline),
-          label: Text(AppLocalizations.of(context)?.editProfileAndHours ?? 'Edit Profile & Hours'),
+          label: Text(AppLocalizations.of(context)?.editProfileAndHours ??
+              'Edit Profile & Hours'),
         ),
       );
     }
@@ -169,13 +178,20 @@ class _ProfessionalBookingManagementPageState
           appointment: appt,
           viewerIsCustomer: false,
           onEdit: (appt) => AppointmentActions.confirmReschedule(context, appt),
-          onCancel: () => AppointmentActions.confirmProfessionalCancel(context, appt),
+          onCancel: () =>
+              AppointmentActions.confirmProfessionalCancel(context, appt),
           onConfirm: isPending
               ? () => AppointmentActions.acceptAppointment(context, appt)
               : null,
           onReject: isPending
               ? () => AppointmentActions.declineAppointment(context, appt)
               : null,
+          onNoShow: (appt) => AppointmentActions.markNoShow(context, appt),
+          onPay: (appt) => Navigator.pushNamed(
+            context,
+            Routes.addPayment,
+            arguments: appt,
+          ),
         );
       },
     );
@@ -197,23 +213,25 @@ class _ProfessionalBookingManagementPageState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
+              const Icon(Icons.wifi_off_rounded,
+                  size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
-               Text(
-                 AppLocalizations.of(context)?.failedToLoadBookings ?? 'Could not load bookings',
-                 style: Theme.of(context).textTheme.titleMedium,
-               ),
+              Text(
+                AppLocalizations.of(context)?.failedToLoadBookings ??
+                    'Could not load bookings',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               Text(
                 apptProvider.error!,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-               ElevatedButton.icon(
-                 onPressed: () => apptProvider.loadAppointments(),
-                 icon: const Icon(Icons.refresh),
-                 label: Text(AppLocalizations.of(context)?.retry ?? 'Retry'),
-               ),
+              ElevatedButton.icon(
+                onPressed: () => apptProvider.loadAppointments(),
+                icon: const Icon(Icons.refresh),
+                label: Text(AppLocalizations.of(context)?.retry ?? 'Retry'),
+              ),
             ],
           ),
         ),
@@ -224,8 +242,10 @@ class _ProfessionalBookingManagementPageState
     if (appointments.isEmpty) {
       return EmptyStateWidget(
         icon: Icons.history,
-        title: AppLocalizations.of(context)?.noPastBookings ?? 'No past bookings',
-        subtitle: AppLocalizations.of(context)?.pastBookingsSubtitle ?? 'Completed and cancelled bookings will appear here',
+        title:
+            AppLocalizations.of(context)?.noPastBookings ?? 'No past bookings',
+        subtitle: AppLocalizations.of(context)?.pastBookingsSubtitle ??
+            'Completed and cancelled bookings will appear here',
       );
     }
 
@@ -239,12 +259,19 @@ class _ProfessionalBookingManagementPageState
           viewerIsCustomer: false,
           onEdit: (_) {},
           onCancel: () {},
+          onNoShow: (appt) => AppointmentActions.markNoShow(context, appt),
+          onPay: (appt) => Navigator.pushNamed(
+            context,
+            Routes.addPayment,
+            arguments: appt,
+          ),
         );
       },
     );
   }
 
-  Widget _buildCalendar(BuildContext context, AppointmentProvider apptProvider, User user) {
+  Widget _buildCalendar(
+      BuildContext context, AppointmentProvider apptProvider, User user) {
     return ProfessionalCalendarView(professional: user);
   }
 }

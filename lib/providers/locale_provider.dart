@@ -9,11 +9,11 @@ class LocaleProvider extends ChangeNotifier {
   Locale get locale => _locale;
 
   List<Locale> get supportedLocales => const [
-    Locale('en'),
-    Locale('ro'),
-    Locale('de'),
-    Locale('hu'),
-  ];
+        Locale('en'),
+        Locale('ro'),
+        Locale('de'),
+        Locale('hu'),
+      ];
 
   LocaleProvider() {
     loadSavedLocale();
@@ -33,7 +33,8 @@ class LocaleProvider extends ChangeNotifier {
     final savedLanguage = prefs.getString(_selectedLanguageKey);
 
     if (savedLanguage != null &&
-        supportedLocales.any((locale) => locale.languageCode == savedLanguage)) {
+        supportedLocales
+            .any((locale) => locale.languageCode == savedLanguage)) {
       _locale = Locale(savedLanguage);
       notifyListeners();
     }

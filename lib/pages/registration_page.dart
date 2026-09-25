@@ -109,7 +109,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)?.register ?? 'Register')),
+      appBar: AppBar(
+          title: Text(AppLocalizations.of(context)?.register ?? 'Register')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -152,7 +153,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
             SegmentedButton<String>(
               segments: [
                 const ButtonSegment(value: 'customer', label: Text('Customer')),
-                ButtonSegment(value: Role.staff.name, label: const Text('Staff Member')),
+                ButtonSegment(
+                    value: Role.staff.name, label: const Text('Staff Member')),
               ],
               selected: {_role},
               onSelectionChanged: (selection) {

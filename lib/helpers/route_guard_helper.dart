@@ -1,5 +1,6 @@
 import 'package:restorahub/constants/routes.dart';
 import 'package:restorahub/models/business.dart';
+import 'package:restorahub/models/user.dart';
 import 'package:restorahub/providers/auth_provider.dart' as app;
 import 'package:restorahub/providers/business_provider.dart';
 
@@ -22,11 +23,11 @@ class RouteGuardHelper {
       if (isAuthenticated && isProfileComplete) {
         final user = authProvider.currentUser!;
 
-        if (user.role == 'super_admin') {
+        if (user.roleEnum == Role.superAdmin) {
           return Routes.superAdminDashboard;
         }
 
-        if (user.role == 'business_admin') {
+        if (user.roleEnum == Role.businessAdmin) {
           final business = businessProvider?.currentBusiness;
           if (business == null || business.status == BusinessStatus.trial) {
             return Routes.setupWizard;
@@ -34,9 +35,7 @@ class RouteGuardHelper {
           return Routes.adminDashboard;
         }
 
-        return user.isStaff
-            ? Routes.professionalHome
-            : Routes.customerHome;
+        return user.isStaff ? Routes.professionalHome : Routes.customerHome;
       }
       return null;
     }
@@ -51,16 +50,24 @@ class RouteGuardHelper {
 
     final user = authProvider.currentUser!;
 
-    if (user.role == 'customer' && currentRoute == Routes.professionalHome) {
+    if (user.roleEnum == Role.customer &&
+        currentRoute == Routes.professionalHome) {
       return Routes.customerHome;
     }
     if (user.isStaff && currentRoute == Routes.customerHome) {
       return Routes.professionalHome;
     }
 
-    if (user.role == 'business_admin') {
+    if (user.roleEnum == Role.businessAdmin) {
       final business = businessProvider?.currentBusiness;
-      final isTrial = business == null || business.status == BusinessStatus.trial;
+      // Business not loaded yet but assigned: transient state (e.g. fresh
+      // login before the business fetch completes). Don't yank an active
+      // admin into onboarding; admin pages handle null business gracefully.
+      if (business == null && user.businessId != null) {
+        return null;
+      }
+      final isTrial =
+          business == null || business.status == BusinessStatus.trial;
 
       if (isTrial && currentRoute != Routes.setupWizard) {
         return Routes.setupWizard;
@@ -87,6 +94,7 @@ class RouteGuardHelper {
       Routes.analytics,
       Routes.pastAppointments,
       Routes.analyticsDashboard,
+      Routes.earningsReport,
     };
     return adminRoutes.contains(route);
   }

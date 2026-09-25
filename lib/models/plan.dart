@@ -14,7 +14,8 @@ class Plan {
       id: map['id']?.toString() ?? '',
       name: map['name']?.toString() ?? '',
       features: map['features'] != null
-          ? List<String>.from((map['features'] as List<dynamic>).map((e) => e.toString()))
+          ? List<String>.from(
+              (map['features'] as List<dynamic>).map((e) => e.toString()))
           : const [],
     );
   }
@@ -91,7 +92,6 @@ class PlanDefinitions {
       'analytics',
       'custom_branding',
       'multi_location',
-      'api_access',
     ],
   );
 

@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/payment.dart';
 import '../providers/appointment_provider.dart';
+import '../providers/business_provider.dart';
 import '../providers/payment_provider.dart';
 import '../helpers/schedule_helper.dart';
 import '../helpers/format_helper.dart';
@@ -20,6 +21,7 @@ class AddPaymentPage extends StatefulWidget {
 
 class _AddPaymentPageState extends State<AddPaymentPage> {
   final _amountController = TextEditingController();
+  final _depositController = TextEditingController();
   PaymentMethod _selectedMethod = PaymentMethod.cash;
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
@@ -27,16 +29,43 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
   @override
   void dispose() {
     _amountController.dispose();
+    _depositController.dispose();
     super.dispose();
+  }
+
+  /// Prefills the deposit from business policy while the field is untouched.
+  /// Staff can still override or clear it before submitting.
+  void _prefillDepositFromPolicy() {
+    if (_depositController.text.trim().isNotEmpty) return;
+    final amount = double.tryParse(_amountController.text.trim());
+    if (amount == null || amount <= 0) return;
+    final settings = Provider.of<BusinessProvider>(context, listen: false)
+        .currentBusiness
+        ?.settings;
+    if (settings == null || !settings.isDepositRequired) return;
+    final deposit = amount * settings.effectiveDepositPercent / 100;
+    _depositController.text = deposit.toStringAsFixed(2);
   }
 
   Future<void> _submitPayment() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Never record a payment that cannot be linked back afterwards.
+    if (widget.appointment.id == null || widget.appointment.id!.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content:
+                Text('Cannot record payment: missing appointment reference')),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
       final appointment = widget.appointment;
+      final depositText = _depositController.text.trim();
       final payment = Payment(
         appointmentId: appointment.id ?? '',
         customerId: appointment.customerId ?? '',
@@ -49,11 +78,13 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
         professionalEmail: appointment.professionalEmail ?? '',
         service: appointment.service,
         staffCategory: ScheduleHelper.parseServiceCategory(appointment.service),
+        businessId: appointment.businessId,
         appointmentDate: appointment.dateTime,
         appointmentTime:
             '${appointment.dateTime.hour.toString().padLeft(2, '0')}:${appointment.dateTime.minute.toString().padLeft(2, '0')}',
         appointmentDurationMinutes: appointment.durationMinutes,
         amount: double.parse(_amountController.text),
+        depositAmount: depositText.isEmpty ? 0.0 : double.parse(depositText),
         method: _selectedMethod,
         status: PaymentStatus.completed,
         receiptGenerated: true,
@@ -61,14 +92,15 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
 
       final paymentProvider =
           Provider.of<PaymentProvider>(context, listen: false);
-      await paymentProvider.recordPayment(payment);
+      final paymentId = await paymentProvider.recordPayment(payment);
 
       if (!mounted) return;
 
-      final appointmentProvider = Provider.of<AppointmentProvider>(context, listen: false);
+      final appointmentProvider =
+          Provider.of<AppointmentProvider>(context, listen: false);
       await appointmentProvider.linkPaymentToAppointment(
         appointment.id!,
-        payment.id ?? '',
+        paymentId,
       );
 
       if (!mounted) return;
@@ -93,7 +125,9 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
     final appointment = widget.appointment;
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)?.recordPayment ?? 'Record Payment')),
+      appBar: AppBar(
+          title: Text(
+              AppLocalizations.of(context)?.recordPayment ?? 'Record Payment')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -113,7 +147,7 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                         '${FormatHelper.formatDateTime(appointment.dateTime)} · ${appointment.durationMinutes} min',
+                        '${FormatHelper.formatDateTime(appointment.dateTime)} · ${appointment.durationMinutes} min',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 4),
@@ -140,6 +174,7 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
                   decimal: true,
                   signed: false,
                 ),
+                onChanged: (_) => _prefillDepositFromPolicy(),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter an amount';
@@ -147,6 +182,32 @@ class _AddPaymentPageState extends State<AddPaymentPage> {
                   final amount = double.tryParse(value.trim());
                   if (amount == null || amount <= 0) {
                     return 'Please enter a valid amount';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _depositController,
+                decoration: const InputDecoration(
+                  labelText: 'Deposit (optional)',
+                  prefixText: '€ ',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: false,
+                ),
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  if (text.isEmpty) return null;
+                  final deposit = double.tryParse(text);
+                  if (deposit == null || deposit < 0) {
+                    return 'Please enter a valid deposit';
+                  }
+                  final total = double.tryParse(_amountController.text.trim());
+                  if (total != null && deposit > total) {
+                    return 'Deposit cannot exceed the total amount';
                   }
                   return null;
                 },

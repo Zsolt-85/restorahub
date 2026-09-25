@@ -31,14 +31,16 @@ class _ServicesPageState extends State<ServicesPage> {
     final user = auth.currentUser;
     if (user == null) return;
 
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     if (businessProvider.currentBusiness != null) return;
 
     final userBusinessId = user.businessId;
     if (userBusinessId == null || userBusinessId.isEmpty) return;
 
     try {
-      final repository = Provider.of<BusinessRepository>(context, listen: false);
+      final repository =
+          Provider.of<BusinessRepository>(context, listen: false);
       final business = await repository.getBusinessById(userBusinessId);
       if (business != null && mounted) {
         businessProvider.setBusiness(business);
@@ -53,7 +55,8 @@ class _ServicesPageState extends State<ServicesPage> {
   }
 
   Future<void> _createService(BuildContext context) async {
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     final repository = Provider.of<ServiceRepository>(context, listen: false);
     final businessId = businessProvider.currentBusiness?.id;
     final messenger = ScaffoldMessenger.of(context);
@@ -61,64 +64,83 @@ class _ServicesPageState extends State<ServicesPage> {
     final l10n = AppLocalizations.of(context);
 
     final nameController = TextEditingController();
+    String selectedCategory = serviceNames.first;
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n?.addService ?? 'Add Service'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: l10n?.name ?? 'Name',
-                border: const OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(l10n?.addService ?? 'Add Service'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: l10n?.name ?? 'Name',
+                  border: const OutlineInputBorder(),
+                ),
+                autofocus: true,
               ),
-              autofocus: true,
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: selectedCategory,
+                decoration: const InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(),
+                ),
+                items: serviceNames
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) setDialogState(() => selectedCategory = v);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l10n?.cancel ?? 'Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                if (name.isEmpty) {
+                  ErrorHandler.showErrorSnackBar(
+                      context, 'Service name is required');
+                  return;
+                }
+                Navigator.pop(context);
+                try {
+                  await repository.createService(
+                    Service(
+                      name: name,
+                      description: '',
+                      businessId: businessId,
+                      category: selectedCategory,
+                    ),
+                  );
+                  if (!mounted) return;
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(l10n?.save ?? 'Service created'),
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(ErrorHandler.getDisplayMessage(e)),
+                      backgroundColor: errorColor,
+                    ),
+                  );
+                }
+              },
+              child: Text(l10n?.save ?? 'Save'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n?.cancel ?? 'Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) {
-                ErrorHandler.showErrorSnackBar(context, 'Service name is required');
-                return;
-              }
-              Navigator.pop(context);
-              try {
-                await repository.createService(
-                  Service(
-                    name: name,
-                    description: '',
-                    businessId: businessId,
-                  ),
-                );
-                if (!mounted) return;
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(l10n?.save ?? 'Service created'),
-                  ),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(ErrorHandler.getDisplayMessage(e)),
-                    backgroundColor: errorColor,
-                  ),
-                );
-              }
-            },
-            child: Text(l10n?.save ?? 'Save'),
-          ),
-        ],
       ),
     );
   }
@@ -136,10 +158,12 @@ class _ServicesPageState extends State<ServicesPage> {
 
     final businessProvider = Provider.of<BusinessProvider>(context);
     final businessId = businessProvider.currentBusiness?.id;
-    final isAdmin = auth.currentUser != null && _isAdmin(auth.currentUser!.role);
+    final isAdmin =
+        auth.currentUser != null && _isAdmin(auth.currentUser!.role);
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)?.services ?? 'Services')),
+      appBar: AppBar(
+          title: Text(AppLocalizations.of(context)?.services ?? 'Services')),
       body: _buildCategoryGrid(context),
       floatingActionButton:
           isAdmin && (businessId != null && businessId.isNotEmpty)
@@ -178,11 +202,17 @@ class _ServicesPageState extends State<ServicesPage> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: InkWell(
-            onTap: () => Navigator.pushNamed(
-              context,
-              Routes.booking,
-              arguments: {'category': category},
-            ),
+            onTap: () {
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              Navigator.pushNamed(
+                context,
+                Routes.booking,
+                arguments: {
+                  'category': category,
+                  'businessId': auth.currentUser?.businessId,
+                },
+              );
+            },
             borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -193,7 +223,8 @@ class _ServicesPageState extends State<ServicesPage> {
                     children: [
                       Icon(icon, color: colorScheme.primary, size: 28),
                       const Spacer(),
-                      Icon(Icons.arrow_forward, size: 18, color: colorScheme.onSurfaceVariant),
+                      Icon(Icons.arrow_forward,
+                          size: 18, color: colorScheme.onSurfaceVariant),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -217,7 +248,8 @@ class _ServicesPageState extends State<ServicesPage> {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: colorScheme.secondaryContainer,
                       borderRadius: BorderRadius.circular(8),

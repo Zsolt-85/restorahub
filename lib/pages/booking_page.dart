@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -13,16 +14,26 @@ import '../models/service.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/business_provider.dart';
 import '../providers/service_provider.dart';
+import '../repositories/staff_directory_repository.dart';
 import '../repositories/user_repository.dart';
+import '../utils/app_logger.dart';
 import '../utils/error_handler.dart';
 
 class BookingPage extends StatefulWidget {
   final String? service;
   final String? category;
   final String? appointmentId;
+  final String? businessId;
 
-  const BookingPage({super.key, this.service, this.category, this.appointmentId});
+  const BookingPage({
+    super.key,
+    this.service,
+    this.category,
+    this.appointmentId,
+    this.businessId,
+  });
 
   @override
   State<BookingPage> createState() => _BookingPageState();
@@ -35,6 +46,9 @@ class _BookingPageState extends State<BookingPage> {
   List<User> _professionals = [];
   User? _selectedProfessional;
   bool _loadingProfessionals = true;
+  String? _professionalsError;
+  // Debug builds only: raw error for diagnostics, never shown in release.
+  String? _professionalsDebugError;
 
   Service? _selectedService;
 
@@ -46,7 +60,8 @@ class _BookingPageState extends State<BookingPage> {
   List<Appointment> _dayAppointments = [];
 
   late String _category;
-  bool get _isReschedule => widget.appointmentId != null && widget.appointmentId!.isNotEmpty;
+  bool get _isReschedule =>
+      widget.appointmentId != null && widget.appointmentId!.isNotEmpty;
   Appointment? _rescheduleAppointment;
 
   @override
@@ -66,16 +81,31 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
 
+  /// Debug builds only: full causal chain (AppException wraps the cause).
+  static String _debugChain(Object e) {
+    final buffer = StringBuffer(e.toString());
+    Object? cause = e is AppException ? e.cause : null;
+    var depth = 0;
+    while (cause != null && depth < 3) {
+      buffer.write(' | caused by: $cause');
+      cause = cause is AppException ? cause.cause : null;
+      depth++;
+    }
+    return buffer.toString();
+  }
+
   String _serviceSubtype(String service) {
     if (service.contains('\u2014')) {
       return service.split('\u2014').last.trim();
     }
     return service;
   }
+
   Future<void> _loadAppointmentForReschedule() async {
     setState(() => _loadingAppointment = true);
     try {
-      final apptProvider = Provider.of<AppointmentProvider>(context, listen: false);
+      final apptProvider =
+          Provider.of<AppointmentProvider>(context, listen: false);
       final appt = await apptProvider.getAppointmentById(widget.appointmentId!);
       if (appt == null) {
         if (!mounted) return;
@@ -122,38 +152,61 @@ class _BookingPageState extends State<BookingPage> {
   }
 
   Future<void> _loadProfessionals() async {
-    final repo = Provider.of<UserRepository>(context, listen: false);
+    // Public staff directory: the users collection cannot be listed by
+    // customers in Firestore rules, so discovery reads here.
+    final repo = Provider.of<StaffDirectoryRepository>(context, listen: false);
+    final businessId = widget.businessId;
+    AppLogger.debug(
+        '_loadProfessionals: businessId=$businessId, isReschedule=$_isReschedule, category=$_category');
     try {
       List<User> professionals;
 
       if (_isReschedule && _rescheduleAppointment?.professionalId != null) {
-        try {
-          final professional = await repo.getUserById(_rescheduleAppointment!.professionalId!);
-          if (professional != null) {
-            if (professional.category.isNotEmpty) {
-              _category = professional.category;
+        final targetedId = _rescheduleAppointment!.professionalId!;
+        if (businessId != null && businessId.isNotEmpty) {
+          professionals = await repo.getStaff(businessId: businessId);
+        } else {
+          try {
+            final professional = await repo.getEntryById(targetedId);
+            if (professional != null) {
+              if (professional.category.isNotEmpty) {
+                _category = professional.category;
+              }
+              professionals = await repo.getStaff(
+                  businessId: businessId, category: _category);
+            } else {
+              professionals = await repo.getStaff(
+                  businessId: businessId, category: _category);
             }
-            professionals = await repo.getProfessionalsByCategory(_category);
-          } else {
-            professionals = await repo.getProfessionalsByCategory(_category);
+          } catch (_) {
+            professionals = await repo.getStaff(
+                businessId: businessId, category: _category);
           }
-        } catch (_) {
-          professionals = await repo.getProfessionalsByCategory(_category);
         }
       } else {
-        professionals = await repo.getProfessionalsByCategory(_category);
+        if (_category.isEmpty) {
+          professionals = await repo.getStaff(businessId: businessId);
+        } else {
+          professionals =
+              await repo.getStaff(businessId: businessId, category: _category);
+        }
       }
 
       if (!mounted) return;
       setState(() {
         _professionals = professionals;
         _loadingProfessionals = false;
+        _professionalsError = null;
+        _professionalsDebugError = null;
         if (professionals.length == 1) {
           _selectedProfessional = professionals.first;
-        } else if (_isReschedule && _rescheduleAppointment?.professionalId != null) {
-          final matched = professionals.where(
-            (p) => p.id == _rescheduleAppointment!.professionalId,
-          ).toList();
+        } else if (_isReschedule &&
+            _rescheduleAppointment?.professionalId != null) {
+          final matched = professionals
+              .where(
+                (p) => p.id == _rescheduleAppointment!.professionalId,
+              )
+              .toList();
           if (matched.length == 1) {
             _selectedProfessional = matched.first;
           } else {
@@ -168,20 +221,28 @@ class _BookingPageState extends State<BookingPage> {
         _dayAppointments = [];
         _rangeError = null;
       });
+      AppLogger.debug(
+          '_loadProfessionals: _professionals.length=${_professionals.length}, businessId=$businessId');
       if (_selectedProfessional != null) {
         _loadDayAppointments(_selectedProfessional!);
       }
     } on AppException catch (e) {
+      AppLogger.error('BookingPage._loadProfessionals AppException: $e');
       if (!mounted) return;
       setState(() {
         _loadingProfessionals = false;
-        _error = e.message;
+        _professionals = [];
+        _professionalsError = ErrorHandler.getDisplayMessage(e);
+        _professionalsDebugError = kDebugMode ? _debugChain(e) : null;
       });
     } catch (e) {
+      AppLogger.error('BookingPage._loadProfessionals error: $e');
       if (!mounted) return;
       setState(() {
         _loadingProfessionals = false;
-        _error = 'Failed to load professionals';
+        _professionals = [];
+        _professionalsError = ErrorHandler.getDisplayMessage(e);
+        _professionalsDebugError = kDebugMode ? _debugChain(e) : null;
       });
     }
   }
@@ -199,16 +260,16 @@ class _BookingPageState extends State<BookingPage> {
       }
       return services.where((s) => s.category == _category).toList();
     }
-    return services
-        .where((s) => s.assignedProfessionalIds.isEmpty)
-        .toList();
+    return services.where((s) => s.assignedProfessionalIds.isEmpty).toList();
   }
 
   Service? _initialService(List<Service> filtered) {
     if (filtered.isEmpty) return null;
     if (widget.service != null && widget.service!.isNotEmpty) {
       final matched = filtered.firstWhere(
-        (s) => s.name == widget.service || widget.service!.startsWith('${s.name} — '),
+        (s) =>
+            s.name == widget.service ||
+            widget.service!.startsWith('${s.name} — '),
         orElse: () => filtered.first,
       );
       return matched;
@@ -216,7 +277,8 @@ class _BookingPageState extends State<BookingPage> {
     return filtered.first;
   }
 
-  List<Widget> _buildServiceCards(BuildContext context, List<Service> services) {
+  List<Widget> _buildServiceCards(
+      BuildContext context, List<Service> services) {
     final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
@@ -229,7 +291,9 @@ class _BookingPageState extends State<BookingPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
-            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outlineVariant,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -253,20 +317,26 @@ class _BookingPageState extends State<BookingPage> {
                         service.name,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: isSelected ? theme.colorScheme.onPrimaryContainer : null,
+                          color: isSelected
+                              ? theme.colorScheme.onPrimaryContainer
+                              : null,
                         ),
                       ),
                     ),
                     if (isSelected)
-                      Icon(Icons.check_circle, color: theme.colorScheme.primary),
+                      Icon(Icons.check_circle,
+                          color: theme.colorScheme.primary),
                   ],
                 ),
-                if (service.description != null && service.description!.isNotEmpty) ...[
+                if (service.description != null &&
+                    service.description!.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
                     service.description!,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isSelected ? theme.colorScheme.onPrimaryContainer : null,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimaryContainer
+                          : null,
                     ),
                   ),
                 ],
@@ -279,7 +349,8 @@ class _BookingPageState extends State<BookingPage> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.timer_outlined, size: 16, color: theme.colorScheme.primary),
+                          Icon(Icons.timer_outlined,
+                              size: 16, color: theme.colorScheme.primary),
                           const SizedBox(width: 4),
                           Text(
                             '${service.durationMinutes} ${loc?.mins ?? 'min'}',
@@ -291,7 +362,8 @@ class _BookingPageState extends State<BookingPage> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.payments_outlined, size: 16, color: theme.colorScheme.primary),
+                          Icon(Icons.payments_outlined,
+                              size: 16, color: theme.colorScheme.primary),
                           const SizedBox(width: 4),
                           Text(
                             FormatHelper.formatCurrency(service.price!),
@@ -319,16 +391,39 @@ class _BookingPageState extends State<BookingPage> {
   Widget _buildServiceChooser(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final businessId = auth.currentUser?.businessId;
-    final serviceProvider = Provider.of<ServiceProvider>(context, listen: false);
+    final serviceProvider =
+        Provider.of<ServiceProvider>(context, listen: false);
 
     return StreamBuilder<List<Service>>(
       stream: serviceProvider.streamServices(businessId: businessId),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(12),
               child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              children: [
+                Text(
+                  ErrorHandler.getDisplayMessage(snapshot.error!),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                FilledButton.tonal(
+                  // Rebuild resubscribes (fresh stream per build) = retry.
+                  onPressed: () => setState(() {}),
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
           );
         }
@@ -351,15 +446,18 @@ class _BookingPageState extends State<BookingPage> {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              AppLocalizations.of(context)?.noServicesAvailable ?? 'No services available',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              AppLocalizations.of(context)?.noServicesAvailable ??
+                  'No services available',
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           );
         }
 
-        final servicesToShow = displayServices.isEmpty && _selectedService != null
-            ? [_selectedService!]
-            : displayServices;
+        final servicesToShow =
+            displayServices.isEmpty && _selectedService != null
+                ? [_selectedService!]
+                : displayServices;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -397,7 +495,104 @@ class _BookingPageState extends State<BookingPage> {
   }
 
   int _selectedDurationMinutes(User professional) {
-    return _selectedService?.durationMinutes ?? professional.slotDurationMinutes;
+    return _selectedService?.durationMinutes ??
+        professional.slotDurationMinutes;
+  }
+
+  /// Deposit-due notice shown when the active business requires one.
+  /// Read-only: collection stays offline until Phase 4 billing.
+  Widget _buildDepositNotice(BuildContext context) {
+    final settings = Provider.of<BusinessProvider>(context, listen: false)
+        .currentBusiness
+        ?.settings;
+    if (settings == null || !settings.isDepositRequired) {
+      return const SizedBox.shrink();
+    }
+    final percent = settings.effectiveDepositPercent;
+    final percentLabel = percent.toStringAsFixed(percent % 1 == 0 ? 0 : 1);
+    final price = _selectedService?.price;
+    final l10n = AppLocalizations.of(context);
+    final message = price != null
+        ? l10n?.depositDueAmount(percentLabel,
+                FormatHelper.formatCurrency(price * percent / 100)) ??
+            'A $percentLabel% deposit will be due at payment time'
+        : l10n?.depositDuePercent(percentLabel) ??
+            'A $percentLabel% deposit will be due at payment time';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        color: Theme.of(context)
+            .colorScheme
+            .tertiaryContainer
+            .withValues(alpha: 0.4),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(Icons.savings_outlined,
+                  color: Theme.of(context).colorScheme.onTertiaryContainer),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onTertiaryContainer,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Start times with conflicts, breaks, and out-of-hours overflow already
+  /// removed — the dropdown never offers an unbookable slot.
+  List<TimeOfDay> _availableStartTimes(User professional) {
+    if (_selectedDate == null) return [];
+    final duration = _selectedDurationMinutes(professional);
+    return ScheduleHelper.generateStartTimes(
+      workStart: professional.workStart,
+      workEnd: professional.workEnd,
+    ).where((t) {
+      return ScheduleHelper.isRangeAvailable(
+        start: _combine(_selectedDate!, t),
+        durationMinutes: duration,
+        workStart: professional.workStart,
+        workEnd: professional.workEnd,
+        appointments: _dayAppointments,
+        professionalId: professional.id!,
+        bufferTimeMinutes: professional.bufferTimeMinutes,
+        breakStart: professional.breakStart,
+        breakEnd: professional.breakEnd,
+      );
+    }).toList();
+  }
+
+  /// Explains a disabled Confirm button; null when booking can proceed.
+  String? _confirmBlockerReason() {
+    if (_loading || _loadingProfessionals) return null;
+    if (_professionals.isEmpty) {
+      return AppLocalizations.of(context)?.noStaffForCategory ??
+          'No staff available for this category';
+    }
+    if (_selectedProfessional == null) {
+      return AppLocalizations.of(context)?.selectStaffToContinue ??
+          'Select a staff member to continue';
+    }
+    if (_selectedDate == null) {
+      return AppLocalizations.of(context)?.pickDateToContinue ??
+          'Pick a date to continue';
+    }
+    if (_startTime == null) {
+      return AppLocalizations.of(context)?.pickTimeToContinue ??
+          'Pick a start time to continue';
+    }
+    if (_rangeError != null) return _rangeError;
+    return null;
   }
 
   void _recalculateEndTime(User professional) {
@@ -488,8 +683,13 @@ class _BookingPageState extends State<BookingPage> {
     }
 
     try {
-      final repo = Provider.of<AppointmentProvider>(context, listen: false).repository;
-      final allAppointments = await repo.getAppointmentsForProfessional(professional.id!, professionalEmail: professional.email);
+      final repo =
+          Provider.of<AppointmentProvider>(context, listen: false).repository;
+      final allAppointments = await repo.getAppointmentsForProfessional(
+        professional.id!,
+        professionalEmail: professional.email,
+        businessId: professional.businessId ?? widget.businessId,
+      );
 
       final dateStr = _selectedDate!;
       final dayAppointments = allAppointments.where((a) {
@@ -535,58 +735,149 @@ class _BookingPageState extends State<BookingPage> {
           children: [
             const TenantBrandHeader(),
             const SizedBox(height: 12),
-            Card(
-              color: Theme.of(context)
-                  .colorScheme
-                  .secondary
-                  .withValues(alpha: 0.15),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  '${AppLocalizations.of(context)?.showingProfessionalsOnly ?? 'Showing'} $_category ${AppLocalizations.of(context)?.professionalContact ?? 'professionals only'}',
-                  style: Theme.of(context).textTheme.bodyMedium,
+            // Show banner only when professionals are available
+            if (_professionals.isNotEmpty) ...[
+              Card(
+                color: Theme.of(context)
+                    .colorScheme
+                    .secondary
+                    .withValues(alpha: 0.15),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    '${AppLocalizations.of(context)?.showingProfessionalsOnly ?? 'Showing'} $_category ${AppLocalizations.of(context)?.professionalContact ?? 'professionals only'}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+            ],
             if (_loadingAppointment || _loadingProfessionals)
               const Center(child: CircularProgressIndicator())
             else if (_professionals.isEmpty)
-              Text(
-                AppLocalizations.of(context)?.noServicesAvailable ??
-                    'No services available',
-                style: const TextStyle(color: Colors.red),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Column(
+                  children: [
+                    Icon(
+                      _professionalsError != null
+                          ? Icons.error_outline
+                          : Icons.calendar_today_outlined,
+                      size: 48,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant
+                          .withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _professionalsError ??
+                          'Services coming soon for this provider',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (kDebugMode && _professionalsDebugError != null) ...[
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        _professionalsDebugError!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                              fontFamily: 'monospace',
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                    if (_professionalsError != null) ...[
+                      const SizedBox(height: 12),
+                      FilledButton.tonal(
+                        onPressed: () {
+                          setState(() {
+                            _loadingProfessionals = true;
+                            _professionalsError = null;
+                          });
+                          _loadProfessionals();
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          AppLocalizations.of(context)?.browseOtherCategories ??
+                              'Browse other categories',
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              )
+            else if (_professionals.length == 1)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.person),
+                  title: Text(
+                    _selectedProfessional?.name ?? 'Staff Member',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  subtitle: _selectedProfessional != null
+                      ? Text(
+                          '${_selectedProfessional!.workStart.format(context)}\u2013${_selectedProfessional!.workEnd.format(context)} \u00b7 ${_selectedProfessional!.slotDurationMinutes} min slots',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        )
+                      : null,
+                ),
               )
             else
               DropdownButtonFormField<User>(
                 key: ValueKey(professional?.id),
                 initialValue: _selectedProfessional,
                 decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context)?.selectCustomer ?? 'Select professional',
+                  labelText: AppLocalizations.of(context)?.selectStaffMember ??
+                      'Select Staff Member',
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.person_search),
                 ),
-                items: _professionals
-                    .map(
-                      (pro) => DropdownMenuItem(
-                        value: pro,
-                        child: Text(
-                          '${pro.name} · ${pro.workStart.format(context)}–${pro.workEnd.format(context)} · ${pro.slotDurationMinutes} min slots',
+                hint: Text(
+                  AppLocalizations.of(context)?.anyAvailable ?? 'Any available',
+                ),
+                items: [
+                  DropdownMenuItem<User>(
+                    value: null,
+                    child: Text(
+                      AppLocalizations.of(context)?.anyAvailable ??
+                          'Any available',
+                    ),
+                  ),
+                  ..._professionals
+                      .map(
+                        (pro) => DropdownMenuItem(
+                          value: pro,
+                          child: Text(
+                            '${pro.name} · ${pro.workStart.format(context)}\u2013${pro.workEnd.format(context)} · ${pro.slotDurationMinutes} min slots',
+                          ),
                         ),
-                      ),
-                    )
-                    .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedProfessional = value;
-                        _startTime = null;
-                        _endTime = null;
-                        _rangeError = null;
-                        _dayAppointments = [];
-                        if (value == null) _selectedService = null;
-                      });
-                  if (value != null) {
-                    _loadDayAppointments(value);
+                      )
+                      .toList(),
+                ],
+                onChanged: (User? value) {
+                  // "Any available" auto-assigns the first professional
+                  // instead of erroring at confirm time.
+                  final effective = value ??
+                      (_professionals.isNotEmpty ? _professionals.first : null);
+                  setState(() {
+                    _selectedProfessional = effective;
+                    _startTime = null;
+                    _endTime = null;
+                    _rangeError = null;
+                    _dayAppointments = [];
+                    if (effective == null) _selectedService = null;
+                  });
+                  if (effective != null) {
+                    _loadDayAppointments(effective);
                   }
                 },
               ),
@@ -603,7 +894,8 @@ class _BookingPageState extends State<BookingPage> {
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
+                      Icon(Icons.info_outline,
+                          color: Theme.of(context).colorScheme.primary),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -619,8 +911,12 @@ class _BookingPageState extends State<BookingPage> {
             _buildServiceChooser(context),
             if (_selectedService != null) ...[
               const SizedBox(height: 12),
+              _buildDepositNotice(context),
               Card(
-                color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .secondaryContainer
+                    .withValues(alpha: 0.3),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -628,10 +924,13 @@ class _BookingPageState extends State<BookingPage> {
                     children: [
                       Text(
                         _selectedService!.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSecondaryContainer,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSecondaryContainer,
+                                  fontWeight: FontWeight.w700,
+                                ),
                       ),
                       if (_selectedService!.description != null &&
                           _selectedService!.description!.isNotEmpty) ...[
@@ -639,7 +938,9 @@ class _BookingPageState extends State<BookingPage> {
                         Text(
                           _selectedService!.description!,
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSecondaryContainer,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSecondaryContainer,
                             fontSize: 14,
                           ),
                         ),
@@ -653,12 +954,18 @@ class _BookingPageState extends State<BookingPage> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.timer_outlined, size: 16, color: Theme.of(context).colorScheme.onSecondaryContainer),
+                                Icon(Icons.timer_outlined,
+                                    size: 16,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSecondaryContainer),
                                 const SizedBox(width: 4),
                                 Text(
                                   '${_selectedService!.durationMinutes} ${AppLocalizations.of(context)?.mins ?? 'min'}',
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSecondaryContainer,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -669,12 +976,19 @@ class _BookingPageState extends State<BookingPage> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.payments_outlined, size: 16, color: Theme.of(context).colorScheme.onSecondaryContainer),
+                                Icon(Icons.payments_outlined,
+                                    size: 16,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSecondaryContainer),
                                 const SizedBox(width: 4),
                                 Text(
-                                  FormatHelper.formatCurrency(_selectedService!.price!),
+                                  FormatHelper.formatCurrency(
+                                      _selectedService!.price!),
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSecondaryContainer,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -695,7 +1009,8 @@ class _BookingPageState extends State<BookingPage> {
                 title: Text(AppLocalizations.of(context)?.selectDate ?? 'Date'),
                 subtitle: Text(
                   _selectedDate == null
-                      ? AppLocalizations.of(context)?.selectDate ?? 'Tap to choose a date'
+                      ? AppLocalizations.of(context)?.selectDate ??
+                          'Tap to choose a date'
                       : FormatHelper.formatDate(_selectedDate!),
                 ),
                 trailing: const Icon(Icons.chevron_right),
@@ -709,28 +1024,41 @@ class _BookingPageState extends State<BookingPage> {
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
-              DropdownButtonFormField<TimeOfDay>(
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Start time',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.access_time),
-                ),
-                initialValue: _startTime,
-                items: ScheduleHelper.generateStartTimes(
-                  workStart: professional.workStart,
-                  workEnd: professional.workEnd,
-                ).map((t) {
-                  return DropdownMenuItem(
-                    value: t,
-                    child: Text(t.format(context)),
+              Builder(builder: (context) {
+                final availableStarts = _availableStartTimes(professional);
+                if (availableStarts.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      AppLocalizations.of(context)?.fullyBookedPickAnother ??
+                          'Fully booked for this day — pick another date',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   );
-                }).toList(),
-                onChanged: (t) {
-                  setState(() => _startTime = t);
-                  _recalculateEndTime(professional);
-                },
-              ),
+                }
+                return DropdownButtonFormField<TimeOfDay>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Start time',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.access_time),
+                  ),
+                  initialValue:
+                      availableStarts.contains(_startTime) ? _startTime : null,
+                  items: availableStarts.map((t) {
+                    return DropdownMenuItem(
+                      value: t,
+                      child: Text(t.format(context)),
+                    );
+                  }).toList(),
+                  onChanged: (t) {
+                    setState(() => _startTime = t);
+                    _recalculateEndTime(professional);
+                  },
+                );
+              }),
               const SizedBox(height: 12),
               if (_startTime != null && _endTime != null)
                 _buildTimeBanner(professional),
@@ -749,155 +1077,213 @@ class _BookingPageState extends State<BookingPage> {
             if (_error != null)
               Text(_error!, style: const TextStyle(color: Colors.red)),
             const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _loading ||
-                      _loadingProfessionals ||
-                      _professionals.isEmpty ||
-                      _rangeError != null ||
-                      _startTime == null
-                  ? null
-                  : () async {
-                      if (_selectedProfessional == null) {
-                        setState(() => _error = AppLocalizations.of(context)?.selectCustomer ?? 'Please select a professional');
-                        return;
-                      }
+            Builder(builder: (context) {
+              final blocked = _loading ||
+                  _loadingProfessionals ||
+                  _professionals.isEmpty ||
+                  _rangeError != null ||
+                  _startTime == null;
+              final blockerReason = blocked ? _confirmBlockerReason() : null;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ElevatedButton(
+                    onPressed: blocked
+                        ? null
+                        : () async {
+                            if (_selectedProfessional == null) {
+                              setState(() => _error =
+                                  AppLocalizations.of(context)
+                                          ?.selectStaffMember ??
+                                      'Please select a staff member');
+                              return;
+                            }
 
-                      if (_selectedDate == null || _startTime == null) {
-                        setState(() => _error = AppLocalizations.of(context)?.selectDate ?? 'Please select a date and time slot');
-                        return;
-                      }
+                            if (_selectedDate == null || _startTime == null) {
+                              setState(() => _error =
+                                  AppLocalizations.of(context)?.selectDate ??
+                                      'Please select a date and time slot');
+                              return;
+                            }
 
-                      final pro = _selectedProfessional!;
-                      final duration = _selectedDurationMinutes(pro);
-                      final dateTime = _combine(_selectedDate!, _startTime!);
+                            final pro = _selectedProfessional!;
+                            final duration = _selectedDurationMinutes(pro);
+                            final dateTime =
+                                _combine(_selectedDate!, _startTime!);
 
-                      final navigator = Navigator.of(context);
-                      final scaffoldMessenger = ScaffoldMessenger.of(context);
-                      final errorColor = Theme.of(context).colorScheme.error;
+                            final navigator = Navigator.of(context);
+                            final scaffoldMessenger =
+                                ScaffoldMessenger.of(context);
+                            final errorColor =
+                                Theme.of(context).colorScheme.error;
 
-                      if (_rangeError != null) {
-                        setState(() => _error = _rangeError);
-                        return;
-                      }
+                            if (_rangeError != null) {
+                              setState(() => _error = _rangeError);
+                              return;
+                            }
 
-                      if (!await apptProvider.isSlotAvailable(
-                        slotStart: dateTime,
-                        slotDuration: duration,
-                        professionalId: pro.id!,
-                        bufferTimeMinutes: pro.bufferTimeMinutes,
-                        professionalEmail: pro.email,
-                      )) {
-                        setState(() => _error =
-                            AppLocalizations.of(context)?.confirmed ?? 'This slot was just booked. Pick another.');
-                        return;
-                      }
+                            if (!await apptProvider.isSlotAvailable(
+                              slotStart: dateTime,
+                              slotDuration: duration,
+                              professionalId: pro.id!,
+                              bufferTimeMinutes: pro.bufferTimeMinutes,
+                              professionalEmail: pro.email,
+                              businessId: pro.businessId ?? widget.businessId,
+                            )) {
+                              setState(() => _error = AppLocalizations.of(
+                                          context)
+                                      ?.confirmed ??
+                                  'This slot was just booked. Pick another.');
+                              return;
+                            }
 
-                      setState(() {
-                        _loading = true;
-                        _error = null;
-                      });
+                            setState(() {
+                              _loading = true;
+                              _error = null;
+                            });
 
-                      final customer = auth.currentUser!;
-                      final selectedService = _selectedService;
-                      final newAppt = Appointment(
-                        serviceId: selectedService?.id,
-                        service: selectedService?.name ?? widget.service ?? _category,
-                        dateTime: dateTime,
-                        durationMinutes: selectedService?.durationMinutes ?? pro.slotDurationMinutes,
-                        price: selectedService?.price,
-                        status: AppointmentStatus.pending,
-                        customerId: customer.id,
-                        customerName: customer.name,
-                        customerPhone: customer.phone,
-                        customerEmail: customer.email,
-                        professionalId: pro.id,
-                        professionalName: pro.name,
-                        professionalPhone: pro.phone,
-                        professionalEmail: pro.email,
-                      );
-
-                      // ignore: use_build_context_synchronously
-                      final l10n = AppLocalizations.of(context);
-
-                      try {
-                        if (_isReschedule && widget.appointmentId != null) {
-                          final updated = Appointment(
-                            id: widget.appointmentId,
-                            serviceId: selectedService?.id,
-                            service: selectedService?.name ?? widget.service ?? _category,
-                            dateTime: dateTime,
-                            durationMinutes: selectedService?.durationMinutes ?? pro.slotDurationMinutes,
-                            price: selectedService?.price,
-                            status: AppointmentStatus.pending,
-                            customerId: customer.id,
-                            customerName: customer.name,
-                            customerPhone: customer.phone,
-                            customerEmail: customer.email,
-                            professionalId: pro.id,
-                            professionalName: pro.name,
-                            professionalPhone: pro.phone,
-                            professionalEmail: pro.email,
-                          );
-                          await apptProvider.rescheduleAppointment(
-                            appointment: updated,
-                            newDateTime: dateTime,
-                          );
-                          if (!mounted) return;
-                          scaffoldMessenger
-                            ..clearSnackBars()
-                            ..showSnackBar(SnackBar(
-                              content: Text(l10n?.bookingRescheduled ?? 'Booking rescheduled successfully'),
-                            ));
-                          navigator.pop(true);
-                        } else {
-                          await apptProvider.addAppointment(newAppt);
-
-                          if (!mounted) return;
-
-                          navigator.pushNamedAndRemoveUntil(
-                            Routes.success,
-                            (route) => false,
-                            arguments: BookingSummary(
+                            final customer = auth.currentUser!;
+                            final selectedService = _selectedService;
+                            // Tenant scope is mandatory: without businessId the
+                            // booking is invisible to every business-scoped query
+                            // (admin lists, analytics, payment backfill).
+                            final bookingBusinessId =
+                                widget.businessId ?? customer.businessId;
+                            final newAppt = Appointment(
                               serviceId: selectedService?.id,
-                              service: selectedService?.name ?? widget.service ?? _category,
-                              price: selectedService?.price,
-                              professionalName: pro.name,
-                              professionalId: pro.id,
+                              service: selectedService?.name ??
+                                  widget.service ??
+                                  _category,
                               dateTime: dateTime,
-                              durationMinutes: selectedService?.durationMinutes ?? pro.slotDurationMinutes,
+                              durationMinutes:
+                                  selectedService?.durationMinutes ??
+                                      pro.slotDurationMinutes,
+                              price: selectedService?.price,
+                              status: AppointmentStatus.pending,
+                              customerId: customer.id,
                               customerName: customer.name,
                               customerPhone: customer.phone,
+                              customerEmail: customer.email,
+                              professionalId: pro.id,
+                              professionalName: pro.name,
                               professionalPhone: pro.phone,
                               professionalEmail: pro.email,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          final displayError = apptProvider.errorMessage ?? ErrorHandler.getDisplayMessage(e);
-                          scaffoldMessenger
-                            ..clearSnackBars()
-                            ..showSnackBar(SnackBar(
-                              content: Text(displayError),
-                              backgroundColor: errorColor,
-                            ));
-                          setState(() => _error = displayError);
-                        }
-                      }
+                              businessId: bookingBusinessId,
+                            );
 
-                      if (mounted) setState(() => _loading = false);
-                    },
-              child: _loading
-                  ? const SizedBox(
-                      height: 22,
-                      width: 22,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
+                            // ignore: use_build_context_synchronously
+                            final l10n = AppLocalizations.of(context);
+
+                            try {
+                              if (_isReschedule &&
+                                  widget.appointmentId != null) {
+                                final updated = Appointment(
+                                  id: widget.appointmentId,
+                                  serviceId: selectedService?.id,
+                                  service: selectedService?.name ??
+                                      widget.service ??
+                                      _category,
+                                  dateTime: dateTime,
+                                  durationMinutes:
+                                      selectedService?.durationMinutes ??
+                                          pro.slotDurationMinutes,
+                                  price: selectedService?.price,
+                                  status: AppointmentStatus.pending,
+                                  customerId: customer.id,
+                                  customerName: customer.name,
+                                  customerPhone: customer.phone,
+                                  customerEmail: customer.email,
+                                  professionalId: pro.id,
+                                  professionalName: pro.name,
+                                  professionalPhone: pro.phone,
+                                  professionalEmail: pro.email,
+                                  // Preserve tenant scope across reschedules; fall
+                                  // back to the current booking context if unknown.
+                                  businessId:
+                                      _rescheduleAppointment?.businessId ??
+                                          bookingBusinessId,
+                                );
+                                await apptProvider.rescheduleAppointment(
+                                  appointment: updated,
+                                  newDateTime: dateTime,
+                                );
+                                if (!mounted) return;
+                                scaffoldMessenger
+                                  ..clearSnackBars()
+                                  ..showSnackBar(SnackBar(
+                                    content: Text(l10n?.bookingRescheduled ??
+                                        'Booking rescheduled successfully'),
+                                  ));
+                                navigator.pop(true);
+                              } else {
+                                await apptProvider.addAppointment(newAppt);
+
+                                if (!mounted) return;
+
+                                navigator.pushNamedAndRemoveUntil(
+                                  Routes.success,
+                                  (route) => false,
+                                  arguments: BookingSummary(
+                                    serviceId: selectedService?.id,
+                                    service: selectedService?.name ??
+                                        widget.service ??
+                                        _category,
+                                    price: selectedService?.price,
+                                    professionalName: pro.name,
+                                    professionalId: pro.id,
+                                    dateTime: dateTime,
+                                    durationMinutes:
+                                        selectedService?.durationMinutes ??
+                                            pro.slotDurationMinutes,
+                                    customerName: customer.name,
+                                    customerPhone: customer.phone,
+                                    professionalPhone: pro.phone,
+                                    professionalEmail: pro.email,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                final displayError =
+                                    apptProvider.errorMessage ??
+                                        ErrorHandler.getDisplayMessage(e);
+                                scaffoldMessenger
+                                  ..clearSnackBars()
+                                  ..showSnackBar(SnackBar(
+                                    content: Text(displayError),
+                                    backgroundColor: errorColor,
+                                  ));
+                                setState(() => _error = displayError);
+                              }
+                            }
+
+                            if (mounted) setState(() => _loading = false);
+                          },
+                    child: _loading
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(AppLocalizations.of(context)?.confirmBooking ??
+                            'Confirm booking'),
+                  ),
+                  if (blockerReason != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      blockerReason,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                    )
-                  : Text(AppLocalizations.of(context)?.confirmBooking ?? 'Confirm booking'),
-            ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
+              );
+            }),
           ],
         ),
       ),

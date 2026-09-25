@@ -5,9 +5,11 @@ class UserResolutionHelper {
   final UserRepository _userRepository;
   final Map<String, User> _cache = {};
 
-  UserResolutionHelper({required UserRepository userRepository}) : _userRepository = userRepository;
+  UserResolutionHelper({required UserRepository userRepository})
+      : _userRepository = userRepository;
 
-  Future<String> resolveUserDisplayName(String? userId, {String fallback = 'Unknown'}) async {
+  Future<String> resolveUserDisplayName(String? userId,
+      {String fallback = 'Unknown'}) async {
     if (userId == null || userId.isEmpty) return fallback;
     try {
       final user = await _getUserById(userId);

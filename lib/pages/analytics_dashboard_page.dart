@@ -35,7 +35,8 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
     }
     try {
       final userRepo = context.read<UserRepository>();
-      final professionals = await userRepo.getProfessionals(businessId: businessId);
+      final professionals =
+          await userRepo.getProfessionals(businessId: businessId);
       if (mounted) {
         setState(() {
           _staff = professionals;
@@ -55,19 +56,24 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
 
     if (user == null || business == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(AppLocalizations.of(context)?.analyticsDashboard ?? 'Analytics Dashboard')),
+        appBar: AppBar(
+            title: Text(AppLocalizations.of(context)?.analyticsDashboard ??
+                'Analytics Dashboard')),
         body: const Center(child: Text('Unauthorized')),
       );
     }
 
     if (!FeatureGate.isAvailable(business, 'analytics')) {
       return Scaffold(
-        appBar: AppBar(title: Text(AppLocalizations.of(context)?.analyticsDashboard ?? 'Analytics Dashboard')),
+        appBar: AppBar(
+            title: Text(AppLocalizations.of(context)?.analyticsDashboard ??
+                'Analytics Dashboard')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              AppLocalizations.of(context)?.featureNotAvailable ?? 'This feature is not available on your current plan.',
+              AppLocalizations.of(context)?.featureNotAvailable ??
+                  'This feature is not available on your current plan.',
               textAlign: TextAlign.center,
             ),
           ),
@@ -84,11 +90,13 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
       appointments: appointments,
       payments: payments,
       staff: _staff,
+      businessId: business.id,
     );
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.analyticsDashboard ?? 'Analytics Dashboard'),
+        title: Text(AppLocalizations.of(context)?.analyticsDashboard ??
+            'Analytics Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -98,7 +106,9 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
               final start = DateTime(now.year, now.month, 1);
               final end = DateTime(now.year, now.month + 1, 1);
               apptProvider.loadAppointmentsInRange(businessId, start, end);
-              paymentProvider.loadPaymentsForProfessionalInRange(null, start, end, businessId: businessId);
+              paymentProvider.loadPaymentsForProfessionalInRange(
+                  null, start, end,
+                  businessId: businessId);
               _loadStaff();
             },
           ),
@@ -110,25 +120,46 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
         children: [
           Row(
             children: [
-              Expanded(child: _buildMetricCard(AppLocalizations.of(context)?.totalBookings ?? 'Total Bookings', metrics.totalBookings.toString(), Icons.event)),
+              Expanded(
+                  child: _buildMetricCard(
+                      AppLocalizations.of(context)?.totalBookings ??
+                          'Total Bookings',
+                      metrics.totalBookings.toString(),
+                      Icons.event)),
               const SizedBox(width: 16),
-              Expanded(child: _buildMetricCard(AppLocalizations.of(context)?.revenueLabel ?? 'Revenue', '\$${metrics.revenueEstimate.toStringAsFixed(2)}', Icons.attach_money)),
+              Expanded(
+                  child: _buildMetricCard(
+                      AppLocalizations.of(context)?.revenueLabel ?? 'Revenue',
+                      '\$${metrics.revenueEstimate.toStringAsFixed(2)}',
+                      Icons.attach_money)),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _buildRateCard(AppLocalizations.of(context)?.completedLabel ?? 'Completion Rate', '${(metrics.completionRate * 100).toStringAsFixed(1)}%', Colors.green)),
+              Expanded(
+                  child: _buildRateCard(
+                      AppLocalizations.of(context)?.completedLabel ??
+                          'Completion Rate',
+                      '${(metrics.completionRate * 100).toStringAsFixed(1)}%',
+                      Colors.green)),
               const SizedBox(width: 16),
-              Expanded(child: _buildRateCard(AppLocalizations.of(context)?.statusCancelled ?? 'Cancellation Rate', '${(metrics.cancellationRate * 100).toStringAsFixed(1)}%', Colors.red)),
+              Expanded(
+                  child: _buildRateCard(
+                      AppLocalizations.of(context)?.statusCancelled ??
+                          'Cancellation Rate',
+                      '${(metrics.cancellationRate * 100).toStringAsFixed(1)}%',
+                      Colors.red)),
             ],
           ),
           const SizedBox(height: 24),
-          _buildSectionTitle(AppLocalizations.of(context)?.peakHours ?? 'Peak Hours'),
+          _buildSectionTitle(
+              AppLocalizations.of(context)?.peakHours ?? 'Peak Hours'),
           const SizedBox(height: 8),
           _buildPeakHoursChart(metrics.peakHours),
           const SizedBox(height: 24),
-          _buildSectionTitle(AppLocalizations.of(context)?.staffUtilization ?? 'Staff Utilization'),
+          _buildSectionTitle(AppLocalizations.of(context)?.staffUtilization ??
+              'Staff Utilization'),
           const SizedBox(height: 8),
           _buildStaffUtilizationList(metrics.staffUtilization, _staff),
         ],
@@ -150,8 +181,11 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(title,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(value,
+                      style: const TextStyle(
+                          fontSize: 24, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -175,8 +209,13 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+                  Text(title,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(value,
+                      style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: color)),
                 ],
               ),
             ),
@@ -189,7 +228,8 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      child: Text(title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -198,13 +238,16 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Text('No data available for peak hours.', textAlign: TextAlign.center),
+          child: Text('No data available for peak hours.',
+              textAlign: TextAlign.center),
         ),
       );
     }
 
-    final sortedHours = peakHours.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
-    final maxCount = sortedHours.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    final sortedHours = peakHours.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final maxCount =
+        sortedHours.map((e) => e.value).reduce((a, b) => a > b ? a : b);
 
     return Card(
       elevation: 2,
@@ -221,7 +264,10 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   children: [
-                    SizedBox(width: 60, child: Text(hourLabel, style: const TextStyle(fontSize: 12))),
+                    SizedBox(
+                        width: 60,
+                        child: Text(hourLabel,
+                            style: const TextStyle(fontSize: 12))),
                     Expanded(
                       child: Stack(
                         children: [
@@ -246,7 +292,8 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(entry.value.toString(), style: const TextStyle(fontSize: 12)),
+                    Text(entry.value.toString(),
+                        style: const TextStyle(fontSize: 12)),
                   ],
                 ),
               );
@@ -257,12 +304,14 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
     );
   }
 
-  Widget _buildStaffUtilizationList(Map<String, double> utilization, List<User> staff) {
+  Widget _buildStaffUtilizationList(
+      Map<String, double> utilization, List<User> staff) {
     if (utilization.isEmpty) {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Text('No staff utilization data available.', textAlign: TextAlign.center),
+          child: Text('No staff utilization data available.',
+              textAlign: TextAlign.center),
         ),
       );
     }
@@ -277,14 +326,19 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
         child: Column(
           children: utilization.entries.map((entry) {
             final member = entry.key == 'overall' ? null : staffMap[entry.key];
-            final label = entry.key == 'overall' ? 'Overall' : (member?.name ?? 'Unknown');
+            final label = entry.key == 'overall'
+                ? 'Overall'
+                : (member?.name ?? 'Unknown');
             final percentage = (entry.value * 100).toStringAsFixed(1);
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
                 children: [
-                  Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
-                  Text('$percentage%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Expanded(
+                      child: Text(label, style: const TextStyle(fontSize: 14))),
+                  Text('$percentage%',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 14)),
                 ],
               ),
             );

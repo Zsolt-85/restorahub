@@ -25,7 +25,8 @@ class AdminDashboardPage extends StatelessWidget {
       );
     }
 
-    final hasMultiLocation = business != null && FeatureGate.isAvailable(business, 'multiLocation');
+    final hasMultiLocation =
+        business != null && FeatureGate.isAvailable(business, 'multiLocation');
     final locations = business?.locations ?? const <Location>[];
     final activeLocation = businessProvider.activeLocation;
 
@@ -39,11 +40,13 @@ class AdminDashboardPage extends StatelessWidget {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: activeLocation?.id,
-                  hint: Text(AppLocalizations.of(context)?.selectLocation ?? 'Select Location'),
+                  hint: Text(AppLocalizations.of(context)?.selectLocation ??
+                      'Select Location'),
                   items: [
                     DropdownMenuItem<String>(
                       value: null,
-                      child: Text(AppLocalizations.of(context)?.allLocations ?? 'All Locations'),
+                      child: Text(AppLocalizations.of(context)?.allLocations ??
+                          'All Locations'),
                     ),
                     ...locations.map((location) {
                       return DropdownMenuItem<String>(
@@ -98,14 +101,86 @@ class AdminDashboardPage extends StatelessWidget {
                 ],
               ],
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, Routes.businessSettings);
-                },
-                child: const Text('Business Settings'),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: [
+                  _AdminNavButton(
+                    icon: Icons.store,
+                    label: 'Business Settings',
+                    onTap: () => Navigator.pushNamed(
+                        context, Routes.businessSettings),
+                  ),
+                  _AdminNavButton(
+                    icon: Icons.people,
+                    label: 'Team Management',
+                    onTap: () => Navigator.pushNamed(
+                        context, Routes.teamManagement),
+                  ),
+                  _AdminNavButton(
+                    icon: Icons.design_services,
+                    label: 'Services Catalog',
+                    onTap: () =>
+                        Navigator.pushNamed(context, Routes.services),
+                  ),
+                  _AdminNavButton(
+                    icon: Icons.calendar_month,
+                    label: 'Staff Calendar',
+                    onTap: () =>
+                        Navigator.pushNamed(context, Routes.adminCalendar),
+                  ),
+                  _AdminNavButton(
+                    icon: Icons.dashboard_outlined,
+                    label: 'Analytics Dashboard',
+                    onTap: () => Navigator.pushNamed(
+                        context, Routes.analyticsDashboard),
+                  ),
+                ],
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminNavButton extends StatelessWidget {
+  const _AdminNavButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 160,
+      height: 88,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon,
+                color: Theme.of(context).colorScheme.primary, size: 28),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ),
       ),
     );

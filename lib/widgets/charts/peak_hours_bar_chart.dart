@@ -32,7 +32,9 @@ class PeakHoursBarChart extends StatelessWidget {
         barRods: [
           BarChartRodData(
             toY: count.toDouble(),
-            color: count == maxCount && count > 0 ? Colors.redAccent : Theme.of(context).primaryColor,
+            color: count == maxCount && count > 0
+                ? Colors.redAccent
+                : Theme.of(context).primaryColor,
             width: 14,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(4),
@@ -75,11 +77,14 @@ class PeakHoursBarChart extends StatelessWidget {
                       showTitles: true,
                       interval: 1,
                       reservedSize: 28,
-                      getTitlesWidget: (value, meta) => Text(value.toInt().toString()),
+                      getTitlesWidget: (value, meta) =>
+                          Text(value.toInt().toString()),
                     ),
                   ),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
                 ),
                 borderData: FlBorderData(show: true),
                 barGroups: barGroups,

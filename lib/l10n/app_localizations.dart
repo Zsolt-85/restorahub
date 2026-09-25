@@ -258,6 +258,102 @@ abstract class AppLocalizations {
   /// **'Select Customer'**
   String get selectCustomer;
 
+  /// No description provided for @selectStaffMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Staff Member'**
+  String get selectStaffMember;
+
+  /// No description provided for @anyAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Any available'**
+  String get anyAvailable;
+
+  /// No description provided for @bookAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Book another'**
+  String get bookAnother;
+
+  /// No description provided for @fullyBookedPickAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Fully booked for this day — pick another date'**
+  String get fullyBookedPickAnother;
+
+  /// No description provided for @pickDateToContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a date to continue'**
+  String get pickDateToContinue;
+
+  /// No description provided for @pickTimeToContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a start time to continue'**
+  String get pickTimeToContinue;
+
+  /// No description provided for @noStaffForCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff available for this category'**
+  String get noStaffForCategory;
+
+  /// No description provided for @selectStaffToContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a staff member to continue'**
+  String get selectStaffToContinue;
+
+  /// No description provided for @browseOtherCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse other categories'**
+  String get browseOtherCategories;
+
+  /// No description provided for @markAsNoShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as no-show'**
+  String get markAsNoShow;
+
+  /// No description provided for @markedNoShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked as no-show'**
+  String get markedNoShow;
+
+  /// No description provided for @depositDuePercent.
+  ///
+  /// In en, this message translates to:
+  /// **'A {percent}% deposit will be due at payment time'**
+  String depositDuePercent(Object percent);
+
+  /// No description provided for @depositDueAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'A {percent}% deposit ({amount}) will be due at payment time'**
+  String depositDueAmount(Object amount, Object percent);
+
+  /// No description provided for @completeProfileSignInExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is incomplete. Sign in to finish setting it up — it takes less than a minute.'**
+  String get completeProfileSignInExplainer;
+
+  /// No description provided for @continueToSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to sign in'**
+  String get continueToSignIn;
+
+  /// No description provided for @noBusinessAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No business is assigned to your account yet. Ask an administrator to invite you, or sign in with a different account.'**
+  String get noBusinessAssigned;
+
   /// No description provided for @customerDetails.
   ///
   /// In en, this message translates to:
@@ -1085,6 +1181,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No upcoming appointments'**
   String get noUpcomingAppointments;
+
+  /// No description provided for @noUpcomingAppointmentsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for your next visit?'**
+  String get noUpcomingAppointmentsSubtitle;
+
+  /// No description provided for @noAppointmentHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No past appointments'**
+  String get noAppointmentHistory;
+
+  /// No description provided for @noAppointmentHistorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your completed bookings will show up here.'**
+  String get noAppointmentHistorySubtitle;
 
   /// No description provided for @appointmentsSection.
   ///

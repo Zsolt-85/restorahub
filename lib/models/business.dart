@@ -131,13 +131,42 @@ class BusinessSettings {
   final int? bufferTimeMinutes;
   final Map<String, dynamic>? notificationConfig;
   final Map<String, dynamic>? onboardingProgress;
+  final bool? isSoloProvider;
+  final bool? depositRequired;
+  final double? depositPercent;
+  final double? noShowFeeAmount;
 
   BusinessSettings({
     this.cancellationWindowHours,
     this.bufferTimeMinutes,
     this.notificationConfig,
     this.onboardingProgress,
+    this.isSoloProvider,
+    this.depositRequired,
+    this.depositPercent,
+    this.noShowFeeAmount,
   });
+
+  /// Effective cancellation window, defaulting to the legacy 2 hours.
+  Duration get effectiveCancellationWindow =>
+      Duration(hours: cancellationWindowHours ?? 2);
+
+  /// Effective deposit percent, clamped to 0–100.
+  double get effectiveDepositPercent {
+    final percent = depositPercent ?? 0.0;
+    if (percent.isNaN || percent <= 0) return 0.0;
+    if (percent > 100) return 100.0;
+    return percent;
+  }
+
+  bool get isDepositRequired =>
+      (depositRequired ?? false) && effectiveDepositPercent > 0;
+
+  double get effectiveNoShowFee {
+    final fee = noShowFeeAmount ?? 0.0;
+    if (fee.isNaN || fee <= 0) return 0.0;
+    return fee;
+  }
 
   factory BusinessSettings.fromMap(Map<String, dynamic> map) {
     return BusinessSettings(
@@ -145,6 +174,10 @@ class BusinessSettings {
       bufferTimeMinutes: map['bufferTimeMinutes'] as int?,
       notificationConfig: map['notificationConfig'] as Map<String, dynamic>?,
       onboardingProgress: map['onboardingProgress'] as Map<String, dynamic>?,
+      isSoloProvider: map['isSoloProvider'] as bool?,
+      depositRequired: map['depositRequired'] as bool?,
+      depositPercent: (map['depositPercent'] as num?)?.toDouble(),
+      noShowFeeAmount: (map['noShowFeeAmount'] as num?)?.toDouble(),
     );
   }
 
@@ -154,6 +187,10 @@ class BusinessSettings {
       'bufferTimeMinutes': bufferTimeMinutes,
       'notificationConfig': notificationConfig,
       'onboardingProgress': onboardingProgress,
+      'isSoloProvider': isSoloProvider,
+      'depositRequired': depositRequired,
+      'depositPercent': depositPercent,
+      'noShowFeeAmount': noShowFeeAmount,
     };
   }
 
@@ -162,12 +199,21 @@ class BusinessSettings {
     int? bufferTimeMinutes,
     Map<String, dynamic>? notificationConfig,
     Map<String, dynamic>? onboardingProgress,
+    bool? isSoloProvider,
+    bool? depositRequired,
+    double? depositPercent,
+    double? noShowFeeAmount,
   }) {
     return BusinessSettings(
-      cancellationWindowHours: cancellationWindowHours ?? this.cancellationWindowHours,
+      cancellationWindowHours:
+          cancellationWindowHours ?? this.cancellationWindowHours,
       bufferTimeMinutes: bufferTimeMinutes ?? this.bufferTimeMinutes,
       notificationConfig: notificationConfig ?? this.notificationConfig,
       onboardingProgress: onboardingProgress ?? this.onboardingProgress,
+      isSoloProvider: isSoloProvider ?? this.isSoloProvider,
+      depositRequired: depositRequired ?? this.depositRequired,
+      depositPercent: depositPercent ?? this.depositPercent,
+      noShowFeeAmount: noShowFeeAmount ?? this.noShowFeeAmount,
     );
   }
 }
@@ -252,6 +298,7 @@ class Business {
   final String? activeLocationId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final int staffCount;
 
   Business({
     required this.id,
@@ -274,11 +321,14 @@ class Business {
     this.activeLocationId,
     this.createdAt,
     this.updatedAt,
+    this.staffCount = 0,
   });
 
   bool get isActive => status == BusinessStatus.active;
   bool get isTrial => status == BusinessStatus.trial;
   bool get isSuspended => status == BusinessStatus.suspended;
+
+  bool get isSolo => (settings?.isSoloProvider ?? false) || staffCount <= 1;
 
   bool get isOnboarded {
     if (status == BusinessStatus.active) return true;
@@ -287,7 +337,8 @@ class Business {
     return progress['isCompleted'] == true;
   }
 
-  String? get effectivePrimaryColor => branding?.primaryColor ?? primaryColorHex;
+  String? get effectivePrimaryColor =>
+      branding?.primaryColor ?? primaryColorHex;
   String? get effectiveBusinessName => branding?.businessName ?? name;
   String? get effectiveLogo => branding?.logo ?? logoUrl;
 
@@ -326,28 +377,38 @@ class Business {
       name: map['name']?.toString() ?? '',
       email: map['email']?.toString() ?? contactMap?['email']?.toString(),
       logoUrl: map['logoUrl']?.toString() ?? brandingMap?['logo']?.toString(),
-      primaryColorHex: map['primaryColorHex']?.toString() ?? brandingMap?['primaryColor']?.toString(),
+      primaryColorHex: map['primaryColorHex']?.toString() ??
+          brandingMap?['primaryColor']?.toString(),
       phone: map['phone']?.toString() ?? contactMap?['phone']?.toString(),
       address: map['address']?.toString() ?? contactMap?['address']?.toString(),
       slug: map['slug']?.toString(),
       businessType: parsedBusinessType,
       status: parsedStatus,
       ownerId: map['ownerId']?.toString(),
-      contactInformation: contactMap != null ? BusinessContactInformation.fromMap(contactMap) : null,
-      branding: brandingMap != null ? BusinessBranding.fromMap(brandingMap) : null,
-      settings: settingsMap != null ? BusinessSettings.fromMap(settingsMap) : null,
-      subscription: subscriptionMap != null ? BusinessSubscription.fromMap(subscriptionMap) : null,
+      contactInformation: contactMap != null
+          ? BusinessContactInformation.fromMap(contactMap)
+          : null,
+      branding:
+          brandingMap != null ? BusinessBranding.fromMap(brandingMap) : null,
+      settings:
+          settingsMap != null ? BusinessSettings.fromMap(settingsMap) : null,
+      subscription: subscriptionMap != null
+          ? BusinessSubscription.fromMap(subscriptionMap)
+          : null,
       featureEntitlements: map['featureEntitlements'] != null
-          ? List<String>.from((map['featureEntitlements'] as List<dynamic>).map((e) => e.toString()))
+          ? List<String>.from((map['featureEntitlements'] as List<dynamic>)
+              .map((e) => e.toString()))
           : const [],
       locations: map['locations'] != null
           ? List<Location>.from(
-              (map['locations'] as List<dynamic>).map((e) => Location.fromMap(e as Map<String, dynamic>)),
+              (map['locations'] as List<dynamic>)
+                  .map((e) => Location.fromMap(e as Map<String, dynamic>)),
             )
           : const [],
       activeLocationId: map['activeLocationId']?.toString(),
       createdAt: _parseNullableDateTime(map['createdAt']),
       updatedAt: _parseNullableDateTime(map['updatedAt']),
+      staffCount: _parseStaffCount(map['staffCount']),
     );
   }
 
@@ -361,6 +422,12 @@ class Business {
     } catch (_) {
       return null;
     }
+  }
+
+  static int _parseStaffCount(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    return int.tryParse(value.toString()) ?? 0;
   }
 
   Map<String, dynamic> toMap() {
@@ -385,6 +452,7 @@ class Business {
       'activeLocationId': activeLocationId,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'staffCount': staffCount,
     };
   }
 
@@ -409,6 +477,7 @@ class Business {
     String? activeLocationId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? staffCount,
   }) {
     return Business(
       id: id ?? this.id,
@@ -431,6 +500,7 @@ class Business {
       activeLocationId: activeLocationId ?? this.activeLocationId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      staffCount: staffCount ?? this.staffCount,
     );
   }
 }

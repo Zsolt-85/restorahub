@@ -19,8 +19,11 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final notifProvider = Provider.of<NotificationProvider>(context);
     final unreadCount = notifProvider.unreadCount;
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
-    final isAdmin = (user.role == 'business_admin' || user.role == 'super_admin') && businessProvider.hasBusiness;
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
+    final isAdmin =
+        (user.role == 'business_admin' || user.role == 'super_admin') &&
+            businessProvider.hasBusiness;
 
     return Drawer(
       child: ListView(
@@ -40,7 +43,8 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.notifications_outlined),
-            title: Text(AppLocalizations.of(context)?.menuNotifications ?? 'Notifications'),
+            title: Text(AppLocalizations.of(context)?.menuNotifications ??
+                'Notifications'),
             trailing: unreadCount > 0
                 ? Container(
                     padding: const EdgeInsets.all(4),
@@ -77,17 +81,31 @@ class AppDrawer extends StatelessWidget {
           if (user.isStaff || user.role == 'business_admin') ...[
             ListTile(
               leading: const Icon(Icons.bar_chart_outlined),
-              title: Text(AppLocalizations.of(context)?.menuAnalytics ?? 'Analytics'),
+              title: Text(
+                  AppLocalizations.of(context)?.menuAnalytics ?? 'Analytics'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, Routes.analytics);
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.payments_outlined),
+              title: Text(AppLocalizations.of(context)?.earningsReport ??
+                  'Earnings'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, Routes.earningsReport);
+              },
+            ),
           ],
-          if (isAdmin && businessProvider.currentBusiness != null && FeatureGate.isAvailable(businessProvider.currentBusiness!, 'analytics')) ...[
+          if (isAdmin &&
+              businessProvider.currentBusiness != null &&
+              FeatureGate.isAvailable(
+                  businessProvider.currentBusiness!, 'analytics')) ...[
             ListTile(
               leading: const Icon(Icons.dashboard_outlined),
-              title: Text(AppLocalizations.of(context)?.analyticsDashboard ?? 'Analytics Dashboard'),
+              title: Text(AppLocalizations.of(context)?.analyticsDashboard ??
+                  'Analytics Dashboard'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, Routes.analyticsDashboard);
@@ -96,7 +114,8 @@ class AppDrawer extends StatelessWidget {
           ],
           ListTile(
             leading: const Icon(Icons.person_outline),
-            title: Text(AppLocalizations.of(context)?.menuEditProfile ?? 'Edit profile'),
+            title: Text(AppLocalizations.of(context)?.menuEditProfile ??
+                'Edit profile'),
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, Routes.profile);
@@ -104,7 +123,8 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.history),
-            title: Text(AppLocalizations.of(context)?.menuPastAppointments ?? 'Past appointments'),
+            title: Text(AppLocalizations.of(context)?.menuPastAppointments ??
+                'Past appointments'),
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, Routes.pastAppointments);
@@ -114,7 +134,8 @@ class AppDrawer extends StatelessWidget {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.store),
-              title: Text(AppLocalizations.of(context)?.businessSettings ?? 'Business Settings'),
+              title: Text(AppLocalizations.of(context)?.businessSettings ??
+                  'Business Settings'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, Routes.businessSettings);
@@ -147,7 +168,8 @@ class AppDrawer extends StatelessWidget {
           ],
           ListTile(
             leading: const Icon(Icons.settings_outlined),
-            title: Text(AppLocalizations.of(context)?.menuSettings ?? 'Settings'),
+            title:
+                Text(AppLocalizations.of(context)?.menuSettings ?? 'Settings'),
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, Routes.settings);
@@ -160,12 +182,17 @@ class AppDrawer extends StatelessWidget {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: Text(AppLocalizations.of(context)?.logoutConfirmation ?? 'Logout'),
-                  content: Text(AppLocalizations.of(context)?.logoutConfirmation ?? 'Are you sure you want to log out?'),
+                  title: Text(
+                      AppLocalizations.of(context)?.logoutConfirmation ??
+                          'Logout'),
+                  content: Text(
+                      AppLocalizations.of(context)?.logoutConfirmation ??
+                          'Are you sure you want to log out?'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancel'),
+                      child: Text(
+                          AppLocalizations.of(context)?.cancel ?? 'Cancel'),
                     ),
                     TextButton(
                       onPressed: () {

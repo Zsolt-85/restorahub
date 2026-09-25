@@ -25,26 +25,28 @@ class FirestorePaymentRepository implements PaymentRepository {
   }
 
   @override
-  Future<Payment?> getPaymentByAppointment(String appointmentId) async {
+  Future<Payment?> getPaymentByAppointment(String appointmentId,
+      {String? businessId}) async {
     try {
-      final query = await _paymentsCol
-          .where('appointmentId', isEqualTo: appointmentId)
-          .limit(1)
-          .get();
+      final query = await _withBusinessFilter(
+        _paymentsCol.where('appointmentId', isEqualTo: appointmentId),
+        businessId,
+      ).limit(1).get();
       if (query.docs.isEmpty) return null;
       final doc = query.docs.first;
       final data = doc.data();
       data['id'] = doc.id;
       return Payment.fromMap(data);
     } catch (e, stack) {
-      AppLogger.error('FirestorePaymentRepository.getPaymentByAppointment error: $e\n$stack');
+      AppLogger.error(
+          'FirestorePaymentRepository.getPaymentByAppointment error: $e\n$stack');
       throw AppException('Failed to load payment', cause: e);
     }
   }
 
   @override
-  Future<List<Payment>> getPaymentsByProfessional(
-      String professionalId, {String? businessId}) async {
+  Future<List<Payment>> getPaymentsByProfessional(String professionalId,
+      {String? businessId}) async {
     try {
       final query = await _withBusinessFilter(
         _paymentsCol.where('professionalId', isEqualTo: professionalId),
@@ -59,18 +61,16 @@ class FirestorePaymentRepository implements PaymentRepository {
       payments.sort((a, b) => b.appointmentDate.compareTo(a.appointmentDate));
       return payments;
     } catch (e, stack) {
-      AppLogger.error('FirestorePaymentRepository.getPaymentsByProfessional error: $e\n$stack');
+      AppLogger.error(
+          'FirestorePaymentRepository.getPaymentsByProfessional error: $e\n$stack');
       throw AppException('Failed to load payments', cause: e);
     }
   }
 
   @override
   Future<List<Payment>> getPaymentsByProfessionalInRange(
-    String? professionalId,
-    DateTime start,
-    DateTime end,
-    {String? businessId}
-  ) async {
+      String? professionalId, DateTime start, DateTime end,
+      {String? businessId}) async {
     try {
       final startIso = start.toIso8601String();
       final endIso = end.toIso8601String();
@@ -93,22 +93,41 @@ class FirestorePaymentRepository implements PaymentRepository {
       payments.sort((a, b) => b.appointmentDate.compareTo(a.appointmentDate));
       return payments;
     } catch (e, stack) {
-      AppLogger.error('FirestorePaymentRepository.getPaymentsByProfessionalInRange error: $e\n$stack');
+      AppLogger.error(
+          'FirestorePaymentRepository.getPaymentsByProfessionalInRange error: $e\n$stack');
       throw AppException('Failed to load payments', cause: e);
     }
   }
 
   @override
-  Future<int> recordPayment(Payment payment) async {
+  Future<String> recordPayment(Payment payment) async {
     try {
+      // Backfill tenant scope for payments created without businessId
+      // (legacy clients): adopt it from the linked appointment when possible.
+      var businessId = payment.businessId;
+      if (businessId == null || businessId.isEmpty) {
+        try {
+          final apptDoc = await _firestore
+              .collection('appointments')
+              .doc(payment.appointmentId)
+              .get();
+          final adopted = apptDoc.data()?['businessId']?.toString();
+          if (adopted != null && adopted.isNotEmpty) {
+            businessId = adopted;
+          }
+        } catch (_) {
+          // Adoption is best-effort; the payment itself must still record.
+        }
+      }
       final docRef = payment.id != null
           ? _paymentsCol.doc(payment.id)
           : _paymentsCol.doc();
-      payment.id = docRef.id;
-      await docRef.set(payment.toMap());
-      return 1;
+      final withId = payment.copyWith(id: docRef.id, businessId: businessId);
+      await docRef.set(withId.toMap());
+      return docRef.id;
     } catch (e, stack) {
-      AppLogger.error('FirestorePaymentRepository.recordPayment error: $e\n$stack');
+      AppLogger.error(
+          'FirestorePaymentRepository.recordPayment error: $e\n$stack');
       throw AppException('Failed to record payment', cause: e);
     }
   }
@@ -122,7 +141,8 @@ class FirestorePaymentRepository implements PaymentRepository {
       await _paymentsCol.doc(payment.id).update(payment.toMap());
       return 1;
     } catch (e, stack) {
-      AppLogger.error('FirestorePaymentRepository.updatePayment error: $e\n$stack');
+      AppLogger.error(
+          'FirestorePaymentRepository.updatePayment error: $e\n$stack');
       if (e is AppException) rethrow;
       throw AppException('Failed to update payment', cause: e);
     }
@@ -138,7 +158,8 @@ class FirestorePaymentRepository implements PaymentRepository {
       await _paymentsCol.doc(paymentId).update({'status': status.name});
       return 1;
     } catch (e, stack) {
-      AppLogger.error('FirestorePaymentRepository.updatePaymentStatus error: $e\n$stack');
+      AppLogger.error(
+          'FirestorePaymentRepository.updatePaymentStatus error: $e\n$stack');
       if (e is AppException) rethrow;
       throw AppException('Failed to update payment status', cause: e);
     }

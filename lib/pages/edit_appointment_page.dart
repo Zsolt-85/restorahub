@@ -7,7 +7,7 @@ import '../helpers/schedule_helper.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
-import '../repositories/user_repository.dart';
+import '../repositories/staff_directory_repository.dart';
 import '../utils/error_handler.dart';
 
 class EditAppointmentPage extends StatefulWidget {
@@ -54,11 +54,13 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
       final targetAppointment = _appointment;
       if (targetAppointment == null) return;
 
-      final repo = Provider.of<UserRepository>(context, listen: false);
+      // Public directory: customers cannot single-GET cross-tenant user docs.
+      final repo =
+          Provider.of<StaffDirectoryRepository>(context, listen: false);
       final professionalId = targetAppointment.professionalId;
       final professional = professionalId == null
           ? null
-          : await repo.getUserById(professionalId);
+          : await repo.getEntryById(professionalId);
 
       if (!mounted) return;
 
@@ -123,8 +125,13 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
     }
 
     try {
-      final repo = Provider.of<AppointmentProvider>(context, listen: false).repository;
-      final allAppointments = await repo.getAppointmentsForProfessional(professional.id!, professionalEmail: professional.email);
+      final repo =
+          Provider.of<AppointmentProvider>(context, listen: false).repository;
+      final allAppointments = await repo.getAppointmentsForProfessional(
+        professional.id!,
+        professionalEmail: professional.email,
+        businessId: professional.businessId ?? _appointment!.businessId,
+      );
 
       final dateStr = _selectedDate!;
       final dayAppointments = allAppointments.where((a) {
@@ -184,12 +191,15 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)?.rescheduleBooking ?? 'Reschedule booking')),
+      appBar: AppBar(
+          title: Text(AppLocalizations.of(context)?.rescheduleBooking ??
+              'Reschedule booking')),
       body: _loadingProfessional
           ? const Center(child: CircularProgressIndicator())
           : professional == null
               ? Center(
-                  child: Text(AppLocalizations.of(context)?.error ?? 'Professional details are unavailable.'),
+                  child: Text(AppLocalizations.of(context)?.error ??
+                      'Professional details are unavailable.'),
                 )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -202,13 +212,15 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                               Text(
-                                 appointment.service,
-                                 style: Theme.of(context).textTheme.titleMedium,
-                               ),
-                               const SizedBox(height: 8),
-                                Text('${AppLocalizations.of(context)?.professionalContact ?? 'With'} ${appointment.professionalName ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A'}'),
-                               Text('${AppLocalizations.of(context)?.history ?? 'Current'}: ${FormatHelper.formatDateTime(appointment.dateTime)}'),
+                              Text(
+                                appointment.service,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                  '${AppLocalizations.of(context)?.professionalContact ?? 'With'} ${appointment.professionalName ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A'}'),
+                              Text(
+                                  '${AppLocalizations.of(context)?.history ?? 'Current'}: ${FormatHelper.formatDateTime(appointment.dateTime)}'),
                             ],
                           ),
                         ),
@@ -217,10 +229,13 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                       Card(
                         child: ListTile(
                           leading: const Icon(Icons.calendar_today),
-                          title: Text(AppLocalizations.of(context)?.selectDate ?? 'New date'),
+                          title: Text(
+                              AppLocalizations.of(context)?.selectDate ??
+                                  'New date'),
                           subtitle: Text(
                             _selectedDate == null
-                                ? AppLocalizations.of(context)?.selectDate ?? 'Tap to choose a date'
+                                ? AppLocalizations.of(context)?.selectDate ??
+                                    'Tap to choose a date'
                                 : FormatHelper.formatDate(_selectedDate!),
                           ),
                           trailing: const Icon(Icons.chevron_right),
@@ -239,9 +254,10 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                           runSpacing: 8,
                           children: _availableSlots(professional).map((slot) {
                             final isSelected = _selectedTime == slot;
-                            final isUnavailable = _unavailableSlots.contains(slot);
+                            final isUnavailable =
+                                _unavailableSlots.contains(slot);
 
-                             return ChoiceChip(
+                            return ChoiceChip(
                               label: isUnavailable
                                   ? Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -271,11 +287,16 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                                   : isSelected
                                       ? Text(
                                           slot.format(context),
-                                          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+                                          style: TextStyle(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimary),
                                         )
                                       : Text(slot.format(context)),
                               selected: isSelected,
-                              onSelected: isUnavailable ? null : (_) => setState(() => _selectedTime = slot),
+                              onSelected: isUnavailable
+                                  ? null
+                                  : (_) => setState(() => _selectedTime = slot),
                             );
                           }).toList(),
                         ),
@@ -288,9 +309,10 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                             : () async {
                                 if (_selectedDate == null ||
                                     _selectedTime == null) {
-                                      ErrorHandler.showErrorSnackBar(
+                                  ErrorHandler.showErrorSnackBar(
                                     context,
-                                    AppLocalizations.of(context)?.selectDate ?? 'Please select a new date and time',
+                                    AppLocalizations.of(context)?.selectDate ??
+                                        'Please select a new date and time',
                                   );
                                   return;
                                 }
@@ -314,13 +336,15 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                                 if (result == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content:
-                                          Text(AppLocalizations.of(context)?.bookingRescheduled ?? 'Booking rescheduled successfully'),
+                                      content: Text(AppLocalizations.of(context)
+                                              ?.bookingRescheduled ??
+                                          'Booking rescheduled successfully'),
                                     ),
                                   );
                                   Navigator.pop(context, true);
                                 } else {
-                                  ErrorHandler.showErrorSnackBar(context, result);
+                                  ErrorHandler.showErrorSnackBar(
+                                      context, result);
                                 }
                               },
                         child: _saving
@@ -332,7 +356,8 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
                                   strokeWidth: 2,
                                 ),
                               )
-                             : Text(AppLocalizations.of(context)?.save ?? 'Save new time'),
+                            : Text(AppLocalizations.of(context)?.save ??
+                                'Save new time'),
                       ),
                     ],
                   ),

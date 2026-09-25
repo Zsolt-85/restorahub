@@ -39,7 +39,9 @@ class Service {
       locationIds.isEmpty || locationIds.contains(locationId);
 
   int get totalDurationMinutes =>
-      (durationMinutes ?? 0) + (bufferTimeMinutes ?? 0) + (preparationTimeMinutes ?? 0);
+      (durationMinutes ?? 0) +
+      (bufferTimeMinutes ?? 0) +
+      (preparationTimeMinutes ?? 0);
 
   factory Service.fromMap(Map<String, dynamic> map) {
     ResourceType? parsedResourceType;
@@ -58,8 +60,14 @@ class Service {
       name: map['name']?.toString() ?? '',
       description: map['description']?.toString(),
       businessId: map['businessId']?.toString(),
-      durationMinutes: map['durationMinutes'] is int ? map['durationMinutes'] as int : int.tryParse(map['durationMinutes']?.toString() ?? ''),
-      price: map['price'] != null ? (map['price'] is double ? map['price'] as double : double.tryParse(map['price'].toString())) : null,
+      durationMinutes: map['durationMinutes'] is int
+          ? map['durationMinutes'] as int
+          : int.tryParse(map['durationMinutes']?.toString() ?? ''),
+      price: map['price'] != null
+          ? (map['price'] is double
+              ? map['price'] as double
+              : double.tryParse(map['price'].toString()))
+          : null,
       subtypes: map['subtypes'] != null
           ? List<String>.from(
               (map['subtypes'] as List<dynamic>).map((e) => e.toString()),
@@ -67,7 +75,8 @@ class Service {
           : null,
       assignedProfessionalIds: map['assignedProfessionalIds'] != null
           ? List<String>.from(
-              (map['assignedProfessionalIds'] as List<dynamic>).map((e) => e.toString()),
+              (map['assignedProfessionalIds'] as List<dynamic>)
+                  .map((e) => e.toString()),
             )
           : const [],
       category: map['category']?.toString(),
@@ -88,7 +97,8 @@ class Service {
       'name': name,
       'description': description,
       'businessId': businessId,
-      'durationMinutes': durationMinutes != null ? durationMinutes as int : null,
+      'durationMinutes':
+          durationMinutes != null ? durationMinutes as int : null,
       'price': price != null ? price as double : null,
       'subtypes': subtypes,
       'assignedProfessionalIds': assignedProfessionalIds,
@@ -123,12 +133,14 @@ class Service {
       durationMinutes: durationMinutes ?? this.durationMinutes,
       price: price ?? this.price,
       subtypes: subtypes ?? this.subtypes,
-      assignedProfessionalIds: assignedProfessionalIds ?? this.assignedProfessionalIds,
+      assignedProfessionalIds:
+          assignedProfessionalIds ?? this.assignedProfessionalIds,
       category: category ?? this.category,
       resourceType: resourceType ?? this.resourceType,
       locationIds: locationIds ?? this.locationIds,
       bufferTimeMinutes: bufferTimeMinutes ?? this.bufferTimeMinutes,
-      preparationTimeMinutes: preparationTimeMinutes ?? this.preparationTimeMinutes,
+      preparationTimeMinutes:
+          preparationTimeMinutes ?? this.preparationTimeMinutes,
     );
   }
 }

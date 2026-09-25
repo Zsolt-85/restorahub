@@ -140,7 +140,8 @@ class WizardState {
       services: services ?? this.services,
       staff: staff ?? this.staff,
       openingHours: openingHours ?? this.openingHours,
-      cancellationWindowHours: cancellationWindowHours ?? this.cancellationWindowHours,
+      cancellationWindowHours:
+          cancellationWindowHours ?? this.cancellationWindowHours,
       bufferTimeMinutes: bufferTimeMinutes ?? this.bufferTimeMinutes,
     );
   }
@@ -151,8 +152,10 @@ class SetupWizardProvider extends ChangeNotifier {
     BusinessRepository? businessRepository,
     ServiceRepository? serviceRepository,
     UserRepository? userRepository,
-  })  : _businessRepository = businessRepository ?? FirestoreBusinessRepository.instance,
-        _serviceRepository = serviceRepository ?? FirestoreServiceRepository.instance,
+  })  : _businessRepository =
+            businessRepository ?? FirestoreBusinessRepository.instance,
+        _serviceRepository =
+            serviceRepository ?? FirestoreServiceRepository.instance,
         _userRepository = userRepository ?? FirestoreUserRepository.instance;
 
   final BusinessRepository _businessRepository;
@@ -223,7 +226,8 @@ class SetupWizardProvider extends ChangeNotifier {
         return 'Business not found';
       }
 
-      final updatedSettings = (business.settings ?? BusinessSettings()).copyWith(
+      final updatedSettings =
+          (business.settings ?? BusinessSettings()).copyWith(
         onboardingProgress: {
           'currentStep': _currentStep.index,
           'state': {
@@ -290,12 +294,15 @@ class SetupWizardProvider extends ChangeNotifier {
           businessName: _state.customerFacingName ?? _state.businessName,
           logo: _state.logoUrl ?? business.branding?.logo,
           primaryColor: _state.primaryColor ?? business.branding?.primaryColor,
-          secondaryColor: _state.secondaryColor ?? business.branding?.secondaryColor,
+          secondaryColor:
+              _state.secondaryColor ?? business.branding?.secondaryColor,
           accentColor: _state.accentColor ?? business.branding?.accentColor,
         ),
         settings: (business.settings ?? BusinessSettings()).copyWith(
-          cancellationWindowHours: _state.cancellationWindowHours ?? business.settings?.cancellationWindowHours,
-          bufferTimeMinutes: _state.bufferTimeMinutes ?? business.settings?.bufferTimeMinutes,
+          cancellationWindowHours: _state.cancellationWindowHours ??
+              business.settings?.cancellationWindowHours,
+          bufferTimeMinutes:
+              _state.bufferTimeMinutes ?? business.settings?.bufferTimeMinutes,
           onboardingProgress: {
             'isCompleted': true,
             'completedAt': DateTime.now().toIso8601String(),
@@ -336,7 +343,8 @@ class SetupWizardProvider extends ChangeNotifier {
 
       final progress = business.settings!.onboardingProgress!;
       final currentStepIndex = progress['currentStep'] as int? ?? 0;
-      _currentStep = WizardStep.values[currentStepIndex.clamp(0, WizardStep.values.length - 1)];
+      _currentStep = WizardStep
+          .values[currentStepIndex.clamp(0, WizardStep.values.length - 1)];
 
       final stateMap = progress['state'] as Map<String, dynamic>? ?? {};
       _state = WizardState(

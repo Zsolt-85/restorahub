@@ -21,14 +21,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      final notifProvider = Provider.of<NotificationProvider>(context, listen: false);
-      final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+      final notifProvider =
+          Provider.of<NotificationProvider>(context, listen: false);
+      final businessProvider =
+          Provider.of<BusinessProvider>(context, listen: false);
       if (auth.currentUser != null) {
         final userId = auth.currentUser!.id;
         final businessId = businessProvider.currentBusiness?.id;
         if (userId != null) {
           notifProvider.loadNotifications(userId, businessId: businessId);
-          notifProvider.startRealtimeNotifications(userId, businessId: businessId);
+          notifProvider.startRealtimeNotifications(userId,
+              businessId: businessId);
         }
       }
     });
@@ -55,15 +58,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.notifications ?? 'Notifications'),
+        title: Text(
+            AppLocalizations.of(context)?.notifications ?? 'Notifications'),
         actions: [
           if (notifProvider.unreadCount > 0)
             IconButton(
               icon: const Icon(Icons.mark_email_read),
               tooltip: AppLocalizations.of(context)?.ok ?? 'Mark all as read',
               onPressed: () {
-                final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
-                notifProvider.markAllAsRead(user.id!, businessId: businessProvider.currentBusiness?.id);
+                final businessProvider =
+                    Provider.of<BusinessProvider>(context, listen: false);
+                notifProvider.markAllAsRead(user.id!,
+                    businessId: businessProvider.currentBusiness?.id);
               },
             ),
         ],
@@ -72,7 +78,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ? const EmptyStateWidget(
               icon: Icons.notifications_none,
               title: 'No notifications yet',
-              subtitle: 'Notifications about your appointments will appear here',
+              subtitle:
+                  'Notifications about your appointments will appear here',
             )
           : ListView.builder(
               padding: const EdgeInsets.all(8),
@@ -142,10 +149,9 @@ class _NotificationTile extends StatelessWidget {
       title: Text(
         notification.title,
         style: TextStyle(
-          fontWeight:
-              notification.status == NotificationStatus.unread
-                  ? FontWeight.bold
-                  : FontWeight.normal,
+          fontWeight: notification.status == NotificationStatus.unread
+              ? FontWeight.bold
+              : FontWeight.normal,
         ),
       ),
       subtitle: Text(notification.message),

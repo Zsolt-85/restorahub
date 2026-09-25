@@ -35,7 +35,8 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
     final user = auth.currentUser;
     if (user == null) return;
 
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     if (businessProvider.currentBusiness != null) {
       _loadStaff();
       return;
@@ -52,13 +53,15 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
     }
 
     try {
-      final repository = Provider.of<BusinessRepository>(context, listen: false);
+      final repository =
+          Provider.of<BusinessRepository>(context, listen: false);
       final business = await repository.getBusinessById(userBusinessId);
       if (business != null && mounted) {
         businessProvider.setBusiness(business);
       }
     } catch (e, stack) {
-      AppLogger.error('TeamManagementPage._ensureBusinessLoaded error: $e\n$stack');
+      AppLogger.error(
+          'TeamManagementPage._ensureBusinessLoaded error: $e\n$stack');
     }
 
     if (!mounted) return;
@@ -71,7 +74,8 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
 
   Future<void> _loadStaff() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     final user = auth.currentUser;
 
     if (user == null) return;
@@ -111,7 +115,8 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
   }
 
   Future<void> _openAddStaffDialog() async {
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     final businessId = businessProvider.currentBusiness?.id;
     if (businessId == null || businessId.isEmpty) {
       ErrorHandler.showErrorSnackBar(context, 'No business selected');
@@ -181,7 +186,8 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
               final specialty = specialtyController.text.trim();
 
               if (name.isEmpty || email.isEmpty) {
-                ErrorHandler.showErrorSnackBar(dialogContext, 'Name and email are required');
+                ErrorHandler.showErrorSnackBar(
+                    dialogContext, 'Name and email are required');
                 return;
               }
 
@@ -269,7 +275,8 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
+              const Icon(Icons.wifi_off_rounded,
+                  size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
               const Text(
                 'Could not load team',

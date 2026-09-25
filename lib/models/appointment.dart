@@ -1,6 +1,13 @@
 import 'package:restorahub/exceptions/app_exception.dart';
 
-enum AppointmentStatus { pending, confirmed, completed, cancelledByCustomer, cancelledByProfessional, noShow }
+enum AppointmentStatus {
+  pending,
+  confirmed,
+  completed,
+  cancelledByCustomer,
+  cancelledByProfessional,
+  noShow
+}
 
 extension AppointmentStatusLabel on AppointmentStatus {
   String get displayLabel {
@@ -41,6 +48,7 @@ class Appointment {
   String? professionalPhone;
   String? professionalEmail;
   String? locationId;
+  String? businessId;
 
   Appointment({
     this.id,
@@ -60,6 +68,7 @@ class Appointment {
     this.professionalPhone,
     this.professionalEmail,
     this.locationId,
+    this.businessId,
   });
 
   DateTime get endTime => dateTime.add(Duration(minutes: durationMinutes));
@@ -99,7 +108,8 @@ class Appointment {
     return true;
   }
 
-  bool canBeCancelledByCustomer({Duration cancellationWindow = const Duration(hours: 2)}) {
+  bool canBeCancelledByCustomer(
+      {Duration cancellationWindow = const Duration(hours: 2)}) {
     if (isTerminal) return false;
     if (isCancelled) return false;
     final now = DateTime.now();
@@ -161,6 +171,7 @@ class Appointment {
       'professionalPhone': professionalPhone,
       'professionalEmail': professionalEmail,
       'locationId': locationId,
+      'businessId': businessId,
     };
   }
 
@@ -168,7 +179,10 @@ class Appointment {
     final rawService = map['service']?.toString() ?? '';
     final type = map['type']?.toString();
     String service;
-    if (type != null && type.isNotEmpty && type != 'Default' && type != 'Standard') {
+    if (type != null &&
+        type.isNotEmpty &&
+        type != 'Default' &&
+        type != 'Standard') {
       service = '$rawService \u2014 $type';
     } else {
       service = rawService;
@@ -204,6 +218,7 @@ class Appointment {
       professionalPhone: map['professionalPhone']?.toString(),
       professionalEmail: map['professionalEmail']?.toString(),
       locationId: map['locationId']?.toString(),
+      businessId: map['businessId']?.toString(),
     );
   }
 
@@ -237,6 +252,7 @@ class Appointment {
     String? professionalPhone,
     String? professionalEmail,
     String? locationId,
+    String? businessId,
   }) {
     return Appointment(
       id: id ?? this.id,
@@ -256,6 +272,7 @@ class Appointment {
       professionalPhone: professionalPhone ?? this.professionalPhone,
       professionalEmail: professionalEmail ?? this.professionalEmail,
       locationId: locationId ?? this.locationId,
+      businessId: businessId ?? this.businessId,
     );
   }
 }

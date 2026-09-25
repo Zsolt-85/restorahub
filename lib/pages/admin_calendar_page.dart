@@ -58,7 +58,8 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
     final user = auth.currentUser;
     if (user == null) return;
 
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     if (businessProvider.currentBusiness != null) {
       _loadData();
       return;
@@ -75,13 +76,15 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
     }
 
     try {
-      final repository = Provider.of<BusinessRepository>(context, listen: false);
+      final repository =
+          Provider.of<BusinessRepository>(context, listen: false);
       final business = await repository.getBusinessById(userBusinessId);
       if (business != null && mounted) {
         businessProvider.setBusiness(business);
       }
     } catch (e, stack) {
-      AppLogger.error('AdminCalendarPage._ensureBusinessLoaded error: $e\n$stack');
+      AppLogger.error(
+          'AdminCalendarPage._ensureBusinessLoaded error: $e\n$stack');
     }
 
     if (!mounted) return;
@@ -94,7 +97,8 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
 
   Future<void> _loadData() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     final user = auth.currentUser;
 
     if (user == null) return;
@@ -148,7 +152,8 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
     try {
       final day = _selectedDay ?? _focusedDay;
       final startOfDay = DateTime(day.year, day.month, day.day);
-      final endOfDay = DateTime(day.year, day.month, day.day, 23, 59, 59, 999, 999);
+      final endOfDay =
+          DateTime(day.year, day.month, day.day, 23, 59, 59, 999, 999);
       final appointments = await _bookingRepo.getAppointmentsForBusiness(
         businessId,
         startDate: startOfDay,
@@ -171,7 +176,8 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
   }
 
   Future<void> _refresh() async {
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     final businessId = businessProvider.currentBusiness?.id;
     if (businessId == null || businessId.isEmpty) return;
     setState(() {
@@ -188,7 +194,8 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
       _selectedDay = selectedDay;
       _focusedDay = focusedDay;
     });
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     final businessId = businessProvider.currentBusiness?.id;
     if (businessId != null && businessId.isNotEmpty) {
       _loadAppointments(businessId);
@@ -293,7 +300,8 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
         padding: const EdgeInsets.all(8),
         child: TableCalendar(
           firstDay: DateTime(_focusedDay.year, _focusedDay.month - 2),
-          lastDay: DateTime(_focusedDay.year + 2, _focusedDay.month, _focusedDay.day),
+          lastDay: DateTime(
+              _focusedDay.year + 2, _focusedDay.month, _focusedDay.day),
           focusedDay: _focusedDay,
           selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
           calendarFormat: CalendarFormat.month,
@@ -325,7 +333,8 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
           },
           eventLoader: (day) {
             return _appointments.where((a) {
-              final apptDay = DateTime(a.dateTime.year, a.dateTime.month, a.dateTime.day);
+              final apptDay =
+                  DateTime(a.dateTime.year, a.dateTime.month, a.dateTime.day);
               final targetDay = DateTime(day.year, day.month, day.day);
               return apptDay == targetDay;
             }).toList();
@@ -338,12 +347,14 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
   Widget _buildStaffFilter(BuildContext context) {
     final selectedLabel = _selectedProfessionalId == null
         ? 'All Staff'
-        : _staff.firstWhere(
-            (s) => s.id == _selectedProfessionalId,
-            orElse: () => _staff.isEmpty
-                ? User(name: 'Unknown', email: '', phone: '', role: '')
-                : _staff.first,
-          ).name;
+        : _staff
+            .firstWhere(
+              (s) => s.id == _selectedProfessionalId,
+              orElse: () => _staff.isEmpty
+                  ? User(name: 'Unknown', email: '', phone: '', role: '')
+                  : _staff.first,
+            )
+            .name;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,21 +405,22 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
                   ),
                 )
               else if (_staffError != null)
-                  IconButton(
-                    onPressed: () {
-                      final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
-                      final businessId = businessProvider.currentBusiness?.id;
-                      if (businessId != null && businessId.isNotEmpty) {
-                        setState(() {
-                          _staffBusy = true;
-                          _staffError = null;
-                        });
-                        _loadStaff(businessId);
-                      }
-                    },
-                    icon: const Icon(Icons.refresh, size: 20),
-                    tooltip: 'Retry',
-                  )
+                IconButton(
+                  onPressed: () {
+                    final businessProvider =
+                        Provider.of<BusinessProvider>(context, listen: false);
+                    final businessId = businessProvider.currentBusiness?.id;
+                    if (businessId != null && businessId.isNotEmpty) {
+                      setState(() {
+                        _staffBusy = true;
+                        _staffError = null;
+                      });
+                      _loadStaff(businessId);
+                    }
+                  },
+                  icon: const Icon(Icons.refresh, size: 20),
+                  tooltip: 'Retry',
+                )
               else
                 ..._staff.map((staff) {
                   final isSelected = _selectedProfessionalId == staff.id;
@@ -442,7 +454,8 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
+              const Icon(Icons.wifi_off_rounded,
+                  size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
               const Text(
                 'Could not load appointments',
@@ -486,7 +499,11 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
         final appts = entry.value;
         final professional = _staff.firstWhere(
           (s) => s.id == professionalId,
-          orElse: () => User(name: AppLocalizations.of(context)?.unknownValue ?? 'Unknown', email: '', phone: '', role: ''),
+          orElse: () => User(
+              name: AppLocalizations.of(context)?.unknownValue ?? 'Unknown',
+              email: '',
+              phone: '',
+              role: ''),
         );
         final color = _professionalColor(professionalId);
 
@@ -514,9 +531,11 @@ class _AdminCalendarPageState extends State<AdminCalendarPage> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -582,7 +601,8 @@ class _AdminAppointmentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final startTime = TimeOfDay(hour: appointment.dateTime.hour, minute: appointment.dateTime.minute);
+    final startTime = TimeOfDay(
+        hour: appointment.dateTime.hour, minute: appointment.dateTime.minute);
     final endTime = TimeOfDay(
       hour: appointment.endTime.hour,
       minute: appointment.endTime.minute,
@@ -632,7 +652,8 @@ class _AdminAppointmentTile extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
@@ -650,14 +671,17 @@ class _AdminAppointmentTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    appointment.customerName ?? AppLocalizations.of(context)?.unknownValue ?? 'Unknown',
+                    appointment.customerName ??
+                        AppLocalizations.of(context)?.unknownValue ??
+                        'Unknown',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${appointment.durationMinutes} ${AppLocalizations.of(context)?.minutesLabel ?? 'min'}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 12,
                         ),
                   ),

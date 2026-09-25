@@ -16,11 +16,14 @@ class BusinessProvider extends ChangeNotifier {
     if (_activeLocationId == null || _currentBusiness == null) return null;
     return _currentBusiness!.locations.firstWhere(
       (l) => l.id == _activeLocationId,
-      orElse: () => _currentBusiness!.locations.isNotEmpty ? _currentBusiness!.locations.first : Location(id: null, name: 'All Locations', isActive: true),
+      orElse: () => _currentBusiness!.locations.isNotEmpty
+          ? _currentBusiness!.locations.first
+          : Location(id: null, name: 'All Locations', isActive: true),
     );
   }
 
-  ThemeData get tenantTheme => ThemeHelper.generateTenantTheme(_currentBusiness?.branding);
+  ThemeData get tenantTheme =>
+      ThemeHelper.generateTenantTheme(_currentBusiness?.branding);
 
   void setBusiness(Business? business) {
     _currentBusiness = business;

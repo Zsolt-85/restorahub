@@ -17,12 +17,14 @@ class TenantBrandHeader extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           border: Border(
-            bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+            bottom:
+                BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
           ),
         ),
         child: Row(
           children: [
-            Icon(Icons.storefront_outlined, color: Theme.of(context).colorScheme.primary),
+            Icon(Icons.storefront_outlined,
+                color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -43,7 +45,8 @@ class TenantBrandHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          bottom:
+              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
       ),
       child: Row(
@@ -61,7 +64,8 @@ class TenantBrandHeader extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                 ),
-                if (business.address != null && business.address!.isNotEmpty) ...[
+                if (business.address != null &&
+                    business.address!.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     business.address!,
@@ -102,7 +106,11 @@ class TenantBrandHeader extends StatelessWidget {
           return const SizedBox(
             height: 40,
             width: 40,
-            child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+            child: Center(
+                child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2))),
           );
         },
       ),

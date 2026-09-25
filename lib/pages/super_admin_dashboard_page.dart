@@ -13,7 +13,8 @@ class SuperAdminDashboardPage extends StatefulWidget {
   const SuperAdminDashboardPage({super.key});
 
   @override
-  State<SuperAdminDashboardPage> createState() => _SuperAdminDashboardPageState();
+  State<SuperAdminDashboardPage> createState() =>
+      _SuperAdminDashboardPageState();
 }
 
 class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
@@ -40,7 +41,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
       if (!mounted) return;
       setState(() => _businessesBusy = false);
     } catch (e, stack) {
-      AppLogger.error('SuperAdminDashboardPage._loadBusinesses error: $e\n$stack');
+      AppLogger.error(
+          'SuperAdminDashboardPage._loadBusinesses error: $e\n$stack');
       if (!mounted) return;
       setState(() {
         _businessesBusy = false;
@@ -175,23 +177,34 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                   : () async {
                       final name = nameController.text.trim();
                       if (name.isEmpty) {
-                        ErrorHandler.showErrorSnackBar(dialogContext, 'Business name is required');
+                        ErrorHandler.showErrorSnackBar(
+                            dialogContext, 'Business name is required');
                         return;
                       }
 
                       setDialogState(() => isSaving = true);
 
-                      final provider = Provider.of<SuperAdminProvider>(context, listen: false);
+                      final provider = Provider.of<SuperAdminProvider>(context,
+                          listen: false);
                       final pageMessenger = ScaffoldMessenger.of(context);
-                      final dialogMessenger = ScaffoldMessenger.of(dialogContext);
+                      final dialogMessenger =
+                          ScaffoldMessenger.of(dialogContext);
                       final dialogNavigator = Navigator.of(dialogContext);
                       final error = await provider.createBusiness(
                         name: name,
-                        email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
-                        phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
-                        address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
+                        email: emailController.text.trim().isEmpty
+                            ? null
+                            : emailController.text.trim(),
+                        phone: phoneController.text.trim().isEmpty
+                            ? null
+                            : phoneController.text.trim(),
+                        address: addressController.text.trim().isEmpty
+                            ? null
+                            : addressController.text.trim(),
                         businessType: selectedBusinessType,
-                        ownerEmail: ownerEmailController.text.trim().isEmpty ? null : ownerEmailController.text.trim(),
+                        ownerEmail: ownerEmailController.text.trim().isEmpty
+                            ? null
+                            : ownerEmailController.text.trim(),
                       );
 
                       if (!mounted) return;
@@ -204,7 +217,9 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                       } else {
                         setDialogState(() => isSaving = false);
                         dialogMessenger.showSnackBar(
-                          SnackBar(content: Text('Failed to create business: $error')),
+                          SnackBar(
+                              content:
+                                  Text('Failed to create business: $error')),
                         );
                       }
                     },
@@ -229,7 +244,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
     final nameController = TextEditingController(text: business.name);
     final emailController = TextEditingController(text: business.email ?? '');
     final phoneController = TextEditingController(text: business.phone ?? '');
-    final addressController = TextEditingController(text: business.address ?? '');
+    final addressController =
+        TextEditingController(text: business.address ?? '');
 
     await showDialog(
       context: context,
@@ -293,19 +309,27 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
             onPressed: () async {
               final name = nameController.text.trim();
               if (name.isEmpty) {
-                ErrorHandler.showErrorSnackBar(dialogContext, 'Business name is required');
+                ErrorHandler.showErrorSnackBar(
+                    dialogContext, 'Business name is required');
                 return;
               }
 
               Navigator.pop(dialogContext);
 
-              final provider = Provider.of<SuperAdminProvider>(context, listen: false);
+              final provider =
+                  Provider.of<SuperAdminProvider>(context, listen: false);
               final error = await provider.updateBusiness(
                 businessId: business.id,
                 name: name,
-                email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
-                phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
-                address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
+                email: emailController.text.trim().isEmpty
+                    ? null
+                    : emailController.text.trim(),
+                phone: phoneController.text.trim().isEmpty
+                    ? null
+                    : phoneController.text.trim(),
+                address: addressController.text.trim().isEmpty
+                    ? null
+                    : addressController.text.trim(),
               );
 
               if (!mounted) return;
@@ -345,10 +369,15 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  const DropdownMenuItem(value: 'customer', child: Text('Customer')),
-                  DropdownMenuItem(value: Role.staff.name, child: const Text('Staff Member')),
-                  const DropdownMenuItem(value: 'business_admin', child: Text('Business Admin')),
-                  const DropdownMenuItem(value: 'super_admin', child: Text('Super Admin')),
+                  const DropdownMenuItem(
+                      value: 'customer', child: Text('Customer')),
+                  DropdownMenuItem(
+                      value: Role.staff.name,
+                      child: const Text('Staff Member')),
+                  const DropdownMenuItem(
+                      value: 'business_admin', child: Text('Business Admin')),
+                  const DropdownMenuItem(
+                      value: 'super_admin', child: Text('Super Admin')),
                 ],
                 onChanged: (value) {
                   if (value != null) selectedRole = value;
@@ -362,7 +391,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  const DropdownMenuItem<String>(value: null, child: Text('None')),
+                  const DropdownMenuItem<String>(
+                      value: null, child: Text('None')),
                   ...businesses.map((b) => DropdownMenuItem<String>(
                         value: b.id,
                         child: Text(b.name),
@@ -383,7 +413,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           TextButton(
             onPressed: () async {
               if (selectedRole == null) {
-                ErrorHandler.showErrorSnackBar(dialogContext, 'Role is required');
+                ErrorHandler.showErrorSnackBar(
+                    dialogContext, 'Role is required');
                 return;
               }
 
@@ -469,13 +500,14 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                 _buildUsersTab(theme),
               ],
             ),
-            floatingActionButton: DefaultTabController.of(innerContext).index == 0
-                ? FloatingActionButton.extended(
-                    onPressed: _openAddBusinessDialog,
-                    icon: const Icon(Icons.add_outlined),
-                    label: const Text('Add Business'),
-                  )
-                : null,
+            floatingActionButton:
+                DefaultTabController.of(innerContext).index == 0
+                    ? FloatingActionButton.extended(
+                        onPressed: _openAddBusinessDialog,
+                        icon: const Icon(Icons.add_outlined),
+                        label: const Text('Add Business'),
+                      )
+                    : null,
           );
         },
       ),
@@ -492,9 +524,11 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
+              const Icon(Icons.wifi_off_rounded,
+                  size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
-              const Text('Could not load businesses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              const Text('Could not load businesses',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Text(_businessesError!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
@@ -542,19 +576,23 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                     children: [
                       Text(
                         business.name,
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       if (business.email != null) ...[
                         const SizedBox(height: 4),
-                        Text(business.email!, style: theme.textTheme.bodyMedium),
+                        Text(business.email!,
+                            style: theme.textTheme.bodyMedium),
                       ],
                       if (business.phone != null) ...[
                         const SizedBox(height: 4),
-                        Text(business.phone!, style: theme.textTheme.bodyMedium),
+                        Text(business.phone!,
+                            style: theme.textTheme.bodyMedium),
                       ],
                       if (business.address != null) ...[
                         const SizedBox(height: 4),
-                        Text(business.address!, style: theme.textTheme.bodyMedium),
+                        Text(business.address!,
+                            style: theme.textTheme.bodyMedium),
                       ],
                     ],
                   ),
@@ -584,9 +622,11 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
+              const Icon(Icons.wifi_off_rounded,
+                  size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
-              const Text('Could not load users', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              const Text('Could not load users',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Text(_usersError!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
@@ -627,13 +667,17 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Customer: Can browse businesses, view available slots, book appointments, and view personal booking history.'),
+                  Text(
+                      'Customer: Can browse businesses, view available slots, book appointments, and view personal booking history.'),
                   SizedBox(height: 4),
-                  Text('Professional / Staff: Can view personal appointment schedule, set work hours/specialties, and manage assigned client appointments.'),
+                  Text(
+                      'Professional / Staff: Can view personal appointment schedule, set work hours/specialties, and manage assigned client appointments.'),
                   SizedBox(height: 4),
-                  Text('Business Admin: Full control over a single business tenant (manages business profile, branding, services catalog, team members, and full business calendar).'),
+                  Text(
+                      'Business Admin: Full control over a single business tenant (manages business profile, branding, services catalog, team members, and full business calendar).'),
                   SizedBox(height: 4),
-                  Text('Super Admin: Platform owner with full global control (can create/edit all business tenants, search all users, assign user roles, and reassign business tenants).'),
+                  Text(
+                      'Super Admin: Platform owner with full global control (can create/edit all business tenants, search all users, assign user roles, and reassign business tenants).'),
                 ],
               ),
             ),
@@ -662,7 +706,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
             itemCount: users.length,
             itemBuilder: (context, index) {
               final user = users[index];
-              final assignedBusiness = user.businessId != null ? businessMap[user.businessId] : null;
+              final assignedBusiness =
+                  user.businessId != null ? businessMap[user.businessId] : null;
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -677,13 +722,15 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                           children: [
                             Text(
                               user.name,
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(height: 4),
                             Text(user.email, style: theme.textTheme.bodyMedium),
                             const SizedBox(height: 8),
                             Chip(label: Text(_roleLabel(user.role))),
-                            if (assignedBusiness != null && assignedBusiness.name.isNotEmpty) ...[
+                            if (assignedBusiness != null &&
+                                assignedBusiness.name.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
                                 'Business: ${assignedBusiness.name}',

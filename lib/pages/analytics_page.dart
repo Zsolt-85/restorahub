@@ -31,12 +31,15 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final professionalId = authProvider.currentUser?.id ?? '';
-      final businessId = Provider.of<BusinessProvider>(context, listen: false).currentBusiness?.id;
+      final businessId = Provider.of<BusinessProvider>(context, listen: false)
+          .currentBusiness
+          ?.id;
       final start = _startOfRange();
       final end = _endOfRange();
       if (businessId != null && businessId.isNotEmpty) {
         Provider.of<AppointmentProvider>(context, listen: false)
-            .loadAppointmentsInRange(businessId, start, end, professionalId: professionalId);
+            .loadAppointmentsInRange(businessId, start, end,
+                professionalId: professionalId);
       }
       Provider.of<PaymentProvider>(context, listen: false)
           .loadPaymentsForProfessionalInRange(
@@ -53,7 +56,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       case 'month':
         return DateTime(_selectedYear, _selectedMonth);
       case 'day':
-        return DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+        return DateTime(
+            DateTime.now().year, DateTime.now().month, DateTime.now().day);
       case 'year':
         return DateTime(_selectedYear);
       default:
@@ -83,9 +87,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
     if (user == null || !user.isStaff) {
       return Scaffold(
-        appBar: AppBar(title: Text(AppLocalizations.of(context)?.analytics ?? 'Analytics')),
+        appBar: AppBar(
+            title:
+                Text(AppLocalizations.of(context)?.analytics ?? 'Analytics')),
         body: Center(
-          child: Text(AppLocalizations.of(context)?.analyticsProfessionalOnly ?? 'Analytics is available for professionals only'),
+          child: Text(AppLocalizations.of(context)?.analyticsProfessionalOnly ??
+              'Analytics is available for professionals only'),
         ),
       );
     }
@@ -95,11 +102,15 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     final total = appointments.length;
     final completed = apptProvider.completedAppointments.length;
     final cancelled = apptProvider.cancelledAppointments.length;
-    final noShow = appointments.where((a) => a.status == AppointmentStatus.noShow).length;
+    final noShow =
+        appointments.where((a) => a.status == AppointmentStatus.noShow).length;
 
-    final completionRate = total > 0 ? '${(completed / total * 100).toStringAsFixed(1)}%' : '0%';
-    final cancellationRate = total > 0 ? '${(cancelled / total * 100).toStringAsFixed(1)}%' : '0%';
-    final noShowRate = total > 0 ? '${(noShow / total * 100).toStringAsFixed(1)}%' : '0%';
+    final completionRate =
+        total > 0 ? '${(completed / total * 100).toStringAsFixed(1)}%' : '0%';
+    final cancellationRate =
+        total > 0 ? '${(cancelled / total * 100).toStringAsFixed(1)}%' : '0%';
+    final noShowRate =
+        total > 0 ? '${(noShow / total * 100).toStringAsFixed(1)}%' : '0%';
 
     return Scaffold(
       appBar: AppBar(
@@ -128,80 +139,130 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                   const SizedBox(height: 24),
                   Row(
                     children: [
-                      Expanded(child: _buildStatCard(AppLocalizations.of(context)?.totalBookings ?? 'Total Bookings', total.toString(), Icons.event)),
+                      Expanded(
+                          child: _buildStatCard(
+                              AppLocalizations.of(context)?.totalBookings ??
+                                  'Total Bookings',
+                              total.toString(),
+                              Icons.event)),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildRateCard(AppLocalizations.of(context)?.completedLabel ?? 'Completion Rate', completionRate, Colors.green, Icons.check_circle)),
+                      Expanded(
+                          child: _buildRateCard(
+                              AppLocalizations.of(context)?.completedLabel ??
+                                  'Completion Rate',
+                              completionRate,
+                              Theme.of(context).colorScheme.primary,
+                              Icons.check_circle)),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(child: _buildRateCard(AppLocalizations.of(context)?.statusCancelled ?? 'Cancellation Rate', cancellationRate, Colors.red, Icons.cancel)),
+                      Expanded(
+                          child: _buildRateCard(
+                              AppLocalizations.of(context)?.statusCancelled ??
+                                  'Cancellation Rate',
+                              cancellationRate,
+                              Theme.of(context).colorScheme.error,
+                              Icons.cancel)),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildRateCard('No-Show Rate', noShowRate, Colors.grey, Icons.person_off)),
+                      Expanded(
+                          child: _buildRateCard(
+                              'No-Show Rate',
+                              noShowRate,
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                              Icons.person_off)),
                     ],
                   ),
                   const SizedBox(height: 16),
                   _buildStatCard(
                     AppLocalizations.of(context)?.revenueLabel ?? 'Revenue',
-                    FormatHelper.formatCurrency(paymentProvider.totalRevenue, currency: paymentProvider.revenueCurrency),
+                    FormatHelper.formatCurrency(paymentProvider.totalRevenue,
+                        currency: paymentProvider.revenueCurrency),
                     Icons.attach_money,
                   ),
-                   const SizedBox(height: 24),
-                   _buildSectionTitle('Revenue Trend'),
-                   const SizedBox(height: 8),
-                   Card(
-                     elevation: 2,
-                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                     child: Padding(
-                       padding: const EdgeInsets.all(12),
-                       child: SizedBox(
-                         height: 250,
-                         child: RevenueTrendChart(
-                           payments: paymentProvider.payments,
-                           start: _startOfRange(),
-                           end: _endOfRange(),
-                           currency: paymentProvider.revenueCurrency,
-                         ),
-                       ),
-                     ),
-                   ),
-                   const SizedBox(height: 24),
-                   _buildSectionTitle(AppLocalizations.of(context)?.appointmentsSection ?? 'Appointments'),
-                   const SizedBox(height: 8),
-                   if (apptProvider.currentAppointments.isEmpty)
-                     Center(
-                       child: Padding(
-                         padding: const EdgeInsets.all(32),
-                         child: Text(AppLocalizations.of(context)?.noUpcomingAppointments ?? 'No upcoming appointments'),
-                       ),
-                     )
-                   else
-                     ...apptProvider.currentAppointments.map((appt) {
-                       return _buildAppointmentTile(appt);
-                     }),
-                   const SizedBox(height: 24),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        if (constraints.maxWidth < 600) {
-                          return Column(
-                            children: [
-                               _buildChartCard('Service Categories', SizedBox(height: 320, child: ServiceCategoryPieChart(appointments: appointments))),
-                               const SizedBox(height: 16),
-                               _buildChartCard('Peak Hours', SizedBox(height: 320, child: PeakHoursBarChart(appointments: appointments))),
-                            ],
-                          );
-                        }
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('Revenue Trend'),
+                  const SizedBox(height: 8),
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: SizedBox(
+                        height: 250,
+                        child: RevenueTrendChart(
+                          payments: paymentProvider.payments,
+                          start: _startOfRange(),
+                          end: _endOfRange(),
+                          currency: paymentProvider.revenueCurrency,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle(
+                      AppLocalizations.of(context)?.appointmentsSection ??
+                          'Appointments'),
+                  const SizedBox(height: 8),
+                  if (apptProvider.currentAppointments.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Text(AppLocalizations.of(context)
+                                ?.noUpcomingAppointments ??
+                            'No upcoming appointments'),
+                      ),
+                    )
+                  else
+                    ...apptProvider.currentAppointments.map((appt) {
+                      return _buildAppointmentTile(appt);
+                    }),
+                  const SizedBox(height: 24),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth < 600) {
+                        return Column(
                           children: [
-                            Expanded(child: _buildChartCard('Service Categories', SizedBox(height: 320, child: ServiceCategoryPieChart(appointments: appointments)))),
-                            const SizedBox(width: 16),
-                            Expanded(child: _buildChartCard('Peak Hours', SizedBox(height: 320, child: PeakHoursBarChart(appointments: appointments)))),
+                            _buildChartCard(
+                                'Service Categories',
+                                SizedBox(
+                                    height: 320,
+                                    child: ServiceCategoryPieChart(
+                                        appointments: appointments))),
+                            const SizedBox(height: 16),
+                            _buildChartCard(
+                                'Peak Hours',
+                                SizedBox(
+                                    height: 320,
+                                    child: PeakHoursBarChart(
+                                        appointments: appointments))),
                           ],
                         );
-                      },
-                    ),
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                              child: _buildChartCard(
+                                  'Service Categories',
+                                  SizedBox(
+                                      height: 320,
+                                      child: ServiceCategoryPieChart(
+                                          appointments: appointments)))),
+                          const SizedBox(width: 16),
+                          Expanded(
+                              child: _buildChartCard(
+                                  'Peak Hours',
+                                  SizedBox(
+                                      height: 320,
+                                      child: PeakHoursBarChart(
+                                          appointments: appointments)))),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -222,15 +283,19 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         });
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final professionalId = authProvider.currentUser?.id ?? '';
-        final businessId = Provider.of<BusinessProvider>(context, listen: false).currentBusiness?.id;
+        final businessId = Provider.of<BusinessProvider>(context, listen: false)
+            .currentBusiness
+            ?.id;
         final start = _startOfRange();
         final end = _endOfRange();
         if (businessId != null && businessId.isNotEmpty) {
           Provider.of<AppointmentProvider>(context, listen: false)
-              .loadAppointmentsInRange(businessId, start, end, professionalId: professionalId);
+              .loadAppointmentsInRange(businessId, start, end,
+                  professionalId: professionalId);
         }
         Provider.of<PaymentProvider>(context, listen: false)
-            .loadPaymentsForProfessionalInRange(professionalId, start, end, businessId: businessId);
+            .loadPaymentsForProfessionalInRange(professionalId, start, end,
+                businessId: businessId);
       },
     );
   }
@@ -272,7 +337,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  Widget _buildRateCard(String title, String value, Color color, IconData icon) {
+  Widget _buildRateCard(
+      String title, String value, Color color, IconData icon) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

@@ -14,41 +14,63 @@ class FakeBookingRepository implements BookingRepository {
   final List<Appointment> appointments = [];
 
   @override
-  Future<List<Appointment>> getAppointmentsForCustomer(String customerId, {String? businessId}) async =>
+  Future<List<Appointment>> getAppointmentsForCustomer(String customerId,
+          {String? businessId}) async =>
       appointments.where((a) => a.customerId == customerId).toList();
 
   @override
-  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) async =>
+  Future<List<Appointment>> getAppointmentsForProfessional(
+          String professionalId,
+          {String? businessId,
+          String? professionalEmail}) async =>
       appointments.where((a) => a.professionalId == professionalId).toList();
 
   @override
-  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate, int? limit, String? startAfterDocumentId}) async =>
-      appointments.where((a) => a.customerId != null || a.professionalId != null).toList();
+  Future<List<Appointment>> getAppointmentsForBusiness(String businessId,
+          {DateTime? startDate,
+          DateTime? endDate,
+          int? limit,
+          String? startAfterDocumentId}) async =>
+      appointments
+          .where((a) => a.customerId != null || a.professionalId != null)
+          .toList();
 
   @override
-  Future<List<Appointment>> getAppointmentsForBusinessInRange(String businessId, DateTime start, DateTime end, {String? professionalId}) async =>
+  Future<List<Appointment>> getAppointmentsForBusinessInRange(
+          String businessId, DateTime start, DateTime end,
+          {String? professionalId}) async =>
       appointments.where((a) {
-        if (a.customerId == null && a.professionalId == null) return false;
-        if (a.dateTime.isBefore(start) || a.dateTime.isAfter(end)) return false;
-        if (professionalId != null && professionalId.isNotEmpty && a.professionalId != professionalId) return false;
+        if (a.customerId == null && a.professionalId == null) {
+          return false;
+        }
+        if (a.dateTime.isBefore(start) || a.dateTime.isAfter(end)) {
+          return false;
+        }
+        if (professionalId != null &&
+            professionalId.isNotEmpty &&
+            a.professionalId != professionalId) {
+          return false;
+        }
         return true;
       }).toList();
 
   @override
-  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId, String? professionalEmail}) async =>
+  Future<bool> checkProfessionalAvailability(
+          {required String professionalId,
+          required DateTime dateTime,
+          required int slotDurationMinutes,
+          int bufferTimeMinutes = 0,
+          String? businessId,
+          String? professionalEmail}) async =>
       true;
 
   @override
-  Future<void> createAppointmentAtomic(Appointment appointment) async {
-    appointment.id ??= (appointments.length + 1).toString();
-    appointments.add(appointment);
-  }
-
-  @override
-  Future<int> insertAppointment(Appointment appointment) async {
-    appointment.id ??= (appointments.length + 1).toString();
-    appointments.add(appointment);
-    return 1;
+  Future<String> createAppointmentAtomic(Appointment appointment) async {
+    final stored = appointment.id == null
+        ? appointment.copyWith(id: (appointments.length + 1).toString())
+        : appointment;
+    appointments.add(stored);
+    return stored.id!;
   }
 
   @override
@@ -69,20 +91,26 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId, {String? businessId}) =>
-      Stream.value(appointments.where((a) => a.customerId == customerId).toList());
+  Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId,
+          {String? businessId}) =>
+      Stream.value(
+          appointments.where((a) => a.customerId == customerId).toList());
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) =>
-      Stream.value(appointments.where((a) => a.professionalId == professionalId).toList());
+  Stream<List<Appointment>> watchAppointmentsForProfessional(
+          String professionalId,
+          {String? businessId,
+          String? professionalEmail}) =>
+      Stream.value(appointments
+          .where((a) => a.professionalId == professionalId)
+          .toList());
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate}) =>
-      Stream.value(appointments.where((a) => a.customerId != null || a.professionalId != null).toList());
-
-  @override
-  Stream<Appointment?> watchAppointment(String id) =>
-      Stream.value(appointments.where((a) => a.id == id).cast<Appointment?>().firstOrNull);
+  Stream<List<Appointment>> watchAppointmentsForBusiness(String businessId,
+          {DateTime? startDate, DateTime? endDate}) =>
+      Stream.value(appointments
+          .where((a) => a.customerId != null || a.professionalId != null)
+          .toList());
 
   @override
   Future<Appointment?> getAppointmentById(String id) async {
@@ -122,32 +150,34 @@ class FakeUserRepository implements UserRepository {
   Future<void> syncUserInAppointments(User user) async {}
 
   @override
-  Future<List<User>> getProfessionalsByCategory(String category) async =>
-      users.where((u) => u.isStaff && u.category == category).toList();
-
-  @override
-  Future<List<User>> getProfessionalsBySpecialty(String specialty) async =>
-      getProfessionalsByCategory(specialty);
-
-  @override
-  Future<List<User>> getProfessionals({String? businessId}) async =>
+  Future<List<User>> getProfessionalsByCategory(String category,
+          {String? businessId}) async =>
       users
-          .where((u) => u.isStaff)
+          .where((u) => u.isStaff && u.category == category)
           .where((u) => businessId == null || u.businessId == businessId)
           .toList();
 
   @override
-  Stream<List<User>> watchProfessionals({String? businessId}) =>
-      Stream.value(
-        users
-            .where((u) => u.isStaff)
-            .where((u) => businessId == null || u.businessId == businessId)
-            .toList(),
-      );
+  Future<List<User>> getProfessionals({String? businessId}) async => users
+      .where((u) => u.isStaff)
+      .where((u) => businessId == null || u.businessId == businessId)
+      .toList();
 
   @override
-  Future<List<User>> getCustomers() async =>
-      users.where((u) => u.role == 'customer').toList();
+  Future<List<User>> getProfessionalsByBusiness(String businessId) async {
+    return users
+        .where((u) =>
+            (u.isStaff || u.role == 'business_admin') &&
+            u.businessId == businessId)
+        .toList();
+  }
+
+  @override
+  Future<List<User>> getCustomers({String? businessId}) async => users
+      .where((u) =>
+          u.role == 'customer' &&
+          (businessId == null || u.businessId == businessId))
+      .toList();
 }
 
 void main() {
@@ -165,7 +195,7 @@ void main() {
         userRepository: userRepo,
       );
       authProvider = AuthProvider(userRepository: userRepo);
-       authProvider.currentUser = User(
+      authProvider.currentUser = User(
         id: 'prof-1',
         name: 'Prof. Test',
         email: 'prof@example.com',
@@ -328,7 +358,8 @@ void main() {
       expect(find.text('Customer B'), findsOneWidget);
     });
 
-    testWidgets('shows preview card and phone after selecting a customer', (tester) async {
+    testWidgets('shows preview card and phone after selecting a customer',
+        (tester) async {
       userRepo.users.addAll([
         User(
           id: 'prof-1',
@@ -432,7 +463,8 @@ void main() {
       expect(find.text('555-0100'), findsNothing);
     });
 
-    testWidgets('does not create appointment when fields are empty', (tester) async {
+    testWidgets('does not create appointment when fields are empty',
+        (tester) async {
       userRepo.users.addAll([
         User(
           id: 'prof-1',
@@ -467,7 +499,9 @@ void main() {
       expect(bookingRepo.appointments, isEmpty);
     });
 
-    testWidgets('creates appointment with correct customer and professional IDs', (tester) async {
+    testWidgets(
+        'creates appointment with correct customer and professional IDs',
+        (tester) async {
       final appt = Appointment(
         service: 'Massage',
         dateTime: DateTime.now().add(const Duration(days: 1)),
@@ -488,7 +522,8 @@ void main() {
       expect(bookingRepo.appointments.first.service, 'Massage');
       expect(bookingRepo.appointments.first.customerId, 'cust-1');
       expect(bookingRepo.appointments.first.professionalId, 'prof-1');
-      expect(bookingRepo.appointments.first.status, AppointmentStatus.confirmed);
+      expect(
+          bookingRepo.appointments.first.status, AppointmentStatus.confirmed);
     });
   });
 }

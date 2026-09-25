@@ -87,6 +87,62 @@ class AppLocalizationsHu extends AppLocalizations {
   String get selectCustomer => 'Ügyfél kiválasztása';
 
   @override
+  String get selectStaffMember => 'Munkatárs kiválasztása';
+
+  @override
+  String get anyAvailable => 'Bármelyik';
+
+  @override
+  String get bookAnother => 'Új foglalás';
+
+  @override
+  String get fullyBookedPickAnother =>
+      'Ez a nap betelt – válasszon másik dátumot';
+
+  @override
+  String get pickDateToContinue => 'Válasszon dátumot a folytatáshoz';
+
+  @override
+  String get pickTimeToContinue => 'Válasszon kezdési időpontot a folytatáshoz';
+
+  @override
+  String get noStaffForCategory =>
+      'Nincs elérhető munkatárs ehhez a kategóriához';
+
+  @override
+  String get selectStaffToContinue => 'Válasszon munkatársat a folytatáshoz';
+
+  @override
+  String get browseOtherCategories => 'További kategóriák';
+
+  @override
+  String get markAsNoShow => 'Megjelölés meg nem jelenésként';
+
+  @override
+  String get markedNoShow => 'Megjelölve meg nem jelenésként';
+
+  @override
+  String depositDuePercent(Object percent) {
+    return '$percent%-os előleg fizetendő a fizetéskor';
+  }
+
+  @override
+  String depositDueAmount(Object amount, Object percent) {
+    return '$percent%-os előleg ($amount) fizetendő a fizetéskor';
+  }
+
+  @override
+  String get completeProfileSignInExplainer =>
+      'Profilja hiányos. Jelentkezzen be a befejezéshez – kevesebb mint egy perc.';
+
+  @override
+  String get continueToSignIn => 'Tovább a bejelentkezéshez';
+
+  @override
+  String get noBusinessAssigned =>
+      'Fiókjához még nincs vállalkozás rendelve. Kérjen meghívót egy adminisztrátortól, vagy jelentkezzen be másik fiókkal.';
+
+  @override
   String get customerDetails => 'Ügyfél adatai';
 
   @override
@@ -503,6 +559,16 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get noUpcomingAppointments => 'Nincsenek közelgő foglalások';
+
+  @override
+  String get noUpcomingAppointmentsSubtitle => 'Kész a következő látogatásra?';
+
+  @override
+  String get noAppointmentHistory => 'Nincsenek múltbeli foglalások';
+
+  @override
+  String get noAppointmentHistorySubtitle =>
+      'A befejezett foglalásai itt fognak megjelenni.';
 
   @override
   String get appointmentsSection => 'Foglalások';

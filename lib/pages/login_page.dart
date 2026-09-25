@@ -36,7 +36,8 @@ class _LoginPageState extends State<LoginPage> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)?.login ?? 'Login')),
+      appBar:
+          AppBar(title: Text(AppLocalizations.of(context)?.login ?? 'Login')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -112,10 +113,10 @@ class _LoginPageState extends State<LoginPage> {
                         _error = null;
                       });
 
-                       final result = await auth.login(
-                         _emailController.text.trim().toLowerCase(),
-                         _passwordController.text.trim(),
-                       );
+                      final result = await auth.login(
+                        _emailController.text.trim().toLowerCase(),
+                        _passwordController.text.trim(),
+                      );
 
                       if (!context.mounted) return;
 
@@ -126,14 +127,19 @@ class _LoginPageState extends State<LoginPage> {
 
                         final user = auth.currentUser!;
                         if (user.role == 'business_admin') {
-                          final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+                          final businessProvider =
+                              Provider.of<BusinessProvider>(context,
+                                  listen: false);
                           final business = businessProvider.currentBusiness;
-                          if (business == null || business.status == BusinessStatus.trial) {
-                            Navigator.pushReplacementNamed(context, Routes.setupWizard);
+                          if (business == null ||
+                              business.status == BusinessStatus.trial) {
+                            Navigator.pushReplacementNamed(
+                                context, Routes.setupWizard);
                           } else {
-                            Navigator.pushReplacementNamed(context, Routes.adminDashboard);
+                            Navigator.pushReplacementNamed(
+                                context, Routes.adminDashboard);
                           }
-                         } else {
+                        } else {
                           final route = user.isStaff
                               ? Routes.professionalHome
                               : Routes.customerHome;
@@ -172,30 +178,34 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showProfileCompletionDialog(AuthProvider auth) {
-    final nameController = TextEditingController(text: _emailController.text.split('@')[0]);
+    final nameController =
+        TextEditingController(text: _emailController.text.split('@')[0]);
     final phoneController = TextEditingController();
     String role = 'customer';
     String? specialty = serviceNames.first;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-             return AlertDialog(
-              title: Text(AppLocalizations.of(context)?.completeProfileDialog ?? 'Complete your profile'),
+            return AlertDialog(
+              title: Text(AppLocalizations.of(context)?.completeProfileDialog ??
+                  'Complete your profile'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(AppLocalizations.of(context)?.completeProfileDialog ?? 'It looks like this is your first login. Please provide details to complete registration.'),
+                    Text(AppLocalizations.of(context)?.completeProfileDialog ??
+                        'It looks like this is your first login. Please provide details to complete registration.'),
                     const SizedBox(height: 16),
                     TextField(
                       controller: nameController,
                       decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context)?.fullName ?? 'Full name',
+                        labelText: AppLocalizations.of(context)?.fullName ??
+                            'Full name',
                         border: const OutlineInputBorder(),
                       ),
                     ),
@@ -204,19 +214,24 @@ class _LoginPageState extends State<LoginPage> {
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context)?.phone ?? 'Phone number',
+                        labelText: AppLocalizations.of(context)?.phone ??
+                            'Phone number',
                         border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(AppLocalizations.of(context)?.customer ?? 'Account type', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                        AppLocalizations.of(context)?.customer ??
+                            'Account type',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     SegmentedButton<String>(
                       segments: [
                         ButtonSegment(
                           value: 'customer',
-                          label: Text(AppLocalizations.of(context)?.customer ?? 'Customer'),
+                          label: Text(AppLocalizations.of(context)?.customer ??
+                              'Customer'),
                         ),
-                         ButtonSegment(
+                        ButtonSegment(
                           value: Role.staff.name,
                           label: const Text('Staff Member'),
                         ),
@@ -233,7 +248,9 @@ class _LoginPageState extends State<LoginPage> {
                       DropdownButtonFormField<String>(
                         initialValue: specialty,
                         decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)?.professionSpecialty ?? 'Specialty',
+                          labelText: AppLocalizations.of(context)
+                                  ?.professionSpecialty ??
+                              'Specialty',
                           border: const OutlineInputBorder(),
                         ),
                         items: serviceNames
@@ -263,40 +280,47 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () async {
                     if (nameController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(AppLocalizations.of(context)?.name ?? 'Name is required')),
+                        SnackBar(
+                            content: Text(AppLocalizations.of(context)?.name ??
+                                'Name is required')),
                       );
                       return;
                     }
                     if (phoneController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(AppLocalizations.of(context)?.phone ?? 'Phone number is required')),
+                        SnackBar(
+                            content: Text(AppLocalizations.of(context)?.phone ??
+                                'Phone number is required')),
                       );
                       return;
                     }
-                    
+
                     final success = await auth.createProfile(
                       name: nameController.text.trim(),
                       phone: phoneController.text.trim(),
                       role: role,
                       specialty: role == Role.staff.name ? specialty ?? '' : '',
                     );
-                    
+
                     if (success && context.mounted) {
                       Provider.of<AppointmentProvider>(context, listen: false)
                           .setCurrentUser(auth.currentUser!);
                       Navigator.pop(context); // close dialog
-                       
-                        final route = auth.currentUser!.isStaff
-                            ? Routes.professionalHome
-                            : Routes.customerHome;
-                       Navigator.pushReplacementNamed(context, route);
+
+                      final route = auth.currentUser!.isStaff
+                          ? Routes.professionalHome
+                          : Routes.customerHome;
+                      Navigator.pushReplacementNamed(context, route);
                     } else if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(AppLocalizations.of(context)?.error ?? 'Failed to save profile')),
+                        SnackBar(
+                            content: Text(AppLocalizations.of(context)?.error ??
+                                'Failed to save profile')),
                       );
                     }
                   },
-                  child: Text(AppLocalizations.of(context)?.saveAndContinue ?? 'Save & Continue'),
+                  child: Text(AppLocalizations.of(context)?.saveAndContinue ??
+                      'Save & Continue'),
                 ),
               ],
             );

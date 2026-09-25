@@ -6,7 +6,6 @@ import '../models/business.dart';
 import '../models/user.dart';
 import '../repositories/super_admin_repository.dart';
 
-
 class SuperAdminProvider extends ChangeNotifier {
   SuperAdminProvider({SuperAdminRepository? repository})
       : _repository = repository ?? FirestoreSuperAdminRepository.instance;
@@ -135,15 +134,27 @@ class SuperAdminProvider extends ChangeNotifier {
   }) async {
     _beginLoading();
     try {
-      final business = Business(
-        id: businessId,
-        name: name.trim(),
-        email: email,
-        logoUrl: logoUrl,
-        primaryColorHex: primaryColorHex,
-        phone: phone,
-        address: address,
-      );
+      final existing = _businesses.where((b) => b.id == businessId).firstOrNull;
+      final business = existing != null
+          ? existing.copyWith(
+              name: name.trim(),
+              email: email,
+              logoUrl: logoUrl,
+              primaryColorHex: primaryColorHex,
+              phone: phone,
+              address: address,
+              updatedAt: DateTime.now(),
+            )
+          : Business(
+              id: businessId,
+              name: name.trim(),
+              email: email,
+              logoUrl: logoUrl,
+              primaryColorHex: primaryColorHex,
+              phone: phone,
+              address: address,
+              updatedAt: DateTime.now(),
+            );
       await _repository.updateBusiness(business);
       await loadAllBusinesses();
       return null;

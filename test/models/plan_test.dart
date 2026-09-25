@@ -12,7 +12,11 @@ void main() {
     });
 
     test('fromMap parses fields', () {
-      final map = {'id': 'pro', 'name': 'Pro', 'features': ['x', 'y']};
+      final map = {
+        'id': 'pro',
+        'name': 'Pro',
+        'features': ['x', 'y']
+      };
 
       final plan = Plan.fromMap(map);
 
@@ -40,7 +44,8 @@ void main() {
     });
 
     test('toMap and fromMap roundtrip', () {
-      final plan = Plan(id: 'enterprise', name: 'Enterprise', features: ['a', 'b', 'c']);
+      final plan =
+          Plan(id: 'enterprise', name: 'Enterprise', features: ['a', 'b', 'c']);
 
       final restored = Plan.fromMap(plan.toMap());
 
@@ -71,7 +76,8 @@ void main() {
   group('PlanDefinitions', () {
     test('values contains all plans', () {
       expect(PlanDefinitions.values.length, 4);
-      expect(PlanDefinitions.values.map((p) => p.id), containsAll(['trial', 'basic', 'pro', 'enterprise']));
+      expect(PlanDefinitions.values.map((p) => p.id),
+          containsAll(['trial', 'basic', 'pro', 'enterprise']));
     });
 
     test('byId returns correct plan', () {
@@ -84,8 +90,10 @@ void main() {
     });
 
     test('featuresForPlan returns features', () {
-      expect(PlanDefinitions.featuresForPlan('trial'), contains('online_booking'));
-      expect(PlanDefinitions.featuresForPlan('pro'), contains('custom_branding'));
+      expect(
+          PlanDefinitions.featuresForPlan('trial'), contains('online_booking'));
+      expect(
+          PlanDefinitions.featuresForPlan('pro'), contains('custom_branding'));
     });
 
     test('featuresForPlan returns empty for unknown id', () {

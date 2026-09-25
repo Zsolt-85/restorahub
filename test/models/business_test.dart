@@ -126,6 +126,47 @@ void main() {
       expect(business.locations, isEmpty);
       expect(business.activeLocationId, isNull);
     });
+
+    test('staffCount defaults to 0', () {
+      final business = Business(id: 'biz_1', name: 'Test');
+      expect(business.staffCount, 0);
+    });
+
+    test('isSolo is true by default when settings null and staffCount <= 1',
+        () {
+      final business = Business(id: 'biz_1', name: 'Test');
+      expect(business.isSolo, isTrue);
+    });
+
+    test(
+        'isSolo is true when isSoloProvider flag is set even with multiple staff',
+        () {
+      final business = Business(
+        id: 'biz_1',
+        name: 'Test',
+        staffCount: 5,
+        settings: BusinessSettings(isSoloProvider: true),
+      );
+      expect(business.isSolo, isTrue);
+    });
+
+    test('isSolo is false when staffCount > 1 and no solo flag', () {
+      final business = Business(
+        id: 'biz_1',
+        name: 'Test',
+        staffCount: 3,
+      );
+      expect(business.isSolo, isFalse);
+    });
+
+    test('isSolo is true when staffCount is 1', () {
+      final business = Business(
+        id: 'biz_1',
+        name: 'Test',
+        staffCount: 1,
+      );
+      expect(business.isSolo, isTrue);
+    });
   });
 
   group('Business fromMap', () {
@@ -231,6 +272,45 @@ void main() {
       expect(business.locations, isEmpty);
       expect(business.activeLocationId, isNull);
     });
+
+    test('parses staffCount and isSoloProvider', () {
+      final map = {
+        'id': 'biz_1',
+        'name': 'Test Business',
+        'staffCount': 3,
+        'settings': {
+          'isSoloProvider': true,
+        },
+      };
+
+      final business = Business.fromMap(map);
+      expect(business.staffCount, 3);
+      expect(business.settings?.isSoloProvider, isTrue);
+      expect(business.isSolo, isTrue);
+    });
+
+    test('defaults staffCount to 0 and isSoloProvider to null when missing',
+        () {
+      final map = {
+        'id': 'biz_1',
+        'name': 'Minimal Business',
+      };
+
+      final business = Business.fromMap(map);
+      expect(business.staffCount, 0);
+      expect(business.settings?.isSoloProvider, isNull);
+      expect(business.isSolo, isTrue);
+    });
+
+    test('parses staffCount as string fallback', () {
+      final map = {
+        'id': 'biz_1',
+        'name': 'Test',
+        'staffCount': '5',
+      };
+      final business = Business.fromMap(map);
+      expect(business.staffCount, 5);
+    });
   });
 
   group('Business toMap', () {
@@ -264,6 +344,7 @@ void main() {
       expect(map['activeLocationId'], 'loc_1');
       expect(map['createdAt'], isNotNull);
       expect(map['updatedAt'], isNotNull);
+      expect(map['staffCount'], 0);
     });
   });
 
@@ -309,6 +390,13 @@ void main() {
       expect(updated.locations.length, 1);
       expect(updated.locations.first.name, 'Branch');
       expect(updated.activeLocationId, 'loc_2');
+    });
+
+    test('copyWith updates staffCount', () {
+      final business = Business(id: 'biz_1', name: 'Test', staffCount: 1);
+      final updated = business.copyWith(staffCount: 5);
+      expect(updated.staffCount, 5);
+      expect(business.staffCount, 1);
     });
   });
 
@@ -364,7 +452,7 @@ void main() {
           'status': 'active',
         },
       };
-      
+
       final business = Business.fromMap(map);
       expect(business.createdAt, date);
       expect(business.updatedAt, date);

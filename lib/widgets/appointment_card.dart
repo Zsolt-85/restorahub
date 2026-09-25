@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../helpers/format_helper.dart';
+import '../helpers/status_color_helper.dart';
 import '../helpers/appointment_actions.dart';
 import '../helpers/calendar_export_helper.dart';
 import '../l10n/app_localizations.dart';
@@ -15,6 +16,8 @@ class AppointmentCard extends StatelessWidget {
     required this.onCancel,
     this.onConfirm,
     this.onReject,
+    this.onNoShow,
+    this.onPay,
   });
 
   final Appointment appointment;
@@ -23,6 +26,8 @@ class AppointmentCard extends StatelessWidget {
   final VoidCallback onCancel;
   final VoidCallback? onConfirm;
   final VoidCallback? onReject;
+  final void Function(Appointment)? onNoShow;
+  final void Function(Appointment)? onPay;
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +40,12 @@ class AppointmentCard extends StatelessWidget {
     final counterpartyEmail = viewerIsCustomer
         ? appointment.professionalEmail
         : appointment.customerEmail;
-    final counterpartyLabel =
-        viewerIsCustomer
-            ? AppLocalizations.of(context)?.counterpartyProfessional ?? 'Professional'
-            : AppLocalizations.of(context)?.counterpartyCustomer ?? 'Customer';
-    final statusColor = _statusColor(appointment.status);
+    final counterpartyLabel = viewerIsCustomer
+        ? AppLocalizations.of(context)?.counterpartyProfessional ??
+            'Professional'
+        : AppLocalizations.of(context)?.counterpartyCustomer ?? 'Customer';
+    final statusColor = StatusColorHelper.forStatus(
+        appointment.status, Theme.of(context).colorScheme);
     final canManage = viewerIsCustomer == false &&
         appointment.status != AppointmentStatus.completed &&
         !appointment.isCancelled &&
@@ -52,17 +58,20 @@ class AppointmentCard extends StatelessWidget {
     final canAddToCalendar = !appointment.isPast && !appointment.isTerminal;
 
     final actionButtons = <Widget>[
-      if (!viewerIsCustomer && appointment.status == AppointmentStatus.pending) ...[
+      if (!viewerIsCustomer &&
+          appointment.status == AppointmentStatus.pending) ...[
         OutlinedButton.icon(
           onPressed: onReject,
-          icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+          icon: Icon(Icons.cancel_outlined,
+              color: Theme.of(context).colorScheme.error),
           label: FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               AppLocalizations.of(context)?.decline ?? 'Decline',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.red),
+              style:
+                  TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
         ),
@@ -79,7 +88,9 @@ class AppointmentCard extends StatelessWidget {
           ),
         ),
         OutlinedButton.icon(
-          onPressed: appointment.isPast ? null : (onEdit != null ? () => onEdit!(appointment) : null),
+          onPressed: appointment.isPast
+              ? null
+              : (onEdit != null ? () => onEdit!(appointment) : null),
           icon: const Icon(Icons.edit_calendar),
           label: FittedBox(
             fit: BoxFit.scaleDown,
@@ -92,7 +103,9 @@ class AppointmentCard extends StatelessWidget {
         ),
       ] else if (canManage) ...[
         OutlinedButton.icon(
-          onPressed: appointment.isPast ? null : (onEdit != null ? () => onEdit!(appointment) : null),
+          onPressed: appointment.isPast
+              ? null
+              : (onEdit != null ? () => onEdit!(appointment) : null),
           icon: const Icon(Icons.edit_calendar),
           label: FittedBox(
             fit: BoxFit.scaleDown,
@@ -122,17 +135,54 @@ class AppointmentCard extends StatelessWidget {
         ),
       ],
       if (canManage &&
-          (!viewerIsCustomer || appointment.status == AppointmentStatus.pending)) ...[
+          (!viewerIsCustomer ||
+              appointment.status == AppointmentStatus.pending)) ...[
         OutlinedButton.icon(
           onPressed: onCancel,
-          icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+          icon: Icon(Icons.cancel_outlined,
+              color: Theme.of(context).colorScheme.error),
           label: FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               AppLocalizations.of(context)?.cancel ?? 'Cancel',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.red),
+              style:
+                  TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ),
+      ],
+      if (onPay != null &&
+          !viewerIsCustomer &&
+          appointment.status == AppointmentStatus.completed &&
+          appointment.paymentId == null) ...[
+        OutlinedButton.icon(
+          onPressed: () => onPay!(appointment),
+          icon: const Icon(Icons.payments_outlined),
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppLocalizations.of(context)?.recordPayment ?? 'Record payment',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+      if (onNoShow != null &&
+          !viewerIsCustomer &&
+          appointment.isPast &&
+          !appointment.isTerminal) ...[
+        OutlinedButton.icon(
+          onPressed: () => onNoShow!(appointment),
+          icon: const Icon(Icons.person_off_outlined),
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppLocalizations.of(context)?.markAsNoShow ?? 'Mark as no-show',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),
@@ -187,7 +237,8 @@ class AppointmentCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(FormatHelper.formatDateTime(appointment.dateTime)),
-                      Text('${AppLocalizations.of(context)?.duration ?? 'Duration'}: ${appointment.durationMinutes} ${AppLocalizations.of(context)?.mins ?? 'min'}'),
+                      Text(
+                          '${AppLocalizations.of(context)?.duration ?? 'Duration'}: ${appointment.durationMinutes} ${AppLocalizations.of(context)?.mins ?? 'min'}'),
                       if (appointment.price != null) ...[
                         const SizedBox(height: 4),
                         Text(
@@ -200,14 +251,14 @@ class AppointmentCard extends StatelessWidget {
                         ),
                       ],
                       const SizedBox(height: 4),
-                        Text(
-                          _localizedStatus(context, appointment.status),
-                          style: TextStyle(
-                            color: statusColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
+                      Text(
+                        _localizedStatus(context, appointment.status),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
                         ),
+                      ),
                     ],
                   ),
                 ),
@@ -215,14 +266,17 @@ class AppointmentCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              AppLocalizations.of(context)?.professionalContact ?? '$counterpartyLabel contact',
+              AppLocalizations.of(context)?.professionalContact ??
+                  '$counterpartyLabel contact',
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
             _ContactRow(
               icon: Icons.person_outline,
               label: AppLocalizations.of(context)?.name ?? 'Name',
-              value: counterpartyName ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A',
+              value: counterpartyName ??
+                  AppLocalizations.of(context)?.notSetValue ??
+                  'N/A',
             ),
             _ContactRow(
               icon: Icons.phone_outlined,
@@ -246,7 +300,8 @@ class AppointmentCard extends StatelessWidget {
                   onPressed: () => _showCalendarOptions(context),
                   icon: const Icon(Icons.calendar_today),
                   label: Text(
-                    AppLocalizations.of(context)?.addToCalendar ?? 'Add to Calendar',
+                    AppLocalizations.of(context)?.addToCalendar ??
+                        'Add to Calendar',
                   ),
                 ),
               ),
@@ -301,7 +356,9 @@ class AppointmentCard extends StatelessWidget {
   }
 
   String _displayValue(String? value, BuildContext context) {
-    if (value == null || value.trim().isEmpty) return AppLocalizations.of(context)?.notSetValue ?? 'N/A';
+    if (value == null || value.trim().isEmpty) {
+      return AppLocalizations.of(context)?.notSetValue ?? 'N/A';
+    }
     return value;
   }
 
@@ -332,7 +389,8 @@ class AppointmentCard extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.calendar_today),
               title: Text(
-                AppLocalizations.of(context)?.googleCalendar ?? 'Google Calendar',
+                AppLocalizations.of(context)?.googleCalendar ??
+                    'Google Calendar',
               ),
               onTap: () async {
                 Navigator.pop(context);
@@ -352,7 +410,8 @@ class AppointmentCard extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.phone_iphone),
               title: Text(
-                AppLocalizations.of(context)?.appleCalendar ?? 'Apple / Device Calendar',
+                AppLocalizations.of(context)?.appleCalendar ??
+                    'Apple / Device Calendar',
               ),
               onTap: () async {
                 Navigator.pop(context);
@@ -373,22 +432,6 @@ class AppointmentCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-Color _statusColor(AppointmentStatus status) {
-  switch (status) {
-    case AppointmentStatus.pending:
-      return Colors.orange;
-    case AppointmentStatus.confirmed:
-      return Colors.green;
-    case AppointmentStatus.completed:
-      return Colors.blue;
-    case AppointmentStatus.cancelledByCustomer:
-    case AppointmentStatus.cancelledByProfessional:
-      return Colors.red;
-    case AppointmentStatus.noShow:
-      return Colors.grey;
   }
 }
 

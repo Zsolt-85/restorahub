@@ -67,26 +67,38 @@ void main() {
 
     group('canTransitionTo', () {
       test('pending can transition to confirmed', () {
-        expect(pendingAppt.canTransitionTo(AppointmentStatus.confirmed), isTrue);
+        expect(
+            pendingAppt.canTransitionTo(AppointmentStatus.confirmed), isTrue);
       });
 
       test('pending can transition to cancelledByCustomer', () {
-        expect(pendingAppt.canTransitionTo(AppointmentStatus.cancelledByCustomer), isTrue);
+        expect(
+            pendingAppt.canTransitionTo(AppointmentStatus.cancelledByCustomer),
+            isTrue);
       });
 
       test('confirmed can transition to completed', () {
-        expect(confirmedAppt.canTransitionTo(AppointmentStatus.completed), isTrue);
+        expect(
+            confirmedAppt.canTransitionTo(AppointmentStatus.completed), isTrue);
       });
 
       test('confirmed can transition to cancelledByProfessional', () {
-        expect(confirmedAppt.canTransitionTo(AppointmentStatus.cancelledByProfessional), isTrue);
+        expect(
+            confirmedAppt
+                .canTransitionTo(AppointmentStatus.cancelledByProfessional),
+            isTrue);
       });
 
       test('terminal statuses cannot transition to any other status', () {
-        expect(completedAppt.canTransitionTo(AppointmentStatus.pending), isFalse);
-        expect(cancelledAppt.canTransitionTo(AppointmentStatus.pending), isFalse);
+        expect(
+            completedAppt.canTransitionTo(AppointmentStatus.pending), isFalse);
+        expect(
+            cancelledAppt.canTransitionTo(AppointmentStatus.pending), isFalse);
         expect(noShowAppt.canTransitionTo(AppointmentStatus.pending), isFalse);
-        expect(completedAppt.canTransitionTo(AppointmentStatus.cancelledByCustomer), isFalse);
+        expect(
+            completedAppt
+                .canTransitionTo(AppointmentStatus.cancelledByCustomer),
+            isFalse);
       });
 
       test('same status transition is not allowed', () {

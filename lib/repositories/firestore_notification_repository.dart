@@ -16,24 +16,29 @@ class FirestoreNotificationRepository implements NotificationRepository {
       _firestore.collection('notifications');
 
   @override
-  Future<void> sendNotification(AppNotification notification, {String? businessId}) async {
+  Future<void> sendNotification(AppNotification notification,
+      {String? businessId}) async {
     try {
       final docRef = _notificationsCol.doc();
       notification.id = docRef.id;
       final data = Map<String, dynamic>.from(notification.toMap());
-      if ((notification.businessId == null || notification.businessId!.isEmpty) &&
-          businessId != null && businessId.isNotEmpty) {
+      if ((notification.businessId == null ||
+              notification.businessId!.isEmpty) &&
+          businessId != null &&
+          businessId.isNotEmpty) {
         data['businessId'] = businessId;
       }
       await docRef.set(data);
     } catch (e, stack) {
-      AppLogger.error('FirestoreNotificationRepository.sendNotification error: $e\n$stack');
+      AppLogger.error(
+          'FirestoreNotificationRepository.sendNotification error: $e\n$stack');
       throw AppException('Failed to send notification', cause: e);
     }
   }
 
   @override
-  Future<List<AppNotification>> getNotificationsForUser(String userId, {String? businessId}) async {
+  Future<List<AppNotification>> getNotificationsForUser(String userId,
+      {String? businessId}) async {
     try {
       Query<Map<String, dynamic>> query = _notificationsCol
           .where('receiverId', isEqualTo: userId)
@@ -50,7 +55,8 @@ class FirestoreNotificationRepository implements NotificationRepository {
       }
       return notifications;
     } catch (e, stack) {
-      AppLogger.error('FirestoreNotificationRepository.getNotificationsForUser error: $e\n$stack');
+      AppLogger.error(
+          'FirestoreNotificationRepository.getNotificationsForUser error: $e\n$stack');
       throw AppException('Failed to load notifications', cause: e);
     }
   }
@@ -63,7 +69,8 @@ class FirestoreNotificationRepository implements NotificationRepository {
       });
       return 1;
     } catch (e, stack) {
-      AppLogger.error('FirestoreNotificationRepository.markAsRead error: $e\n$stack');
+      AppLogger.error(
+          'FirestoreNotificationRepository.markAsRead error: $e\n$stack');
       throw AppException('Failed to mark notification as read', cause: e);
     }
   }
@@ -87,13 +94,15 @@ class FirestoreNotificationRepository implements NotificationRepository {
       await batch.commit();
       return snapshot.docs.length;
     } catch (e, stack) {
-      AppLogger.error('FirestoreNotificationRepository.markAllAsRead error: $e\n$stack');
+      AppLogger.error(
+          'FirestoreNotificationRepository.markAllAsRead error: $e\n$stack');
       throw AppException('Failed to mark notifications as read', cause: e);
     }
   }
 
   @override
-  Stream<List<AppNotification>> watchNotifications(String userId, {String? businessId}) {
+  Stream<List<AppNotification>> watchNotifications(String userId,
+      {String? businessId}) {
     Query<Map<String, dynamic>> query = _notificationsCol
         .where('receiverId', isEqualTo: userId)
         .orderBy('createdAt', descending: true);

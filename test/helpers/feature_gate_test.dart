@@ -36,13 +36,19 @@ void main() {
 
     test('isAvailableForPlan checks plan features', () {
       expect(FeatureGate.isAvailableForPlan('pro', 'custom_branding'), isTrue);
-      expect(FeatureGate.isAvailableForPlan('basic', 'custom_branding'), isFalse);
+      expect(
+          FeatureGate.isAvailableForPlan('basic', 'custom_branding'), isFalse);
       expect(FeatureGate.isAvailableForPlan('unknown', 'anything'), isFalse);
     });
 
     test('entitlementsForPlan returns plan features', () {
-      expect(FeatureGate.entitlementsForPlan('trial'), contains('online_booking'));
-      expect(FeatureGate.entitlementsForPlan('enterprise'), contains('api_access'));
+      expect(
+          FeatureGate.entitlementsForPlan('trial'), contains('online_booking'));
+      // api_access removed: no API exists (re-add with middleware+keys).
+      expect(FeatureGate.entitlementsForPlan('enterprise'),
+          contains('multi_location'));
+      expect(FeatureGate.entitlementsForPlan('enterprise'),
+          isNot(contains('api_access')));
     });
 
     test('entitlementsForPlan returns empty for unknown plan', () {

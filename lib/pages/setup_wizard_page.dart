@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
+import '../l10n/app_localizations.dart';
 import '../models/business.dart';
 import '../providers/auth_provider.dart';
 import '../providers/business_provider.dart';
@@ -96,11 +97,40 @@ class _SetupWizardPageState extends State<SetupWizardPage> {
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.currentUser;
 
+    // No business to set up (and none can be created here — that is a
+    // super-admin action). Explain instead of showing a blank page.
     if (user == null || user.businessId == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushNamedAndRemoveUntil(context, Routes.login, (_) => false);
-      });
-      return const Scaffold(body: SizedBox.shrink());
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Setup Wizard'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  AppLocalizations.of(context)?.noBusinessAssigned ??
+                      'No business is assigned to your account yet.',
+                  style: const TextStyle(fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    Routes.login,
+                    (_) => false,
+                  ),
+                  child: Text(AppLocalizations.of(context)?.goToLogin ??
+                      'Go to Login'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     final businessId = user.businessId!;
@@ -205,7 +235,8 @@ class _SetupWizardPageState extends State<SetupWizardPage> {
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final theme = Theme.of(context);
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     final repository = Provider.of<BusinessRepository>(context, listen: false);
 
     if (wizard.isLastStep) {
@@ -741,26 +772,33 @@ class _ColorField extends StatelessWidget {
           spacing: 10,
           runSpacing: 10,
           children: palette.map((color) {
-            final hex = '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-            final isSelected = selectedHex == hex.toLowerCase() || selectedColor == color;
-            return GestureDetector(
-              onTap: () => onColorSelected(hex),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.transparent,
-                    width: 3,
+            final hex =
+                '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+            final isSelected =
+                selectedHex == hex.toLowerCase() || selectedColor == color;
+            return Semantics(
+              button: true,
+              label: 'Color $hex',
+              child: GestureDetector(
+                onTap: () => onColorSelected(hex),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.transparent,
+                      width: 3,
+                    ),
                   ),
+                  child: isSelected
+                      ? Icon(Icons.check,
+                          color: _contrastColor(color), size: 20)
+                      : null,
                 ),
-                child: isSelected
-                    ? Icon(Icons.check, color: _contrastColor(color), size: 18)
-                    : null,
               ),
             );
           }).toList(),
@@ -832,7 +870,8 @@ class _PreviewRow extends StatelessWidget {
             child: Text(
               value ?? '—',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: value != null ? FontWeight.w500 : FontWeight.normal,
+                    fontWeight:
+                        value != null ? FontWeight.w500 : FontWeight.normal,
                   ),
             ),
           ),

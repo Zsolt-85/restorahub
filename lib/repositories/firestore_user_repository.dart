@@ -28,7 +28,8 @@ class FirestoreUserRepository implements UserRepository {
     try {
       final doc = await _usersCol.doc(id).get();
       if (!doc.exists) {
-        AppLogger.debug('FirestoreUserRepository.getUserById: doc does not exist for ID $id');
+        AppLogger.debug(
+            'FirestoreUserRepository.getUserById: doc does not exist for ID $id');
         return null;
       }
       final data = doc.data()!;
@@ -43,7 +44,8 @@ class FirestoreUserRepository implements UserRepository {
   @override
   Future<bool> isEmailTaken(String email, {String? excludeUserId}) async {
     try {
-      var query = _usersCol.where('email', isEqualTo: email.trim().toLowerCase());
+      var query =
+          _usersCol.where('email', isEqualTo: email.trim().toLowerCase());
       final snapshot = await query.get();
       if (snapshot.docs.isEmpty) return false;
       if (excludeUserId != null) {
@@ -91,20 +93,35 @@ class FirestoreUserRepository implements UserRepository {
     try {
       if (user.id == null) return;
 
-      final customerSnapshot = await _firestore.collection('appointments')
+      final customerSnapshot = await _firestore
+          .collection('appointments')
           .where('customerId', isEqualTo: user.id)
           .get();
 
-      final batch = _firestore.batch();
+      // Firestore caps a batch at 500 writes; commit in chunks so large
+      // histories sync instead of failing the whole operation.
+      var batch = _firestore.batch();
+      var pendingWrites = 0;
+      Future<void> flushIfFull() async {
+        if (pendingWrites >= 500) {
+          await batch.commit();
+          batch = _firestore.batch();
+          pendingWrites = 0;
+        }
+      }
+
       for (final doc in customerSnapshot.docs) {
         batch.update(doc.reference, {
           'customerName': user.name,
           'customerPhone': user.phone,
           'customerEmail': user.email,
         });
+        pendingWrites++;
+        await flushIfFull();
       }
 
-      final professionalSnapshot = await _firestore.collection('appointments')
+      final professionalSnapshot = await _firestore
+          .collection('appointments')
           .where('professionalId', isEqualTo: user.id)
           .get();
 
@@ -114,22 +131,30 @@ class FirestoreUserRepository implements UserRepository {
           'professionalPhone': user.phone,
           'professionalEmail': user.email,
         });
+        pendingWrites++;
+        await flushIfFull();
       }
 
-      await batch.commit();
+      if (pendingWrites > 0) {
+        await batch.commit();
+      }
     } catch (e, stack) {
-      AppLogger.error('FirestoreUserRepository.syncUserInAppointments error: $e\n$stack');
+      AppLogger.error(
+          'FirestoreUserRepository.syncUserInAppointments error: $e\n$stack');
       throw AppException('Failed to sync user data', cause: e);
     }
   }
 
   @override
-  Future<List<User>> getProfessionalsByCategory(String category) async {
+  Future<List<User>> getProfessionalsByCategory(String category,
+      {String? businessId}) async {
     try {
-      final query = await _usersCol
-          .where('role', whereIn: ['professional', 'staff'])
-          .where('category', isEqualTo: category)
-          .get();
+      final query = await _withBusinessFilter(
+        _usersCol.where('role', whereIn: ['professional', 'staff']).where(
+            'category',
+            isEqualTo: category),
+        businessId,
+      ).get();
 
       final professionals = <User>[];
       for (final doc in query.docs) {
@@ -140,17 +165,13 @@ class FirestoreUserRepository implements UserRepository {
       professionals.sort((a, b) => a.name.compareTo(b.name));
       return professionals;
     } catch (e, stack) {
-      AppLogger.error('FirestoreUserRepository.getProfessionalsByCategory error: $e\n$stack');
+      AppLogger.error(
+          'FirestoreUserRepository.getProfessionalsByCategory error: $e\n$stack');
       throw AppException('Failed to load professionals', cause: e);
     }
   }
 
   @override
-  @Deprecated('Use getProfessionalsByCategory instead')
-  Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
-    return getProfessionalsByCategory(specialty);
-  }
-
   @override
   Future<List<User>> getProfessionals({String? businessId}) async {
     try {
@@ -168,32 +189,64 @@ class FirestoreUserRepository implements UserRepository {
       professionals.sort((a, b) => a.name.compareTo(b.name));
       return professionals;
     } catch (e, stack) {
-      AppLogger.error('FirestoreUserRepository.getProfessionals error: $e\n$stack');
+      AppLogger.error(
+          'FirestoreUserRepository.getProfessionals error: $e\n$stack');
       throw AppException('Failed to load professionals', cause: e);
     }
   }
 
   @override
-  Stream<List<User>> watchProfessionals({String? businessId}) {
-    return _withBusinessFilter(
-      _usersCol.where('role', whereIn: ['professional', 'staff']),
-      businessId,
-    ).snapshots().map((snapshot) {
+  Future<List<User>> getProfessionalsByBusiness(String businessId) async {
+    if (businessId.isEmpty) return [];
+    try {
+      AppLogger.debug(
+          'getProfessionalsByBusiness: querying businessId=$businessId');
+      final snapshot =
+          await _usersCol.where('businessId', isEqualTo: businessId).get();
+
+      AppLogger.debug(
+          'getProfessionalsByBusiness: businessId=$businessId, rawDocs=${snapshot.docs.length}');
+
       final professionals = <User>[];
       for (final doc in snapshot.docs) {
         final data = doc.data();
         data['id'] = doc.id;
-        professionals.add(User.fromMap(data));
+        final user = User.fromMap(data);
+        // Deliberate: business_admins stay bookable (solo owners take
+        // bookings themselves). Callers filter further if needed.
+        if (user.isStaff || user.role == 'business_admin') {
+          professionals.add(user);
+        }
       }
       professionals.sort((a, b) => a.name.compareTo(b.name));
+
+      AppLogger.debug(
+        'getProfessionalsByBusiness: businessId=$businessId, filteredCount=${professionals.length}, '
+        'roles=${professionals.map((p) => p.role).toList()}, '
+        'ids=${professionals.map((p) => p.id).toList()}',
+      );
+
       return professionals;
-    });
+    } catch (e, stack) {
+      AppLogger.error(
+          'FirestoreUserRepository.getProfessionalsByBusiness error: $e\n$stack');
+      // Never swallow: callers (booking flow) render errors with Retry.
+      // Silent [] made failures indistinguishable from "no staff".
+      if (e is AppException) rethrow;
+      throw AppException('Failed to load staff', cause: e);
+    }
   }
 
   @override
-  Future<List<User>> getCustomers() async {
+  Future<List<User>> getCustomers({String? businessId}) async {
     try {
-      final query = await _usersCol.where('role', isEqualTo: 'customer').get();
+      final query = await _withBusinessFilter(
+        _usersCol.where('role', isEqualTo: 'customer'),
+        businessId,
+      ).get();
+
+      AppLogger.debug(
+          'getCustomers: businessId=$businessId, rawDocs=${query.docs.length}');
 
       final customers = <User>[];
       for (final doc in query.docs) {
@@ -202,6 +255,8 @@ class FirestoreUserRepository implements UserRepository {
         customers.add(User.fromMap(data));
       }
       customers.sort((a, b) => a.name.compareTo(b.name));
+      AppLogger.debug(
+          'getCustomers: businessId=$businessId, customerCount=${customers.length}');
       return customers;
     } catch (e, stack) {
       AppLogger.error('FirestoreUserRepository.getCustomers error: $e\n$stack');

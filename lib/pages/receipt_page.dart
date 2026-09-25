@@ -1,27 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../helpers/format_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../models/payment.dart';
+import '../providers/business_provider.dart';
 
 class ReceiptPage extends StatelessWidget {
   final Payment payment;
 
   const ReceiptPage({super.key, required this.payment});
 
-  String get _receiptNumber => 'RCP-${payment.id?.substring(0, 8) ?? 'XXXX'}';
+  String get _receiptNumber {
+    final id = payment.id ?? '';
+    final short = id.length >= 8 ? id.substring(0, 8) : id.padLeft(4, 'X');
+    return 'RCP-$short';
+  }
 
-  String get _formattedAmount =>
-      '${payment.currency} ${payment.amount.toStringAsFixed(2)}';
+  String get _formattedAmount => FormatHelper.formatCurrency(payment.amount,
+      currency: payment.currency);
+
+  /// Salon name for customer-facing surfaces, generic fallback otherwise.
+  /// Defensive: receipts are also pumped in tests without providers.
+  static String brandNameOf(BuildContext context) {
+    try {
+      return Provider.of<BusinessProvider>(context, listen: false)
+              .currentBusiness
+              ?.effectiveBusinessName ??
+          'Salon';
+    } catch (_) {
+      return 'Salon';
+    }
+  }
 
   Future<void> _shareReceipt(BuildContext context) async {
+    final brand = brandNameOf(context).toUpperCase();
     final lines = [
-      '===== RESTORAHUB RECEIPT =====',
+      '===== $brand RECEIPT =====',
       'Receipt: $_receiptNumber',
       '',
       'APPOINTMENT DETAILS',
       'Service: ${payment.service}',
-      'Date: ${payment.appointmentDate.toLocal()}',
+      'Date: ${FormatHelper.formatDate(payment.appointmentDate)}',
       'Time: ${payment.appointmentTime}',
       '',
       'CUSTOMER',
@@ -36,10 +57,14 @@ class ReceiptPage extends StatelessWidget {
       '',
       'PAYMENT',
       'Amount: $_formattedAmount',
+      if (payment.depositAmount > 0)
+        'Deposit: ${payment.currency} ${payment.depositAmount.toStringAsFixed(2)}',
+      if (payment.depositAmount > 0)
+        'Balance due: ${payment.currency} ${payment.balanceDue.toStringAsFixed(2)}',
       'Method: ${payment.methodLabel}',
       'Status: ${payment.statusLabel}',
       '',
-      'Thank you for choosing RestoraHub!',
+      'Thank you for choosing ${brandNameOf(context)}!',
     ].join('\n');
 
     await Share.share(lines, subject: 'Receipt $_receiptNumber');
@@ -63,9 +88,9 @@ class ReceiptPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text(
-              'RESTORAHUB',
-              style: TextStyle(
+            Text(
+              brandNameOf(context).toUpperCase(),
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 3,
@@ -82,7 +107,8 @@ class ReceiptPage extends StatelessWidget {
             _sectionTitle('APPOINTMENT DETAILS'),
             const SizedBox(height: 8),
             _detailRow('Service', payment.service),
-            _detailRow('Date', payment.appointmentDate.toLocal().toString().split(' ').first),
+            _detailRow(
+                'Date', FormatHelper.formatDate(payment.appointmentDate)),
             _detailRow('Time', payment.appointmentTime),
             _detailRow('Duration', '${payment.appointmentDurationMinutes} min'),
             const SizedBox(height: 16),
@@ -107,6 +133,15 @@ class ReceiptPage extends StatelessWidget {
             _sectionTitle('PAYMENT'),
             const SizedBox(height: 8),
             _detailRow('Amount', _formattedAmount),
+            if (payment.depositAmount > 0)
+              _detailRow('Deposit',
+                  '${payment.currency} ${payment.depositAmount.toStringAsFixed(2)}'),
+            if (payment.depositAmount > 0)
+              _detailRow('Balance due',
+                  '${payment.currency} ${payment.balanceDue.toStringAsFixed(2)}'),
+            if (payment.noShowFee > 0)
+              _detailRow('No-show fee',
+                  '${payment.currency} ${payment.noShowFee.toStringAsFixed(2)}'),
             _detailRow('Method', payment.methodLabel),
             _detailRow('Status', payment.statusLabel),
             _detailRow('Payment ID', payment.id ?? 'N/A'),
@@ -114,7 +149,7 @@ class ReceiptPage extends StatelessWidget {
             const Divider(thickness: 1),
             const SizedBox(height: 16),
             Text(
-              'Thank you for choosing RestoraHub!',
+              'Thank you for choosing ${brandNameOf(context)}!',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontStyle: FontStyle.italic,
                   ),
@@ -122,7 +157,7 @@ class ReceiptPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Generated: ${DateTime.now().toLocal()}',
+              'Generated: ${FormatHelper.formatDateTime(DateTime.now())}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],

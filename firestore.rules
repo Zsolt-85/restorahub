@@ -10,16 +10,20 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function userDocExists() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     function getCurrentUser() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
     function getCurrentUserRole() {
-      return getCurrentUser().data.role;
+      return userDocExists() ? getCurrentUser().data.role : '';
     }
 
     function getCurrentUserBusinessId() {
-      return getCurrentUser().data.businessId;
+      return userDocExists() ? getCurrentUser().data.businessId : '';
     }
 
     function isSuperAdmin() {
@@ -31,7 +35,11 @@ service cloud.firestore {
     }
 
     function isProfessional() {
-      return isSignedIn() && getCurrentUserRole() == 'professional';
+      return isSignedIn() && getCurrentUserRole() in ['professional', 'staff'];
+    }
+
+    function isStaff() {
+      return isProfessional();
     }
 
     function isCustomer() {
@@ -56,14 +64,31 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isOwner(userId) || isSameBusiness(userId) || isSuperAdmin();
+      // Staff/admin/super-admin can LIST users (team management, manual
+      // booking customer lookup). Evaluated on the requester's own role, so
+      // it provably holds for whole queries — unlike per-doc conditions.
+      // Residual risk (cross-tenant reads by staff) is tracked for Phase 5
+      // claims-gated reads. Customers cannot list; they use staff_directory.
+      allow list: if isProfessional() || isBusinessAdmin() || isSuperAdmin();
       allow create: if isOwner(userId);
-      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'businessId'])) || isSuperAdmin();
+      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'businessId'])) || isSuperAdmin() || (isBusinessAdmin() && isSameBusiness(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'businessId']));
+      allow delete: if isSuperAdmin();
+    }
+
+    // Public bookable-staff directory (PII-free). Customer booking discovery
+    // depends on listing this collection, which users-list rules forbid.
+    match /staff_directory/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isOwner(userId) || isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
 
     match /services/{serviceId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isBusinessMatch(resource.data.businessId) || isSuperAdmin();
+      // Solo staff (no business) own their services: businessId is null/empty
+      // and they must be assigned to create, or already assigned to update.
+      allow create: if isSuperAdmin() || isBusinessMatch(request.resource.data.businessId) || (isProfessional() && (request.resource.data.businessId == null || request.resource.data.businessId == ''));
+      allow update, delete: if isSuperAdmin() || isBusinessMatch(resource.data.businessId) || (isProfessional() && (resource.data.businessId == null || resource.data.businessId == '') && request.auth.uid in resource.data.get('assignedProfessionalIds', []));
     }
 
     match /appointments/{appointmentId} {
@@ -71,6 +96,9 @@ service cloud.firestore {
                     isOwner(resource.data.professionalId) ||
                     isBusinessMatch(resource.data.businessId) ||
                     isSuperAdmin();
+      // NOTE: list stays authenticated-only for pilot (customer/professional
+      // queries filter by customerId/professionalId+businessId client-side).
+      // Tighten with request.query constraints once all queries send businessId.
       allow list: if isSignedIn();
       allow create: if isSignedIn() &&
         request.resource.data.keys().hasAll(['customerId', 'professionalId', 'dateTime', 'service']);
@@ -86,7 +114,8 @@ service cloud.firestore {
                     isOwner(resource.data.professionalId) ||
                     isBusinessMatch(resource.data.businessId) ||
                     isSuperAdmin();
-      allow create, update: if isSignedIn() && request.resource.data.professionalId == request.auth.uid;
+      allow create, update: if isSignedIn() && (request.resource.data.professionalId == request.auth.uid || isSuperAdmin() || (isBusinessAdmin() && isBusinessMatch(request.resource.data.businessId)));
+      allow delete: if isSuperAdmin() || (isBusinessAdmin() && isBusinessMatch(resource.data.businessId));
     }
 
     match /notifications/{notificationId} {
@@ -95,6 +124,7 @@ service cloud.firestore {
     }
 
     match /businesses/{businessId} {
+      // Intentional public read: customers discover businesses/services without login.
       allow get: if true;
       allow list: if isSuperAdmin();
       allow create: if isSuperAdmin();

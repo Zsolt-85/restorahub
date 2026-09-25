@@ -9,6 +9,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'repositories/firestore_booking_repository.dart';
 import 'repositories/firestore_user_repository.dart';
+import 'repositories/firestore_staff_directory_repository.dart';
+import 'repositories/staff_directory_repository.dart';
 import 'repositories/user_repository.dart';
 import 'repositories/firestore_business_repository.dart';
 import 'repositories/business_repository.dart';
@@ -25,6 +27,7 @@ import 'constants/routes.dart';
 import 'models/booking_summary.dart';
 import 'models/appointment.dart';
 import 'models/payment.dart';
+import 'models/user.dart';
 import 'providers/appointment_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
@@ -59,6 +62,8 @@ import 'pages/super_admin_dashboard_page.dart';
 import 'pages/setup_wizard_page.dart';
 import 'pages/admin_dashboard_page.dart';
 import 'pages/analytics_dashboard_page.dart';
+import 'pages/business_settings_page.dart';
+import 'pages/earnings_report_page.dart';
 
 Future<void> main() async {
   FlutterError.onError = (details) {
@@ -87,7 +92,11 @@ Future<void> main() async {
     final notificationRepo = FirestoreNotificationRepository.instance;
     final paymentRepo = FirestorePaymentRepository.instance;
     final businessRepo = FirestoreBusinessRepository.instance;
-    final authProvider = AuthProvider(userRepository: userRepo);
+    final staffDirectoryRepo = FirestoreStaffDirectoryRepository.instance;
+    final authProvider = AuthProvider(
+      userRepository: userRepo,
+      staffDirectoryRepository: staffDirectoryRepo,
+    );
     final appointmentProvider = AppointmentProvider(
       bookingRepository: bookingRepo,
       userRepository: userRepo,
@@ -107,8 +116,10 @@ Future<void> main() async {
       appointmentProvider.setCurrentUser(authProvider.currentUser!);
 
       final currentUser = authProvider.currentUser!;
-      if (currentUser.role == 'business_admin' && currentUser.businessId != null) {
-        final business = await businessRepo.getBusinessById(currentUser.businessId!);
+      if (currentUser.roleEnum == Role.businessAdmin &&
+          currentUser.businessId != null) {
+        final business =
+            await businessRepo.getBusinessById(currentUser.businessId!);
         if (business != null) {
           businessProvider.setBusiness(business);
         }
@@ -125,10 +136,10 @@ Future<void> main() async {
         appointmentProvider: appointmentProvider,
         themeProvider: themeProvider,
         localeProvider: localeProvider,
-         businessProvider: businessProvider,
-         superAdminProvider: superAdminProvider,
-         setupWizardProvider: setupWizardProvider,
-         initialRoute: initialRoute,
+        businessProvider: businessProvider,
+        superAdminProvider: superAdminProvider,
+        setupWizardProvider: setupWizardProvider,
+        initialRoute: initialRoute,
         notificationRepo: notificationRepo,
         paymentRepo: paymentRepo,
       ),
@@ -138,7 +149,8 @@ Future<void> main() async {
   });
 }
 
-String _resolveInitialRoute(AuthProvider authProvider, BusinessProvider businessProvider) {
+String _resolveInitialRoute(
+    AuthProvider authProvider, BusinessProvider businessProvider) {
   return RouteGuardHelper.evaluateRedirect(
         currentRoute: Routes.login,
         authProvider: authProvider,
@@ -182,6 +194,8 @@ class MyApp extends StatelessWidget {
           value: appointmentProvider,
         ),
         Provider<UserRepository>.value(value: FirestoreUserRepository.instance),
+        Provider<StaffDirectoryRepository>.value(
+            value: FirestoreStaffDirectoryRepository.instance),
         Provider<BusinessRepository>.value(
             value: FirestoreBusinessRepository.instance),
         Provider<ServiceRepository>.value(
@@ -218,7 +232,8 @@ class MyApp extends StatelessWidget {
           value: superAdminProvider,
         ),
         ChangeNotifierProvider<ServiceProvider>(
-          create: (_) => ServiceProvider(repository: FirestoreServiceRepository.instance),
+          create: (_) =>
+              ServiceProvider(repository: FirestoreServiceRepository.instance),
         ),
         ChangeNotifierProvider<SetupWizardProvider>(
           create: (_) => SetupWizardProvider(),
@@ -250,118 +265,8 @@ class MyApp extends StatelessWidget {
               final targetRoute = redirect ?? route;
 
               return MaterialPageRoute(
-                builder: (context) {
-                  switch (targetRoute) {
-                    case Routes.login:
-                      return const LoginPage();
-                    case Routes.register:
-                      return const RegistrationPage();
-                    case Routes.forgotPassword:
-                      return const ForgotPasswordPage();
-                    case Routes.customerHome:
-                      return const UserHomePage();
-                    case Routes.professionalHome:
-                      return const ProfessionalBookingManagementPage();
-                    case Routes.professionalManualBooking:
-                      final args = settings.arguments;
-                      final initialDateTime = args is DateTime ? args : null;
-                      return ProfessionalManualBookingPage(
-                        initialDateTime: initialDateTime,
-                      );
-                    case Routes.completeProfile:
-                      return Scaffold(
-                        appBar: AppBar(
-                            title: Text(
-                                AppLocalizations.of(context)?.completeProfile ??
-                                    'Complete Profile')),
-                        body: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context)
-                                          ?.completeProfileDialog ??
-                                      'Your profile is incomplete.',
-                                  style: const TextStyle(fontSize: 18),
-                                ),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () =>
-                                      Navigator.pushNamedAndRemoveUntil(
-                                    context,
-                                    Routes.login,
-                                    (_) => false,
-                                  ),
-                                  child: Text(
-                                      AppLocalizations.of(context)?.goToLogin ??
-                                          'Go to Login'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    case Routes.services:
-                      return const ServicesPage();
-                     case Routes.booking:
-                       final args = settings.arguments;
-                       if (args is Map<String, dynamic>) {
-                         return BookingPage(
-                           service: args['service'] as String?,
-                           category: args['category'] as String?,
-                           appointmentId: args['appointmentId'] as String?,
-                         );
-                       }
-                       if (args is String) {
-                         return BookingPage(service: args);
-                       }
-                       return const BookingPage();
-                     case Routes.editAppointment:
-                       final appointment = settings.arguments as Appointment?;
-                       if (appointment == null) {
-                         return Scaffold(
-                           appBar: AppBar(title: const Text('Reschedule booking')),
-                           body: const Center(child: Text('Invalid appointment data.')),
-                         );
-                       }
-                       return EditAppointmentPage(appointment: appointment);
-                    case Routes.addPayment:
-                      final appt = settings.arguments as Appointment;
-                      return AddPaymentPage(appointment: appt);
-                    case Routes.receipt:
-                      final payment = settings.arguments as Payment;
-                      return ReceiptPage(payment: payment);
-                    case Routes.success:
-                      final summary = settings.arguments as BookingSummary?;
-                      return SuccessPage(summary: summary);
-                    case Routes.profile:
-                      return const ProfilePage();
-                    case Routes.notifications:
-                      return const NotificationsPage();
-                    case Routes.analytics:
-                      return const AnalyticsPage();
-                    case Routes.pastAppointments:
-                      return const PastAppointmentsPage();
-                    case Routes.settings:
-                      return const SettingsPage();
-                    case Routes.teamManagement:
-                      return const TeamManagementPage();
-                    case Routes.adminCalendar:
-                      return const AdminCalendarPage();
-                     case Routes.superAdminDashboard:
-                       return const SuperAdminDashboardPage();
-                     case Routes.setupWizard:
-                       return const SetupWizardPage();
-                     case Routes.adminDashboard:
-                       return const AdminDashboardPage();
-                     case Routes.analyticsDashboard:
-                       return const AnalyticsDashboardPage();
-                      default:
-                      return const LoginPage();
-                  }
-                },
+                builder: (context) =>
+                    buildRouteWidget(context, targetRoute, settings),
               );
             },
             onUnknownRoute: (_) =>
@@ -370,5 +275,131 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// Builds the page widget for [targetRoute] (after route-guard redirects).
+/// Extracted from `MyApp.onGenerateRoute` so the route table is unit-testable.
+/// Unknown routes fall back to [LoginPage], mirroring `onUnknownRoute`.
+Widget buildRouteWidget(
+  BuildContext context,
+  String targetRoute,
+  RouteSettings settings,
+) {
+  switch (targetRoute) {
+    case Routes.login:
+      return const LoginPage();
+    case Routes.register:
+      return const RegistrationPage();
+    case Routes.forgotPassword:
+      return const ForgotPasswordPage();
+    case Routes.customerHome:
+      return const UserHomePage();
+    case Routes.professionalHome:
+      return const ProfessionalBookingManagementPage();
+    case Routes.professionalManualBooking:
+      final args = settings.arguments;
+      final initialDateTime = args is DateTime ? args : null;
+      return ProfessionalManualBookingPage(
+        initialDateTime: initialDateTime,
+      );
+    case Routes.completeProfile:
+      // Profile completion lives on the login page (needsProfile dialog);
+      // this route only explains the detour instead of looping silently.
+      return Scaffold(
+        appBar: AppBar(
+            title: Text(AppLocalizations.of(context)?.completeProfile ??
+                'Complete Profile')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  AppLocalizations.of(context)
+                          ?.completeProfileSignInExplainer ??
+                      'Your profile is incomplete. Sign in to finish setting it up.',
+                  style: const TextStyle(fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    Routes.login,
+                    (_) => false,
+                  ),
+                  child: Text(
+                      AppLocalizations.of(context)?.continueToSignIn ??
+                          'Continue to sign in'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    case Routes.services:
+      return const ServicesPage();
+    case Routes.booking:
+      final args = settings.arguments;
+      if (args is Map<String, dynamic>) {
+        return BookingPage(
+          service: args['service'] as String?,
+          category: args['category'] as String?,
+          appointmentId: args['appointmentId'] as String?,
+          businessId: args['businessId'] as String?,
+        );
+      }
+      if (args is String) {
+        return BookingPage(service: args);
+      }
+      return const BookingPage();
+    case Routes.editAppointment:
+      final appointment = settings.arguments as Appointment?;
+      if (appointment == null) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Reschedule booking')),
+          body: const Center(child: Text('Invalid appointment data.')),
+        );
+      }
+      return EditAppointmentPage(appointment: appointment);
+    case Routes.addPayment:
+      final appt = settings.arguments as Appointment;
+      return AddPaymentPage(appointment: appt);
+    case Routes.receipt:
+      final payment = settings.arguments as Payment;
+      return ReceiptPage(payment: payment);
+    case Routes.success:
+      final summary = settings.arguments as BookingSummary?;
+      return SuccessPage(summary: summary);
+    case Routes.profile:
+      return const ProfilePage();
+    case Routes.notifications:
+      return const NotificationsPage();
+    case Routes.analytics:
+      return const AnalyticsPage();
+    case Routes.pastAppointments:
+      return const PastAppointmentsPage();
+    case Routes.settings:
+      return const SettingsPage();
+    case Routes.teamManagement:
+      return const TeamManagementPage();
+    case Routes.adminCalendar:
+      return const AdminCalendarPage();
+    case Routes.superAdminDashboard:
+      return const SuperAdminDashboardPage();
+    case Routes.setupWizard:
+      return const SetupWizardPage();
+    case Routes.adminDashboard:
+      return const AdminDashboardPage();
+    case Routes.analyticsDashboard:
+      return const AnalyticsDashboardPage();
+    case Routes.businessSettings:
+      return const BusinessSettingsPage();
+    case Routes.earningsReport:
+      return const EarningsReportPage();
+    default:
+      return const LoginPage();
   }
 }

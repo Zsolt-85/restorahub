@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../helpers/format_helper.dart';
+import '../helpers/status_color_helper.dart';
 import '../helpers/appointment_actions.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
@@ -45,7 +46,8 @@ class _ProfessionalCalendarViewState extends State<ProfessionalCalendarView> {
 
     List<Appointment> eventLoader(DateTime day) {
       return appointments.where((a) {
-        final apptDay = DateTime(a.dateTime.year, a.dateTime.month, a.dateTime.day);
+        final apptDay =
+            DateTime(a.dateTime.year, a.dateTime.month, a.dateTime.day);
         final targetDay = DateTime(day.year, day.month, day.day);
         return apptDay == targetDay;
       }).toList();
@@ -105,7 +107,8 @@ class _ProfessionalCalendarViewState extends State<ProfessionalCalendarView> {
     final day = _selectedDay ?? _focusedDay;
 
     final dayAppointments = apptProvider.filteredAppointments.where((a) {
-      final apptDay = DateTime(a.dateTime.year, a.dateTime.month, a.dateTime.day);
+      final apptDay =
+          DateTime(a.dateTime.year, a.dateTime.month, a.dateTime.day);
       final targetDay = DateTime(day.year, day.month, day.day);
       return apptDay == targetDay;
     }).toList();
@@ -116,7 +119,8 @@ class _ProfessionalCalendarViewState extends State<ProfessionalCalendarView> {
 
     if (timeSlots.isEmpty) {
       return Center(
-        child: Text(AppLocalizations.of(context)?.noWorkingHours ?? 'No working hours configured'),
+        child: Text(AppLocalizations.of(context)?.noWorkingHours ??
+            'No working hours configured'),
       );
     }
 
@@ -155,13 +159,18 @@ class _ProfessionalCalendarViewState extends State<ProfessionalCalendarView> {
 
   List<DateTime> _generateTimeSlots() {
     final slots = <DateTime>[];
-    final startHour = int.tryParse(widget.professional.workStartTime.split(':').first) ?? 9;
-    final startMinute = int.tryParse(widget.professional.workStartTime.split(':').last) ?? 0;
-    final endHour = int.tryParse(widget.professional.workEndTime.split(':').first) ?? 17;
-    final endMinute = int.tryParse(widget.professional.workEndTime.split(':').last) ?? 0;
+    final startHour =
+        int.tryParse(widget.professional.workStartTime.split(':').first) ?? 9;
+    final startMinute =
+        int.tryParse(widget.professional.workStartTime.split(':').last) ?? 0;
+    final endHour =
+        int.tryParse(widget.professional.workEndTime.split(':').first) ?? 17;
+    final endMinute =
+        int.tryParse(widget.professional.workEndTime.split(':').last) ?? 0;
 
     final day = _selectedDay ?? _focusedDay;
-    final start = DateTime(day.year, day.month, day.day, startHour, startMinute);
+    final start =
+        DateTime(day.year, day.month, day.day, startHour, startMinute);
     final end = DateTime(day.year, day.month, day.day, endHour, endMinute);
 
     const slotMinutes = 15;
@@ -191,7 +200,8 @@ class _TimeSlotRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final timeLabel = TimeOfDay(hour: slot.hour, minute: slot.minute);
-    final formattedTime = '${timeLabel.hourOfPeriod.toString().padLeft(2, '0')}:${timeLabel.minute.toString().padLeft(2, '0')} ${timeLabel.period == DayPeriod.am ? AppLocalizations.of(context)?.am ?? 'AM' : AppLocalizations.of(context)?.pm ?? 'PM'}';
+    final formattedTime =
+        '${timeLabel.hourOfPeriod.toString().padLeft(2, '0')}:${timeLabel.minute.toString().padLeft(2, '0')} ${timeLabel.period == DayPeriod.am ? AppLocalizations.of(context)?.am ?? 'AM' : AppLocalizations.of(context)?.pm ?? 'PM'}';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +248,8 @@ class _TimeSlotRow extends StatelessWidget {
                 )
               : Column(
                   children: appointments.map((appt) {
-                    return _AppointmentSlot(appointment: appt, slotDuration: slotDuration);
+                    return _AppointmentSlot(
+                        appointment: appt, slotDuration: slotDuration);
                   }).toList(),
                 ),
         ),
@@ -258,10 +269,13 @@ class _AppointmentSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _statusColor(appointment.status);
-    final endLabel = appointment.dateTime.add(Duration(minutes: appointment.durationMinutes));
+    final statusColor = StatusColorHelper.forStatus(
+        appointment.status, Theme.of(context).colorScheme);
+    final endLabel = appointment.dateTime
+        .add(Duration(minutes: appointment.durationMinutes));
     final endTime = TimeOfDay(hour: endLabel.hour, minute: endLabel.minute);
-    final endFormatted = '${endTime.hourOfPeriod.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')} ${endTime.period == DayPeriod.am ? 'AM' : 'PM'}';
+    final endFormatted =
+        '${endTime.hourOfPeriod.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')} ${endTime.period == DayPeriod.am ? 'AM' : 'PM'}';
 
     return GestureDetector(
       onTap: () => _showAppointmentDetail(context, appointment),
@@ -288,7 +302,8 @@ class _AppointmentSlot extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -305,10 +320,10 @@ class _AppointmentSlot extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 4),
-             Text(
-               '${appointment.customerName ?? AppLocalizations.of(context)?.unknownValue ?? "Unknown"} · ${appointment.durationMinutes} ${AppLocalizations.of(context)?.minutesLabel ?? 'min'}',
-               style: Theme.of(context).textTheme.bodySmall,
-             ),
+            Text(
+              '${appointment.customerName ?? AppLocalizations.of(context)?.unknownValue ?? "Unknown"} · ${appointment.durationMinutes} ${AppLocalizations.of(context)?.minutesLabel ?? 'min'}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
             Text(
               endFormatted,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -323,7 +338,8 @@ class _AppointmentSlot extends StatelessWidget {
   }
 
   void _showAppointmentDetail(BuildContext context, Appointment appointment) {
-    final endTime = appointment.dateTime.add(Duration(minutes: appointment.durationMinutes));
+    final endTime = appointment.dateTime
+        .add(Duration(minutes: appointment.durationMinutes));
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -344,56 +360,71 @@ class _AppointmentSlot extends StatelessWidget {
                       Expanded(
                         child: Text(
                           appointment.service,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
                       ),
-                      _StatusChip(label: _localizedStatus(context, appointment.status)),
+                      _StatusChip(
+                          label: _localizedStatus(context, appointment.status)),
                     ],
                   ),
                   const SizedBox(height: 16),
-                   _DetailRow(
-                     icon: Icons.person_outline,
-                     label: AppLocalizations.of(context)?.counterpartyCustomer ?? 'Customer',
-                     value: appointment.customerName ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A',
-                   ),
-                   _DetailRow(
-                     icon: Icons.phone_outlined,
-                     label: AppLocalizations.of(context)?.phone ?? 'Phone',
-                     value: appointment.customerPhone ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A',
-                   ),
-                   _DetailRow(
-                     icon: Icons.email_outlined,
-                     label: AppLocalizations.of(context)?.email ?? 'Email',
-                     value: appointment.customerEmail ?? AppLocalizations.of(context)?.notSetValue ?? 'N/A',
-                   ),
+                  _DetailRow(
+                    icon: Icons.person_outline,
+                    label: AppLocalizations.of(context)?.counterpartyCustomer ??
+                        'Customer',
+                    value: appointment.customerName ??
+                        AppLocalizations.of(context)?.notSetValue ??
+                        'N/A',
+                  ),
+                  _DetailRow(
+                    icon: Icons.phone_outlined,
+                    label: AppLocalizations.of(context)?.phone ?? 'Phone',
+                    value: appointment.customerPhone ??
+                        AppLocalizations.of(context)?.notSetValue ??
+                        'N/A',
+                  ),
+                  _DetailRow(
+                    icon: Icons.email_outlined,
+                    label: AppLocalizations.of(context)?.email ?? 'Email',
+                    value: appointment.customerEmail ??
+                        AppLocalizations.of(context)?.notSetValue ??
+                        'N/A',
+                  ),
                   const SizedBox(height: 8),
-                   _DetailRow(
-                     icon: Icons.calendar_today_outlined,
-                     label: AppLocalizations.of(context)?.selectDate ?? 'Date',
-                     value: FormatHelper.formatDate(appointment.dateTime),
-                   ),
-                   _DetailRow(
-                     icon: Icons.access_time_outlined,
-                     label: AppLocalizations.of(context)?.timeLabel ?? 'Time',
-                     value: '${FormatHelper.formatTime(appointment.dateTime)} - ${FormatHelper.formatTime(endTime)}',
-                   ),
-                    _DetailRow(
-                      icon: Icons.timer_outlined,
-                      label: AppLocalizations.of(context)?.duration ?? 'Duration',
-                      value: '${appointment.durationMinutes} ${AppLocalizations.of(context)?.minutesLabel ?? 'minutes'}',
+                  _DetailRow(
+                    icon: Icons.calendar_today_outlined,
+                    label: AppLocalizations.of(context)?.selectDate ?? 'Date',
+                    value: FormatHelper.formatDate(appointment.dateTime),
+                  ),
+                  _DetailRow(
+                    icon: Icons.access_time_outlined,
+                    label: AppLocalizations.of(context)?.timeLabel ?? 'Time',
+                    value:
+                        '${FormatHelper.formatTime(appointment.dateTime)} - ${FormatHelper.formatTime(endTime)}',
+                  ),
+                  _DetailRow(
+                    icon: Icons.timer_outlined,
+                    label: AppLocalizations.of(context)?.duration ?? 'Duration',
+                    value:
+                        '${appointment.durationMinutes} ${AppLocalizations.of(context)?.minutesLabel ?? 'minutes'}',
+                  ),
+                  if (appointment.status != AppointmentStatus.completed &&
+                      !appointment.isCancelled &&
+                      !appointment.isPast) ...[
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => AppointmentActions.confirmReschedule(
+                          context, appointment),
+                      icon: const Icon(Icons.edit_calendar),
+                      label: Text(AppLocalizations.of(context)?.reschedule ??
+                          'Reschedule'),
                     ),
-                    if (appointment.status != AppointmentStatus.completed &&
-                        !appointment.isCancelled &&
-                        !appointment.isPast) ...[
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: () => AppointmentActions.confirmReschedule(context, appointment),
-                        icon: const Icon(Icons.edit_calendar),
-                        label: Text(AppLocalizations.of(context)?.reschedule ?? 'Reschedule'),
-                      ),
-                    ],
+                  ],
                 ],
               ),
             );
@@ -432,10 +463,30 @@ class _StatusChip extends StatelessWidget {
 
 Color _statusColorFromLabel(String label) {
   final l = label.toLowerCase();
-  if (l.contains('pending') || l.contains('függő') || l.contains('ausstehend') || l.contains('în așteptare')) return Colors.orange;
-  if (l.contains('confirmed') || l.contains('megerősített') || l.contains('bestätigt') || l.contains('confirmată')) return Colors.green;
-  if (l.contains('completed') || l.contains('befejezett') || l.contains('abgeschlossen') || l.contains('finalizată')) return Colors.blue;
-  if (l.contains('cancelled') || l.contains('törölve') || l.contains('storniert') || l.contains('anulată')) return Colors.red;
+  if (l.contains('pending') ||
+      l.contains('függő') ||
+      l.contains('ausstehend') ||
+      l.contains('în așteptare')) {
+    return Colors.orange;
+  }
+  if (l.contains('confirmed') ||
+      l.contains('megerősített') ||
+      l.contains('bestätigt') ||
+      l.contains('confirmată')) {
+    return Colors.green;
+  }
+  if (l.contains('completed') ||
+      l.contains('befejezett') ||
+      l.contains('abgeschlossen') ||
+      l.contains('finalizată')) {
+    return Colors.blue;
+  }
+  if (l.contains('cancelled') ||
+      l.contains('törölve') ||
+      l.contains('storniert') ||
+      l.contains('anulată')) {
+    return Colors.red;
+  }
   return Colors.grey;
 }
 
@@ -475,22 +526,6 @@ class _DetailRow extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-Color _statusColor(AppointmentStatus status) {
-  switch (status) {
-    case AppointmentStatus.pending:
-      return Colors.orange;
-    case AppointmentStatus.confirmed:
-      return Colors.green;
-    case AppointmentStatus.completed:
-      return Colors.blue;
-    case AppointmentStatus.cancelledByCustomer:
-    case AppointmentStatus.cancelledByProfessional:
-      return Colors.red;
-    case AppointmentStatus.noShow:
-      return Colors.grey;
   }
 }
 

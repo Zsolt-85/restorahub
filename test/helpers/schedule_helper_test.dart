@@ -265,5 +265,70 @@ void main() {
         isTrue,
       );
     });
+
+    test('isRangeAvailable uses instant math across DST fall-back', () {
+      // Europe/Budapest falls back on 2026-10-25: the wall-clock hour
+      // 10:00 occurs twice (once at +02:00, once at +01:00). These two
+      // bookings are 75 real minutes apart but share wall-clock minutes;
+      // minute-of-day math wrongly reports a collision.
+      final appointments = [
+        Appointment(
+          id: 'dst-1',
+          service: 'Massage',
+          dateTime: DateTime.parse('2026-10-25T10:00:00+02:00'),
+          durationMinutes: 30,
+          professionalId: '7',
+        ),
+      ];
+
+      expect(
+        ScheduleHelper.isRangeAvailable(
+          start: DateTime.parse('2026-10-25T10:15:00+01:00'),
+          durationMinutes: 30,
+          workStart: const TimeOfDay(hour: 9, minute: 0),
+          workEnd: const TimeOfDay(hour: 17, minute: 0),
+          appointments: appointments,
+          professionalId: '7',
+        ),
+        isTrue,
+      );
+    });
+
+    test('isRangeAvailable agrees with isSlotAvailable same-day', () {
+      final appointments = [
+        Appointment(
+          id: '1',
+          service: 'Massage',
+          dateTime: DateTime(2026, 6, 9, 10, 0),
+          durationMinutes: 60,
+          professionalId: '7',
+        ),
+      ];
+      final starts = [
+        DateTime(2026, 6, 9, 9, 0),
+        DateTime(2026, 6, 9, 10, 30),
+        DateTime(2026, 6, 9, 11, 0),
+        DateTime(2026, 6, 9, 16, 0),
+      ];
+      for (final start in starts) {
+        expect(
+          ScheduleHelper.isRangeAvailable(
+            start: start,
+            durationMinutes: 60,
+            workStart: const TimeOfDay(hour: 9, minute: 0),
+            workEnd: const TimeOfDay(hour: 17, minute: 0),
+            appointments: appointments,
+            professionalId: '7',
+          ),
+          ScheduleHelper.isSlotAvailable(
+            slotStart: start,
+            slotDuration: 60,
+            professionalId: '7',
+            appointments: appointments,
+          ),
+          reason: 'slot $start',
+        );
+      }
+    });
   });
 }

@@ -6,10 +6,9 @@ abstract class UserRepository {
   Future<int> insertUser(User user);
   Future<int> updateUser(User user);
   Future<void> syncUserInAppointments(User user);
-  Future<List<User>> getProfessionalsByCategory(String category);
-  @Deprecated('Use getProfessionalsByCategory instead')
-  Future<List<User>> getProfessionalsBySpecialty(String specialty);
+  Future<List<User>> getProfessionalsByCategory(String category,
+      {String? businessId});
   Future<List<User>> getProfessionals({String? businessId});
-  Stream<List<User>> watchProfessionals({String? businessId});
-  Future<List<User>> getCustomers();
+  Future<List<User>> getProfessionalsByBusiness(String businessId);
+  Future<List<User>> getCustomers({String? businessId});
 }

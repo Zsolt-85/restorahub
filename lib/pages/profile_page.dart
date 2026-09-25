@@ -46,8 +46,12 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _loadUser();
-    if (Provider.of<AuthProvider>(context, listen: false).currentUser?.isStaff ?? false) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _loadBusinessServices());
+    if (Provider.of<AuthProvider>(context, listen: false)
+            .currentUser
+            ?.isStaff ??
+        false) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _loadBusinessServices());
     }
   }
 
@@ -75,16 +79,24 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = auth.currentUser;
     if (user == null || !user.isStaff) return;
 
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
     final businessId = businessProvider.currentBusiness?.id ?? user.businessId;
-    if (businessId == null || businessId.isEmpty) return;
 
     setState(() => _loadingServices = true);
     try {
       final repository = Provider.of<ServiceRepository>(context, listen: false);
       final services = await repository.getServices(businessId: businessId);
       if (mounted) {
-        setState(() => _businessServices = services);
+        // Solo staff (no business) see only their own assigned services.
+        final visible = businessId == null || businessId.isEmpty
+            ? services
+                .where((s) =>
+                    user.id != null &&
+                    s.assignedProfessionalIds.contains(user.id))
+                .toList()
+            : services;
+        setState(() => _businessServices = visible);
       }
     } catch (e) {
       if (mounted) {
@@ -110,7 +122,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _pickTime({required bool isStart}) async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: (isStart ? _workStart : _workEnd) ?? const TimeOfDay(hour: 9, minute: 0),
+      initialTime: (isStart ? _workStart : _workEnd) ??
+          const TimeOfDay(hour: 9, minute: 0),
     );
 
     if (picked != null) {
@@ -127,7 +140,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _pickBreakTime({required bool isStart}) async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: (isStart ? _breakStart : _breakEnd) ?? const TimeOfDay(hour: 12, minute: 0),
+      initialTime: (isStart ? _breakStart : _breakEnd) ??
+          const TimeOfDay(hour: 12, minute: 0),
     );
 
     if (picked != null) {
@@ -154,17 +168,11 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
+    // Solo staff have no business: services are created unscoped (null
+    // businessId), which the security rules explicitly permit for staff.
     final businessId = businessProvider.currentBusiness?.id ?? user.businessId;
-    if (businessId == null || businessId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No business associated with your account. Please contact support.'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      return;
-    }
 
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
@@ -232,7 +240,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     labelText: l10n?.price ?? 'Price',
                     border: const OutlineInputBorder(),
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Price is required';
@@ -276,13 +285,17 @@ class _ProfilePageState extends State<ProfilePage> {
               setState(() => _loading = true);
 
               try {
-                final repository = Provider.of<ServiceRepository>(context, listen: false);
+                final repository =
+                    Provider.of<ServiceRepository>(context, listen: false);
                 final service = Service(
                   name: name,
                   description: description.isEmpty ? null : description,
                   businessId: businessId,
                   durationMinutes: duration,
                   price: price,
+                  // Inherit the creator's category so the service is
+                  // discoverable in category-filtered menus.
+                  category: user.category.isNotEmpty ? user.category : null,
                   assignedProfessionalIds: [user.id!],
                 );
                 await repository.createService(service);
@@ -337,13 +350,15 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _loading = true);
     try {
       final repository = Provider.of<ServiceRepository>(context, listen: false);
-      final updatedService = service.copyWith(assignedProfessionalIds: updatedIds);
+      final updatedService =
+          service.copyWith(assignedProfessionalIds: updatedIds);
       await repository.updateService(updatedService);
       if (!mounted) return;
       await _loadBusinessServices();
     } catch (e) {
       if (!mounted) return;
-      ErrorHandler.showErrorSnackBar(context, ErrorHandler.getDisplayMessage(e));
+      ErrorHandler.showErrorSnackBar(
+          context, ErrorHandler.getDisplayMessage(e));
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -364,7 +379,8 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)?.profile ?? 'Edit profile')),
+      appBar: AppBar(
+          title: Text(AppLocalizations.of(context)?.profile ?? 'Edit profile')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -384,7 +400,8 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 16),
             Text(
-              AppLocalizations.of(context)?.customerDetails ?? 'Personal information',
+              AppLocalizations.of(context)?.customerDetails ??
+                  'Personal information',
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
@@ -419,17 +436,20 @@ class _ProfilePageState extends State<ProfilePage> {
             if (user.isStaff) ...[
               const SizedBox(height: 24),
               Text(
-                AppLocalizations.of(context)?.professionalSettings ?? 'Professional settings',
+                AppLocalizations.of(context)?.professionalSettings ??
+                    'Professional settings',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
-               DropdownButtonFormField<String>(
-                 initialValue: _specialty,
-                 decoration: InputDecoration(
-                   labelText: AppLocalizations.of(context)?.professionSpecialty ?? 'Profession / specialty',
-                   border: const OutlineInputBorder(),
-                   prefixIcon: const Icon(Icons.work_outline),
-                 ),
+              DropdownButtonFormField<String>(
+                initialValue: _specialty,
+                decoration: InputDecoration(
+                  labelText:
+                      AppLocalizations.of(context)?.professionSpecialty ??
+                          'Profession / specialty',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.work_outline),
+                ),
                 items: serviceNames
                     .map((name) => DropdownMenuItem(
                           value: name,
@@ -441,26 +461,34 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(AppLocalizations.of(context)?.workDayStarts ?? 'Work day starts'),
-                subtitle: Text(_workStart?.format(context) ?? AppLocalizations.of(context)?.notSet ?? 'Not set'),
+                title: Text(AppLocalizations.of(context)?.workDayStarts ??
+                    'Work day starts'),
+                subtitle: Text(_workStart?.format(context) ??
+                    AppLocalizations.of(context)?.notSet ??
+                    'Not set'),
                 trailing: const Icon(Icons.schedule),
                 onTap: () => _pickTime(isStart: true),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(AppLocalizations.of(context)?.workDayEnds ?? 'Work day ends'),
-                subtitle: Text(_workEnd?.format(context) ?? AppLocalizations.of(context)?.notSet ?? 'Not set'),
+                title: Text(AppLocalizations.of(context)?.workDayEnds ??
+                    'Work day ends'),
+                subtitle: Text(_workEnd?.format(context) ??
+                    AppLocalizations.of(context)?.notSet ??
+                    'Not set'),
                 trailing: const Icon(Icons.schedule),
                 onTap: () => _pickTime(isStart: false),
               ),
               const SizedBox(height: 8),
-               DropdownButtonFormField<int>(
-                 initialValue: _slotDurationMinutes,
-                 decoration: InputDecoration(
-                   labelText: AppLocalizations.of(context)?.appointmentSlotLength ?? 'Appointment slot length',
-                   border: const OutlineInputBorder(),
-                   prefixIcon: const Icon(Icons.timelapse),
-                 ),
+              DropdownButtonFormField<int>(
+                initialValue: _slotDurationMinutes,
+                decoration: InputDecoration(
+                  labelText:
+                      AppLocalizations.of(context)?.appointmentSlotLength ??
+                          'Appointment slot length',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.timelapse),
+                ),
                 items: slotDurationOptions
                     .map(
                       (minutes) => DropdownMenuItem(
@@ -473,13 +501,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     setState(() => _slotDurationMinutes = value),
               ),
               const SizedBox(height: 12),
-               DropdownButtonFormField<int>(
-                 initialValue: _bufferTimeMinutes,
-                 decoration: InputDecoration(
-                   labelText: AppLocalizations.of(context)?.bufferTimeBetweenAppointments ?? 'Buffer time between appointments',
-                   border: const OutlineInputBorder(),
-                   prefixIcon: const Icon(Icons.timer_outlined),
-                 ),
+              DropdownButtonFormField<int>(
+                initialValue: _bufferTimeMinutes,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)
+                          ?.bufferTimeBetweenAppointments ??
+                      'Buffer time between appointments',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.timer_outlined),
+                ),
                 items: bufferTimeOptions
                     .map(
                       (minutes) => DropdownMenuItem(
@@ -494,26 +524,34 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(AppLocalizations.of(context)?.breakStart ?? 'Break start'),
-                subtitle: Text(_breakStart?.format(context) ?? AppLocalizations.of(context)?.notSet ?? 'Not set'),
+                title: Text(
+                    AppLocalizations.of(context)?.breakStart ?? 'Break start'),
+                subtitle: Text(_breakStart?.format(context) ??
+                    AppLocalizations.of(context)?.notSet ??
+                    'Not set'),
                 trailing: const Icon(Icons.free_breakfast),
                 onTap: () => _pickBreakTime(isStart: true),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(AppLocalizations.of(context)?.breakEnd ?? 'Break end'),
-                subtitle: Text(_breakEnd?.format(context) ?? AppLocalizations.of(context)?.notSet ?? 'Not set'),
+                title:
+                    Text(AppLocalizations.of(context)?.breakEnd ?? 'Break end'),
+                subtitle: Text(_breakEnd?.format(context) ??
+                    AppLocalizations.of(context)?.notSet ??
+                    'Not set'),
                 trailing: const Icon(Icons.free_breakfast),
                 onTap: () => _pickBreakTime(isStart: false),
               ),
               const SizedBox(height: 24),
               Text(
-                AppLocalizations.of(context)?.myOfferedServices ?? 'My Offered Services',
+                AppLocalizations.of(context)?.myOfferedServices ??
+                    'My Offered Services',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
               if (_loadingServices)
-                const Center(child: Padding(
+                const Center(
+                    child: Padding(
                   padding: EdgeInsets.all(16),
                   child: CircularProgressIndicator(),
                 )),
@@ -521,8 +559,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
-                    AppLocalizations.of(context)?.noServicesAvailable ?? 'No services available',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    AppLocalizations.of(context)?.noServicesAvailable ??
+                        'No services available',
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ),
               ..._businessServices.map((service) {
@@ -536,13 +576,17 @@ class _ProfilePageState extends State<ProfilePage> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (service.description != null && service.description!.isNotEmpty)
+                        if (service.description != null &&
+                            service.description!.isNotEmpty)
                           Text(service.description!),
-                        if (service.durationMinutes != null || service.price != null)
+                        if (service.durationMinutes != null ||
+                            service.price != null)
                           Text(
                             [
-                              if (service.durationMinutes != null) '${service.durationMinutes} min',
-                               if (service.price != null) '${service.price!.toStringAsFixed(2)} RON',
+                              if (service.durationMinutes != null)
+                                '${service.durationMinutes} min',
+                              if (service.price != null)
+                                '${service.price!.toStringAsFixed(2)} RON',
                             ].join(' · '),
                           ),
                       ],
@@ -557,19 +601,22 @@ class _ProfilePageState extends State<ProfilePage> {
               ElevatedButton.icon(
                 onPressed: _loading ? null : _createCustomService,
                 icon: const Icon(Icons.add),
-                label: Text(AppLocalizations.of(context)?.addService ?? 'Add Custom Service'),
+                label: Text(AppLocalizations.of(context)?.addService ??
+                    'Add Custom Service'),
               ),
             ],
             const SizedBox(height: 24),
             Text(
-              AppLocalizations.of(context)?.changePassword ?? 'Change password (optional)',
+              AppLocalizations.of(context)?.changePassword ??
+                  'Change password (optional)',
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _passwordController,
               decoration: InputDecoration(
-                labelText: AppLocalizations.of(context)?.newPassword ?? 'New password',
+                labelText:
+                    AppLocalizations.of(context)?.newPassword ?? 'New password',
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.lock_outline),
               ),
@@ -579,7 +626,8 @@ class _ProfilePageState extends State<ProfilePage> {
             TextField(
               controller: _confirmPasswordController,
               decoration: InputDecoration(
-                labelText: AppLocalizations.of(context)?.confirmNewPassword ?? 'Confirm new password',
+                labelText: AppLocalizations.of(context)?.confirmNewPassword ??
+                    'Confirm new password',
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.lock_outline),
               ),
@@ -637,12 +685,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(AppLocalizations.of(context)?.profileUpdatedSuccessfully ?? 'Profile updated successfully'),
+                            content: Text(AppLocalizations.of(context)
+                                    ?.profileUpdatedSuccessfully ??
+                                'Profile updated successfully'),
                           ),
                         );
                         Navigator.pop(context);
                       } else {
-                        setState(() => _error = ErrorHandler.getDisplayMessage(result));
+                        setState(() =>
+                            _error = ErrorHandler.getDisplayMessage(result));
                       }
                     },
               child: _loading

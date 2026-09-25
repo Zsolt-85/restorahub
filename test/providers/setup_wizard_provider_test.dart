@@ -55,7 +55,8 @@ class FakeServiceRepository implements ServiceRepository {
 
   @override
   Stream<List<Service>> watchServices({String? businessId}) {
-    return Stream.value(services.where((s) => s.businessId == (businessId ?? '')).toList());
+    return Stream.value(
+        services.where((s) => s.businessId == (businessId ?? '')).toList());
   }
 }
 
@@ -86,13 +87,12 @@ class FakeUserRepository implements UserRepository {
   Future<void> syncUserInAppointments(User user) async {}
 
   @override
-  Future<List<User>> getProfessionalsByCategory(String category) async {
-    return users.values.where((u) => u.isStaff && u.category == category).toList();
-  }
-
-  @override
-  Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
-    return getProfessionalsByCategory(specialty);
+  Future<List<User>> getProfessionalsByCategory(String category,
+      {String? businessId}) async {
+    return users.values
+        .where((u) => u.isStaff && u.category == category)
+        .where((u) => businessId == null || u.businessId == businessId)
+        .toList();
   }
 
   @override
@@ -104,18 +104,22 @@ class FakeUserRepository implements UserRepository {
   }
 
   @override
-  Stream<List<User>> watchProfessionals({String? businessId}) {
-    return Stream.value(
-      users.values
-          .where((u) => u.isStaff)
-          .where((u) => businessId == null || u.businessId == businessId)
-          .toList(),
-    );
+  Future<List<User>> getProfessionalsByBusiness(String businessId) async {
+    return users.values
+        .where((u) =>
+            (u.isStaff || u.role == 'business_admin') &&
+            u.businessId == businessId)
+        .toList();
   }
 
   @override
-  Future<List<User>> getCustomers() async {
-    return users.values.where((u) => u.role == 'customer').toList();
+  Future<List<User>> getCustomers({String? businessId}) async {
+    if (businessId == null) {
+      return users.values.where((u) => u.role == 'customer').toList();
+    }
+    return users.values
+        .where((u) => u.role == 'customer' && u.businessId == businessId)
+        .toList();
   }
 }
 

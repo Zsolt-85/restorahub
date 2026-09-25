@@ -87,6 +87,63 @@ class AppLocalizationsDe extends AppLocalizations {
   String get selectCustomer => 'Kunde auswählen';
 
   @override
+  String get selectStaffMember => 'Mitarbeiter auswählen';
+
+  @override
+  String get anyAvailable => 'Alle verfügbar';
+
+  @override
+  String get bookAnother => 'Weitere Buchung';
+
+  @override
+  String get fullyBookedPickAnother =>
+      'Dieser Tag ist ausgebucht – wählen Sie ein anderes Datum';
+
+  @override
+  String get pickDateToContinue => 'Wählen Sie ein Datum, um fortzufahren';
+
+  @override
+  String get pickTimeToContinue => 'Wählen Sie eine Startzeit, um fortzufahren';
+
+  @override
+  String get noStaffForCategory =>
+      'Keine Mitarbeiter für diese Kategorie verfügbar';
+
+  @override
+  String get selectStaffToContinue =>
+      'Wählen Sie einen Mitarbeiter, um fortzufahren';
+
+  @override
+  String get browseOtherCategories => 'Andere Kategorien ansehen';
+
+  @override
+  String get markAsNoShow => 'Als No-Show markieren';
+
+  @override
+  String get markedNoShow => 'Als No-Show markiert';
+
+  @override
+  String depositDuePercent(Object percent) {
+    return 'Eine Anzahlung von $percent % ist bei der Zahlung fällig';
+  }
+
+  @override
+  String depositDueAmount(Object amount, Object percent) {
+    return 'Eine Anzahlung von $percent % ($amount) ist bei der Zahlung fällig';
+  }
+
+  @override
+  String get completeProfileSignInExplainer =>
+      'Ihr Profil ist unvollständig. Melden Sie sich an, um es fertigzustellen – es dauert weniger als eine Minute.';
+
+  @override
+  String get continueToSignIn => 'Weiter zur Anmeldung';
+
+  @override
+  String get noBusinessAssigned =>
+      'Ihrem Konto ist noch kein Unternehmen zugeordnet. Bitten Sie einen Administrator um eine Einladung oder melden Sie sich mit einem anderen Konto an.';
+
+  @override
   String get customerDetails => 'Kundendetails';
 
   @override
@@ -505,6 +562,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noUpcomingAppointments => 'Keine anstehenden Termine';
+
+  @override
+  String get noUpcomingAppointmentsSubtitle =>
+      'Bereit für Ihren nächsten Besuch?';
+
+  @override
+  String get noAppointmentHistory => 'Keine vergangenen Termine';
+
+  @override
+  String get noAppointmentHistorySubtitle =>
+      'Ihre abgeschlossenen Buchungen werden hier angezeigt.';
 
   @override
   String get appointmentsSection => 'Termine';

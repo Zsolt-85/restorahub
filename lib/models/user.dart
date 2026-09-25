@@ -35,8 +35,10 @@ class User {
 
   bool get isStaff => role == 'professional' || role == 'staff';
 
-  @Deprecated('Use isStaff instead')
-  bool get isProfessional => isStaff;
+  /// Single choke point for the legacy `professional` → `staff` migration.
+  /// All new writes must store [Role.staff.name]; reads accept both.
+  static String normalizeRole(String role) =>
+      role == 'professional' ? Role.staff.name : role;
 
   Role? get roleEnum {
     const mapping = <String, Role>{
@@ -64,7 +66,8 @@ class User {
   factory User.fromMap(Map<String, dynamic> map) {
     final categoryValue = map['category']?.toString() ?? '';
     final legacySpecialty = map['specialty']?.toString() ?? '';
-    final resolvedCategory = categoryValue.isNotEmpty ? categoryValue : legacySpecialty;
+    final resolvedCategory =
+        categoryValue.isNotEmpty ? categoryValue : legacySpecialty;
 
     return User(
       id: map['id']?.toString(),

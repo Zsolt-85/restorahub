@@ -87,6 +87,62 @@ class AppLocalizationsRo extends AppLocalizations {
   String get selectCustomer => 'Selectează client';
 
   @override
+  String get selectStaffMember => 'Selectați personalul';
+
+  @override
+  String get anyAvailable => 'Oricare disponibil';
+
+  @override
+  String get bookAnother => 'Rezervare nouă';
+
+  @override
+  String get fullyBookedPickAnother => 'Ziua este completă – alegeți altă dată';
+
+  @override
+  String get pickDateToContinue => 'Alegeți o dată pentru a continua';
+
+  @override
+  String get pickTimeToContinue => 'Alegeți ora de început pentru a continua';
+
+  @override
+  String get noStaffForCategory =>
+      'Niciun membru al personalului disponibil pentru această categorie';
+
+  @override
+  String get selectStaffToContinue =>
+      'Selectați un membru al personalului pentru a continua';
+
+  @override
+  String get browseOtherCategories => 'Răsfoiți alte categorii';
+
+  @override
+  String get markAsNoShow => 'Marcați ca neprezentare';
+
+  @override
+  String get markedNoShow => 'Marcat ca neprezentare';
+
+  @override
+  String depositDuePercent(Object percent) {
+    return 'Un avans de $percent% va fi datorat la plată';
+  }
+
+  @override
+  String depositDueAmount(Object amount, Object percent) {
+    return 'Un avans de $percent% ($amount) va fi datorat la plată';
+  }
+
+  @override
+  String get completeProfileSignInExplainer =>
+      'Profilul dvs. este incomplet. Autentificați-vă pentru a-l finaliza – durează mai puțin de un minut.';
+
+  @override
+  String get continueToSignIn => 'Continuați la autentificare';
+
+  @override
+  String get noBusinessAssigned =>
+      'Nicio afacere nu este încă asociată contului dvs. Cereți unui administrator o invitație sau autentificați-vă cu alt cont.';
+
+  @override
   String get customerDetails => 'Detalii client';
 
   @override
@@ -505,6 +561,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get noUpcomingAppointments => 'Nu sunt programări viitoare';
+
+  @override
+  String get noUpcomingAppointmentsSubtitle =>
+      'Rezervați un nou serviciu folosind butonul \'+\' de mai jos.';
+
+  @override
+  String get noAppointmentHistory => 'Fără istoric de programări';
+
+  @override
+  String get noAppointmentHistorySubtitle =>
+      'Rezervările dvs. finalizate și trecute vor apărea aici.';
 
   @override
   String get appointmentsSection => 'Programări';

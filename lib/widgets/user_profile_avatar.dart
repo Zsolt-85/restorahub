@@ -66,7 +66,8 @@ class UserProfileAvatar extends StatelessWidget {
               value: 'profile',
               child: ListTile(
                 leading: const Icon(Icons.person_outline),
-                title: Text(AppLocalizations.of(context)?.editProfile ?? 'Profile Settings'),
+                title: Text(AppLocalizations.of(context)?.editProfile ??
+                    'Profile Settings'),
                 contentPadding: EdgeInsets.zero,
                 minLeadingWidth: 0,
               ),
@@ -75,7 +76,8 @@ class UserProfileAvatar extends StatelessWidget {
               value: 'theme',
               child: ListTile(
                 leading: const Icon(Icons.color_lens_outlined),
-                title: Text(AppLocalizations.of(context)?.theme ?? 'Theme Selection'),
+                title: Text(
+                    AppLocalizations.of(context)?.theme ?? 'Theme Selection'),
                 contentPadding: EdgeInsets.zero,
                 minLeadingWidth: 0,
               ),
@@ -85,7 +87,8 @@ class UserProfileAvatar extends StatelessWidget {
               value: 'logout',
               child: ListTile(
                 leading: const Icon(Icons.logout),
-                title: Text(AppLocalizations.of(context)?.menuLogout ?? 'Log Out'),
+                title:
+                    Text(AppLocalizations.of(context)?.menuLogout ?? 'Log Out'),
                 contentPadding: EdgeInsets.zero,
                 minLeadingWidth: 0,
               ),

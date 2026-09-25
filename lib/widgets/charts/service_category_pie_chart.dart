@@ -37,7 +37,8 @@ class ServiceCategoryPieChart extends StatelessWidget {
     ];
 
     final sections = categoryMap.entries.map((entry) {
-      final color = colors[categoryMap.keys.toList().indexOf(entry.key) % colors.length];
+      final color =
+          colors[categoryMap.keys.toList().indexOf(entry.key) % colors.length];
       return PieChartSectionData(
         value: entry.value.toDouble(),
         color: color,
@@ -46,9 +47,15 @@ class ServiceCategoryPieChart extends StatelessWidget {
     }).toList();
 
     final legendItems = categoryMap.entries.map((entry) {
-      final color = colors[categoryMap.keys.toList().indexOf(entry.key) % colors.length];
-      final percentage = total > 0 ? ((entry.value / total) * 100).toStringAsFixed(1) : '0.0';
-      return _LegendItem(color: color, label: entry.key, count: entry.value, percentage: percentage);
+      final color =
+          colors[categoryMap.keys.toList().indexOf(entry.key) % colors.length];
+      final percentage =
+          total > 0 ? ((entry.value / total) * 100).toStringAsFixed(1) : '0.0';
+      return _LegendItem(
+          color: color,
+          label: entry.key,
+          count: entry.value,
+          percentage: percentage);
     }).toList();
 
     return Column(

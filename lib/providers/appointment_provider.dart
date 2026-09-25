@@ -49,6 +49,8 @@ class AppointmentProvider extends ChangeNotifier {
     try {
       return await _repository.getAppointmentById(id);
     } catch (e) {
+      // Nullable contract preserved for callers; never fail silently.
+      AppLogger.error('AppointmentProvider.getAppointmentById error: $e');
       return null;
     }
   }
@@ -76,6 +78,9 @@ class AppointmentProvider extends ChangeNotifier {
   void _endLoading([String? error]) {
     _isLoading = false;
     _error = error;
+    // errorMessage feeds booking UI directly: keep it in sync so stale
+    // validation errors (set before loading starts) never linger.
+    _errorMessage = error;
     notifyListeners();
   }
 
@@ -91,10 +96,14 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadAppointmentsInRange(String businessId, DateTime start, DateTime end, {String? professionalId}) async {
+  Future<void> loadAppointmentsInRange(
+      String businessId, DateTime start, DateTime end,
+      {String? professionalId}) async {
     _beginLoading();
     try {
-      _appointments = await _repository.getAppointmentsForBusinessInRange(businessId, start, end, professionalId: professionalId);
+      _appointments = await _repository.getAppointmentsForBusinessInRange(
+          businessId, start, end,
+          professionalId: professionalId);
       _endLoading();
     } on AppException catch (e) {
       _endLoading(e.message);
@@ -107,10 +116,19 @@ class AppointmentProvider extends ChangeNotifier {
     if (currentUser == null) return;
     final userId = currentUser!.id;
     if (userId == null) return;
-    if (currentUser!.role == 'customer') {
-      _appointments = await _repository.getAppointmentsForCustomer(userId, businessId: businessId);
+    if (currentUser!.roleEnum == Role.customer) {
+      _appointments = await _repository.getAppointmentsForCustomer(userId,
+          businessId: businessId);
     } else if (currentUser!.isStaff) {
-      _appointments = await _repository.getAppointmentsForProfessional(userId, businessId: businessId, professionalEmail: currentUser!.email);
+      _appointments = await _repository.getAppointmentsForProfessional(userId,
+          businessId: businessId, professionalEmail: currentUser!.email);
+    } else if ((currentUser!.roleEnum == Role.businessAdmin ||
+            currentUser!.roleEnum == Role.superAdmin) &&
+        currentUser!.businessId != null &&
+        currentUser!.businessId!.isNotEmpty) {
+      // Admins see their whole business scope, not a personal list.
+      _appointments = await _repository
+          .getAppointmentsForBusiness(currentUser!.businessId!);
     }
   }
 
@@ -120,10 +138,18 @@ class AppointmentProvider extends ChangeNotifier {
     final userId = currentUser!.id;
     if (userId == null) return;
 
-    if (currentUser!.role == 'customer') {
-      _appointmentsStream = _repository.watchAppointmentsForCustomer(userId, businessId: businessId);
+    if (currentUser!.roleEnum == Role.customer) {
+      _appointmentsStream = _repository.watchAppointmentsForCustomer(userId,
+          businessId: businessId);
     } else if (currentUser!.isStaff) {
-      _appointmentsStream = _repository.watchAppointmentsForProfessional(userId, businessId: businessId, professionalEmail: currentUser!.email);
+      _appointmentsStream = _repository.watchAppointmentsForProfessional(userId,
+          businessId: businessId, professionalEmail: currentUser!.email);
+    } else if ((currentUser!.roleEnum == Role.businessAdmin ||
+            currentUser!.roleEnum == Role.superAdmin) &&
+        currentUser!.businessId != null &&
+        currentUser!.businessId!.isNotEmpty) {
+      _appointmentsStream =
+          _repository.watchAppointmentsForBusiness(currentUser!.businessId!);
     } else {
       return;
     }
@@ -134,7 +160,9 @@ class AppointmentProvider extends ChangeNotifier {
         notifyListeners();
       },
       onError: (e) {
-        _error = e is AppException ? e.message : 'Unexpected error loading appointments';
+        _error = e is AppException
+            ? e.message
+            : 'Unexpected error loading appointments';
         notifyListeners();
       },
     );
@@ -154,21 +182,26 @@ class AppointmentProvider extends ChangeNotifier {
       if ((businessId == null || businessId.isEmpty) &&
           (businessName == null || businessName.isEmpty)) {
         final sender = await _userRepository.getUserById(notification.senderId);
-        final receiver = await _userRepository.getUserById(notification.receiverId);
-        final candidateUser = sender?.businessId != null && sender!.businessId!.isNotEmpty
+        final receiver =
+            await _userRepository.getUserById(notification.receiverId);
+        final candidateUser = sender?.businessId != null &&
+                sender!.businessId!.isNotEmpty
             ? sender
             : receiver?.businessId != null && receiver!.businessId!.isNotEmpty
                 ? receiver
                 : null;
         if (candidateUser != null) {
           businessId = candidateUser.businessId;
-          final business = await _businessRepository?.getBusinessById(businessId!);
+          final business =
+              await _businessRepository?.getBusinessById(businessId!);
           businessName = business?.name;
         }
       }
 
       final title = _buildNotificationTitle(notification.type, businessName);
-      final message = _buildNotificationMessage(notification, businessName);
+      // Message passes through unchanged (kept inline; was a 6-branch switch
+      // returning its input).
+      final message = notification.message;
 
       await _notificationRepository!.sendNotification(
         notification.copyWith(
@@ -185,7 +218,9 @@ class AppointmentProvider extends ChangeNotifier {
   }
 
   String _buildNotificationTitle(NotificationType type, String? businessName) {
-    final suffix = businessName != null && businessName.isNotEmpty ? ' at $businessName' : '';
+    final suffix = businessName != null && businessName.isNotEmpty
+        ? ' at $businessName'
+        : '';
     switch (type) {
       case NotificationType.bookingRequested:
         return 'New booking request$suffix';
@@ -199,23 +234,6 @@ class AppointmentProvider extends ChangeNotifier {
         return 'Booking completed$suffix';
       case NotificationType.upcomingReminder:
         return 'Upcoming appointment reminder$suffix';
-    }
-  }
-
-  String _buildNotificationMessage(AppNotification notification, String? businessName) {
-    switch (notification.type) {
-      case NotificationType.bookingRequested:
-        return notification.message;
-      case NotificationType.bookingConfirmed:
-        return notification.message;
-      case NotificationType.bookingCancelled:
-        return notification.message;
-      case NotificationType.bookingRescheduled:
-        return notification.message;
-      case NotificationType.bookingCompleted:
-        return notification.message;
-      case NotificationType.upcomingReminder:
-        return notification.message;
     }
   }
 
@@ -246,14 +264,16 @@ class AppointmentProvider extends ChangeNotifier {
 
     _beginLoading();
     try {
-      await _repository.createAppointmentAtomic(appt);
+      // Repository never mutates [appt]: the authoritative id comes back here.
+      final newId = await _repository.createAppointmentAtomic(appt);
       if (appt.professionalId != null && appt.customerId != null) {
         await _sendNotification(
           AppNotification(
             type: NotificationType.bookingRequested,
             title: 'New booking request',
-            message: '${appt.customerName ?? 'A customer'} requested ${appt.service} on ${FormatHelper.formatDateTime(appt.dateTime)}',
-            appointmentId: appt.id,
+            message:
+                '${appt.customerName ?? 'A customer'} requested ${appt.service} on ${FormatHelper.formatDateTime(appt.dateTime)}',
+            appointmentId: newId,
             receiverId: appt.professionalId!,
             senderId: appt.customerId!,
           ),
@@ -262,7 +282,9 @@ class AppointmentProvider extends ChangeNotifier {
       await _reloadAppointments(businessId: currentUser?.businessId);
       _endLoading();
     } on AppException catch (e) {
-      _endLoading(e.code == 'SLOT_TAKEN' ? 'This time slot is no longer available' : e.message);
+      _endLoading(e.code == 'SLOT_TAKEN'
+          ? 'This time slot is no longer available'
+          : e.message);
       rethrow;
     } catch (e) {
       _endLoading('Unexpected error creating booking');
@@ -309,7 +331,8 @@ class AppointmentProvider extends ChangeNotifier {
         _endLoading();
         return;
       }
-      final appt = appointments.firstWhere((a) => a.id == id, orElse: () => throw StateError('Appointment not found'));
+      final appt = appointments.firstWhere((a) => a.id == id,
+          orElse: () => throw StateError('Appointment not found'));
       final previousStatus = appt.status;
       final updated = appt.withStatus(newStatus);
       await _repository.updateAppointment(updated);
@@ -322,7 +345,8 @@ class AppointmentProvider extends ChangeNotifier {
           AppNotification(
             type: NotificationType.bookingConfirmed,
             title: 'Booking confirmed',
-            message: '${appt.professionalName ?? 'Your professional'} confirmed ${appt.service} on ${FormatHelper.formatDateTime(appt.dateTime)}',
+            message:
+                '${appt.professionalName ?? 'Your professional'} confirmed ${appt.service} on ${FormatHelper.formatDateTime(appt.dateTime)}',
             appointmentId: appt.id,
             receiverId: appt.customerId!,
             senderId: appt.professionalId!,
@@ -337,7 +361,8 @@ class AppointmentProvider extends ChangeNotifier {
           AppNotification(
             type: NotificationType.bookingCancelled,
             title: 'Booking declined',
-            message: '${appt.professionalName ?? 'Your professional'} declined ${appt.service} on ${FormatHelper.formatDateTime(appt.dateTime)}',
+            message:
+                '${appt.professionalName ?? 'Your professional'} declined ${appt.service} on ${FormatHelper.formatDateTime(appt.dateTime)}',
             appointmentId: appt.id,
             receiverId: appt.customerId!,
             senderId: appt.professionalId!,
@@ -357,19 +382,25 @@ class AppointmentProvider extends ChangeNotifier {
   List<Appointment> get pendingAppointments {
     final appointments = _appointments;
     if (appointments == null || appointments.isEmpty) return const [];
-    return appointments.where((a) => a.status == AppointmentStatus.pending).toList();
+    return appointments
+        .where((a) => a.status == AppointmentStatus.pending)
+        .toList();
   }
 
   List<Appointment> get confirmedAppointments {
     final appointments = _appointments;
     if (appointments == null || appointments.isEmpty) return const [];
-    return appointments.where((a) => a.status == AppointmentStatus.confirmed).toList();
+    return appointments
+        .where((a) => a.status == AppointmentStatus.confirmed)
+        .toList();
   }
 
   List<Appointment> get completedAppointments {
     final appointments = _appointments;
     if (appointments == null || appointments.isEmpty) return const [];
-    return appointments.where((a) => a.status == AppointmentStatus.completed).toList();
+    return appointments
+        .where((a) => a.status == AppointmentStatus.completed)
+        .toList();
   }
 
   List<Appointment> get cancelledAppointments {
@@ -407,34 +438,6 @@ class AppointmentProvider extends ChangeNotifier {
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }
 
-  int getAppointmentCountForMonth(int year, int month) {
-    final appointments = _appointments;
-    if (appointments == null || appointments.isEmpty) return 0;
-    final start = DateTime(year, month, 1);
-    final end = DateTime(year, month + 1, 1);
-    return appointments
-        .where(
-          (a) =>
-              a.dateTime.isAfter(start) &&
-              a.dateTime.isBefore(end),
-        )
-        .length;
-  }
-
-  int getYearToDateAppointmentCount(int year) {
-    final appointments = _appointments;
-    if (appointments == null || appointments.isEmpty) return 0;
-    final start = DateTime(year);
-    final now = DateTime.now();
-    return appointments
-        .where(
-          (a) =>
-              a.dateTime.isAfter(start) &&
-              a.dateTime.isBefore(now.add(const Duration(days: 1))),
-        )
-        .length;
-  }
-
   void setCurrentUser(User user) {
     currentUser = user;
     loadAppointments();
@@ -446,6 +449,7 @@ class AppointmentProvider extends ChangeNotifier {
     required String professionalId,
     int bufferTimeMinutes = 0,
     String? professionalEmail,
+    String? businessId,
   }) async {
     try {
       return await _repository.checkProfessionalAvailability(
@@ -454,8 +458,12 @@ class AppointmentProvider extends ChangeNotifier {
         slotDurationMinutes: slotDuration,
         bufferTimeMinutes: bufferTimeMinutes,
         professionalEmail: professionalEmail,
+        businessId: businessId,
       );
     } catch (e) {
+      // Fail closed: an unchecked slot must read as taken, never as free.
+      // Callers show the "just booked" message; errors are logged here.
+      AppLogger.error('AppointmentProvider.isSlotAvailable error: $e');
       return false;
     }
   }
@@ -488,14 +496,41 @@ class AppointmentProvider extends ChangeNotifier {
     }
   }
 
+  /// Business cancellation window, falling back to the legacy 2 hours.
+  /// Never throws: policy lookup failures must not block cancellations.
+  Future<Duration> cancellationWindow() async {
+    try {
+      final businessId = currentUser?.businessId;
+      if (businessId != null && businessId.isNotEmpty) {
+        final business =
+            await _businessRepository?.getBusinessById(businessId);
+        final hours = business?.settings?.cancellationWindowHours;
+        if (hours != null && hours > 0) {
+          return Duration(hours: hours);
+        }
+      }
+    } catch (e) {
+      AppLogger.error('AppointmentProvider.cancellationWindow error: $e');
+    }
+    return const Duration(hours: 2);
+  }
+
+  String _cancellationBlockedMessage(Duration window) {
+    final hours = window.inHours;
+    final unit = hours == 1 ? 'hour' : 'hours';
+    return 'Appointments cannot be cancelled less than $hours $unit before the start time.';
+  }
+
   Future<String?> cancelAppointment(String id) async {
     final appointments = _appointments;
     if (appointments == null || appointments.isEmpty) {
       return 'Appointment not found.';
     }
-    final appt = appointments.firstWhere((a) => a.id == id, orElse: () => throw StateError('Appointment not found'));
-    if (!appt.canBeCancelledByCustomer()) {
-      return 'Appointments cannot be cancelled less than 2 hours before the start time.';
+    final appt = appointments.firstWhere((a) => a.id == id,
+        orElse: () => throw StateError('Appointment not found'));
+    final window = await cancellationWindow();
+    if (!appt.canBeCancelledByCustomer(cancellationWindow: window)) {
+      return _cancellationBlockedMessage(window);
     }
     _beginLoading();
     try {
@@ -518,13 +553,16 @@ class AppointmentProvider extends ChangeNotifier {
     if (appointments == null || appointments.isEmpty) {
       return 'Appointment not found.';
     }
-    final appt = appointments.firstWhere((a) => a.id == id, orElse: () => throw StateError('Appointment not found'));
-    if (!appt.canBeCancelled()) {
-      return 'Appointments cannot be cancelled less than 2 hours before the start time.';
+    final appt = appointments.firstWhere((a) => a.id == id,
+        orElse: () => throw StateError('Appointment not found'));
+    final window = await cancellationWindow();
+    if (!appt.canBeCancelledByCustomer(cancellationWindow: window)) {
+      return _cancellationBlockedMessage(window);
     }
     _beginLoading();
     try {
-      await updateAppointmentStatus(id, AppointmentStatus.cancelledByProfessional);
+      await updateAppointmentStatus(
+          id, AppointmentStatus.cancelledByProfessional);
       await _reloadAppointments(businessId: currentUser?.businessId);
       _endLoading();
       return null;
@@ -534,6 +572,42 @@ class AppointmentProvider extends ChangeNotifier {
     } catch (e) {
       _endLoading('Unexpected error cancelling booking');
       return 'Unexpected error cancelling booking';
+    }
+  }
+
+  /// Marks a past, non-terminal appointment as no-show.
+  /// Returns null on success, otherwise a user-safe error message.
+  /// Any configured no-show fee is recorded separately by the caller
+  /// (see AppointmentActions.markNoShow) to keep payments explicit.
+  Future<String?> markNoShow(String id) async {
+    final appointments = _appointments;
+    if (appointments == null || appointments.isEmpty) {
+      return 'Appointment not found.';
+    }
+    late final Appointment appt;
+    try {
+      appt = appointments.firstWhere((a) => a.id == id);
+    } catch (_) {
+      return 'Appointment not found.';
+    }
+    if (appt.isTerminal) {
+      return 'This appointment cannot be marked as no-show.';
+    }
+    if (!appt.isPast) {
+      return 'Only past appointments can be marked as no-show.';
+    }
+    _beginLoading();
+    try {
+      await updateAppointmentStatus(id, AppointmentStatus.noShow);
+      await _reloadAppointments(businessId: currentUser?.businessId);
+      _endLoading();
+      return null;
+    } on AppException catch (e) {
+      _endLoading(e.message);
+      return e.message;
+    } catch (e) {
+      _endLoading('Unexpected error updating appointment');
+      return 'Unexpected error updating appointment';
     }
   }
 
@@ -551,7 +625,8 @@ class AppointmentProvider extends ChangeNotifier {
 
     _beginLoading();
     try {
-      final professional = await _userRepository.getUserById(appointment.professionalId!);
+      final professional =
+          await _userRepository.getUserById(appointment.professionalId!);
       final bufferTime = professional?.bufferTimeMinutes ?? 0;
 
       final available = await isSlotAvailable(
@@ -559,6 +634,7 @@ class AppointmentProvider extends ChangeNotifier {
         slotDuration: appointment.durationMinutes,
         professionalId: appointment.professionalId!,
         bufferTimeMinutes: bufferTime,
+        businessId: professional?.businessId ?? appointment.businessId,
       );
 
       if (!available) {
@@ -582,9 +658,11 @@ class AppointmentProvider extends ChangeNotifier {
 
   List<Appointment> get filteredAppointments {
     final appointments = _appointments;
-    if (appointments == null || appointments.isEmpty || currentUser == null) return const [];
+    if (appointments == null || appointments.isEmpty || currentUser == null) {
+      return const [];
+    }
 
-    if (currentUser!.role == 'customer') {
+    if (currentUser!.roleEnum == Role.customer) {
       return appointments
           .where((a) => a.customerId == currentUser!.id)
           .toList();
@@ -594,7 +672,9 @@ class AppointmentProvider extends ChangeNotifier {
       final userId = currentUser!.id;
       final userEmail = currentUser!.email;
       return appointments
-          .where((a) => a.professionalId == userId || (userEmail.isNotEmpty && a.professionalEmail == userEmail))
+          .where((a) =>
+              a.professionalId == userId ||
+              (userEmail.isNotEmpty && a.professionalEmail == userEmail))
           .toList();
     }
 
@@ -607,13 +687,17 @@ class AppointmentProvider extends ChangeNotifier {
     final now = DateTime.now();
     for (final appt in appointments) {
       if (appt.isCancelled) continue;
+      // Id-less appointments share one fallback bucket and cannot be
+      // cancelled individually — skip them instead of spamming it.
+      if (appt.id == null || appt.id!.isEmpty) continue;
       final reminderTime = appt.dateTime.subtract(const Duration(hours: 1));
       if (reminderTime.isAfter(now) && reminderTime.isBefore(appt.dateTime)) {
         try {
           await NotificationScheduleHelper.scheduleUpcomingReminder(
             appointmentId: appt.id ?? '',
             title: 'Appointment reminder',
-            body: '${appt.service} with ${appt.professionalName ?? "a professional"} is in 1 hour',
+            body:
+                '${appt.service} with ${appt.professionalName ?? "a professional"} is in 1 hour',
             scheduledTime: reminderTime,
           );
         } catch (e) {

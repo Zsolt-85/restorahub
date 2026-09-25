@@ -12,7 +12,8 @@ Future<void> addToGoogleCalendar(Appointment appointment) async {
 
 Future<void> exportCalendarIcs(Appointment appointment) async {
   final ics = generateIcsContent(appointment);
-  final blob = web.Blob([ics].jsify() as JSArray<JSAny>, web.BlobPropertyBag(type: 'text/calendar;charset=utf-8'));
+  final blob = web.Blob([ics].jsify() as JSArray<JSAny>,
+      web.BlobPropertyBag(type: 'text/calendar;charset=utf-8'));
   final url = web.URL.createObjectURL(blob);
   web.HTMLAnchorElement()
     ..href = url

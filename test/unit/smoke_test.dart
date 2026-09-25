@@ -57,9 +57,13 @@ void main() {
     test('business lifecycle state machine transitions', () {
       final business = Business(id: 'biz_1', name: 'Test');
 
-      expect(() => BusinessLifecycleHelper.validateTransition(business, BusinessStatus.active),
+      expect(
+          () => BusinessLifecycleHelper.validateTransition(
+              business, BusinessStatus.active),
           returnsNormally);
-      expect(() => BusinessLifecycleHelper.validateTransition(business, BusinessStatus.archived),
+      expect(
+          () => BusinessLifecycleHelper.validateTransition(
+              business, BusinessStatus.archived),
           throwsA(isA<Exception>()));
     });
 
@@ -69,7 +73,7 @@ void main() {
 
       expect(restored.id, plan.id);
       expect(restored.features, plan.features);
-      expect(restored.hasFeature('api_access'), isTrue);
+      expect(restored.hasFeature('multi_location'), isTrue);
     });
   });
 }

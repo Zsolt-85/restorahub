@@ -16,32 +16,60 @@ class FakeBookingRepository implements BookingRepository {
   final List<Appointment> appointments = [];
 
   @override
-  Future<List<Appointment>> getAppointmentsForCustomer(String customerId, {String? businessId}) async {
+  Future<List<Appointment>> getAppointmentsForCustomer(String customerId,
+      {String? businessId}) async {
     return appointments.where((a) => a.customerId == customerId).toList();
   }
 
   @override
-  Future<List<Appointment>> getAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) async {
-    return appointments.where((a) => a.professionalId == professionalId).toList();
+  Future<List<Appointment>> getAppointmentsForProfessional(
+      String professionalId,
+      {String? businessId,
+      String? professionalEmail}) async {
+    return appointments
+        .where((a) => a.professionalId == professionalId)
+        .toList();
   }
 
   @override
-  Future<List<Appointment>> getAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate, int? limit, String? startAfterDocumentId}) async {
-    return appointments.where((a) => a.customerId != null || a.professionalId != null).toList();
+  Future<List<Appointment>> getAppointmentsForBusiness(String businessId,
+      {DateTime? startDate,
+      DateTime? endDate,
+      int? limit,
+      String? startAfterDocumentId}) async {
+    return appointments
+        .where((a) => a.customerId != null || a.professionalId != null)
+        .toList();
   }
 
   @override
-  Future<List<Appointment>> getAppointmentsForBusinessInRange(String businessId, DateTime start, DateTime end, {String? professionalId}) async {
+  Future<List<Appointment>> getAppointmentsForBusinessInRange(
+      String businessId, DateTime start, DateTime end,
+      {String? professionalId}) async {
     return appointments.where((a) {
-      if (a.customerId == null && a.professionalId == null) return false;
-      if (a.dateTime.isBefore(start) || a.dateTime.isAfter(end)) return false;
-      if (professionalId != null && professionalId.isNotEmpty && a.professionalId != professionalId) return false;
+      if (a.customerId == null && a.professionalId == null) {
+        return false;
+      }
+      if (a.dateTime.isBefore(start) || a.dateTime.isAfter(end)) {
+        return false;
+      }
+      if (professionalId != null &&
+          professionalId.isNotEmpty &&
+          a.professionalId != professionalId) {
+        return false;
+      }
       return true;
     }).toList();
   }
 
   @override
-  Future<bool> checkProfessionalAvailability({required String professionalId, required DateTime dateTime, required int slotDurationMinutes, int bufferTimeMinutes = 0, String? businessId, String? professionalEmail}) async {
+  Future<bool> checkProfessionalAvailability(
+      {required String professionalId,
+      required DateTime dateTime,
+      required int slotDurationMinutes,
+      int bufferTimeMinutes = 0,
+      String? businessId,
+      String? professionalEmail}) async {
     final slotEnd = dateTime.add(Duration(minutes: slotDurationMinutes));
     return !appointments.any((a) {
       if (a.professionalId != professionalId) return false;
@@ -54,32 +82,43 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<void> createAppointmentAtomic(Appointment appointment) async {
+  Future<String> createAppointmentAtomic(Appointment appointment) async {
     if (appointment.professionalId != null) {
       final slotStart = appointment.dateTime;
-      final slotEnd = slotStart.add(Duration(minutes: appointment.durationMinutes));
+      final slotEnd =
+          slotStart.add(Duration(minutes: appointment.durationMinutes));
 
       final hasOverlap = appointments.any((a) {
-        if (a.professionalId != appointment.professionalId) return false;
-        if (a.status != AppointmentStatus.pending && a.status != AppointmentStatus.confirmed) return false;
+        if (a.professionalId != appointment.professionalId) {
+          return false;
+        }
+        if (a.status != AppointmentStatus.pending &&
+            a.status != AppointmentStatus.confirmed) {
+          return false;
+        }
         final apptEnd = a.dateTime.add(Duration(minutes: a.durationMinutes));
         return slotStart.isBefore(apptEnd) && slotEnd.isAfter(a.dateTime);
       });
 
       if (hasOverlap) {
-        throw const AppException('This time slot is no longer available', code: 'SLOT_TAKEN');
+        throw const AppException('This time slot is no longer available',
+            code: 'SLOT_TAKEN');
       }
     }
 
-    appointment.id ??= (appointments.length + 1).toString();
-    appointments.add(appointment);
+    final stored = appointment.id == null
+        ? appointment.copyWith(id: (appointments.length + 1).toString())
+        : appointment;
+    appointments.add(stored);
+    return stored.id!;
   }
 
-  @override
-  Future<int> insertAppointment(Appointment appointment) async {
-    appointment.id ??= (appointments.length + 1).toString();
-    appointments.add(appointment);
-    return 1;
+  /// Test-only seeding (replaces the deleted insertAppointment).
+  Future<void> seedAppointment(Appointment appointment) async {
+    final stored = appointment.id == null
+        ? appointment.copyWith(id: (appointments.length + 1).toString())
+        : appointment;
+    appointments.add(stored);
   }
 
   @override
@@ -100,31 +139,32 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId, {String? businessId}) {
+  Stream<List<Appointment>> watchAppointmentsForCustomer(String customerId,
+      {String? businessId}) {
     final controller = StreamController<List<Appointment>>();
-    controller.add(appointments.where((a) => a.customerId == customerId).toList());
+    controller
+        .add(appointments.where((a) => a.customerId == customerId).toList());
     return controller.stream;
   }
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForProfessional(String professionalId, {String? businessId, String? professionalEmail}) {
+  Stream<List<Appointment>> watchAppointmentsForProfessional(
+      String professionalId,
+      {String? businessId,
+      String? professionalEmail}) {
     final controller = StreamController<List<Appointment>>();
-    controller.add(appointments.where((a) => a.professionalId == professionalId).toList());
+    controller.add(
+        appointments.where((a) => a.professionalId == professionalId).toList());
     return controller.stream;
   }
 
   @override
-  Stream<List<Appointment>> watchAppointmentsForBusiness(String businessId, {DateTime? startDate, DateTime? endDate}) {
+  Stream<List<Appointment>> watchAppointmentsForBusiness(String businessId,
+      {DateTime? startDate, DateTime? endDate}) {
     final controller = StreamController<List<Appointment>>();
-    controller.add(appointments.where((a) => a.customerId != null || a.professionalId != null).toList());
-    return controller.stream;
-  }
-
-  @override
-  Stream<Appointment?> watchAppointment(String id) {
-    final controller = StreamController<Appointment?>();
-    final appt = appointments.where((a) => a.id == id).firstOrNull;
-    controller.add(appt);
+    controller.add(appointments
+        .where((a) => a.customerId != null || a.professionalId != null)
+        .toList());
     return controller.stream;
   }
 
@@ -165,13 +205,12 @@ class FakeUserRepository implements UserRepository {
   Future<void> syncUserInAppointments(User user) async {}
 
   @override
-  Future<List<User>> getProfessionalsByCategory(String category) async {
-    return users.values.where((u) => u.isStaff && u.category == category).toList();
-  }
-
-  @override
-  Future<List<User>> getProfessionalsBySpecialty(String specialty) async {
-    return getProfessionalsByCategory(specialty);
+  Future<List<User>> getProfessionalsByCategory(String category,
+      {String? businessId}) async {
+    return users.values
+        .where((u) => u.isStaff && u.category == category)
+        .where((u) => businessId == null || u.businessId == businessId)
+        .toList();
   }
 
   @override
@@ -183,18 +222,22 @@ class FakeUserRepository implements UserRepository {
   }
 
   @override
-  Stream<List<User>> watchProfessionals({String? businessId}) {
-    return Stream.value(
-      users.values
-          .where((u) => u.isStaff)
-          .where((u) => businessId == null || u.businessId == businessId)
-          .toList(),
-    );
+  Future<List<User>> getProfessionalsByBusiness(String businessId) async {
+    return users.values
+        .where((u) =>
+            (u.isStaff || u.role == 'business_admin') &&
+            u.businessId == businessId)
+        .toList();
   }
 
   @override
-  Future<List<User>> getCustomers() async {
-    return users.values.where((u) => u.role == 'customer').toList();
+  Future<List<User>> getCustomers({String? businessId}) async {
+    if (businessId == null) {
+      return users.values.where((u) => u.role == 'customer').toList();
+    }
+    return users.values
+        .where((u) => u.role == 'customer' && u.businessId == businessId)
+        .toList();
   }
 }
 
@@ -202,12 +245,14 @@ class FakeNotificationRepository implements NotificationRepository {
   final List<AppNotification> sent = [];
 
   @override
-  Future<void> sendNotification(AppNotification notification, {String? businessId}) async {
+  Future<void> sendNotification(AppNotification notification,
+      {String? businessId}) async {
     sent.add(notification);
   }
 
   @override
-  Future<List<AppNotification>> getNotificationsForUser(String userId, {String? businessId}) async {
+  Future<List<AppNotification>> getNotificationsForUser(String userId,
+      {String? businessId}) async {
     return sent.where((n) => n.receiverId == userId).toList();
   }
 
@@ -222,7 +267,8 @@ class FakeNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Stream<List<AppNotification>> watchNotifications(String userId, {String? businessId}) {
+  Stream<List<AppNotification>> watchNotifications(String userId,
+      {String? businessId}) {
     throw UnimplementedError();
   }
 }
@@ -243,12 +289,14 @@ class FakeBusinessRepository implements BusinessRepository {
 
 class _FailingNotificationRepository implements NotificationRepository {
   @override
-  Future<void> sendNotification(AppNotification notification, {String? businessId}) async {
+  Future<void> sendNotification(AppNotification notification,
+      {String? businessId}) async {
     throw Exception('Notification failed');
   }
 
   @override
-  Future<List<AppNotification>> getNotificationsForUser(String userId, {String? businessId}) async {
+  Future<List<AppNotification>> getNotificationsForUser(String userId,
+      {String? businessId}) async {
     return [];
   }
 
@@ -263,7 +311,8 @@ class _FailingNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Stream<List<AppNotification>> watchNotifications(String userId, {String? businessId}) {
+  Stream<List<AppNotification>> watchNotifications(String userId,
+      {String? businessId}) {
     throw UnimplementedError();
   }
 }
@@ -303,11 +352,11 @@ void main() {
       final appt = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 8, 1, 10, 0),
+        dateTime: DateTime(2030, 8, 1, 10, 0),
         durationMinutes: 60,
         customerId: 'cust-1',
       );
-      await bookingRepository.insertAppointment(appt);
+      await bookingRepository.seedAppointment(appt);
 
       await provider.loadAppointments();
 
@@ -319,7 +368,7 @@ void main() {
     test('addAppointment adds to repository and reloads list', () async {
       final appt = Appointment(
         service: 'Facial',
-        dateTime: DateTime(2026, 9, 1, 11, 0),
+        dateTime: DateTime(2030, 9, 1, 11, 0),
         durationMinutes: 60,
         customerId: 'cust-1',
         professionalId: 'prof-1',
@@ -332,18 +381,48 @@ void main() {
       expect(provider.appointments.first.id, isNotNull);
     });
 
-    test('updateAppointment modifies existing appointment and reloads', () async {
+    test('addAppointment uses returned id and never mutates input', () async {
+      final prof = User(
+        id: 'prof-1',
+        name: 'Test Professional',
+        email: 'prof@example.com',
+        phone: '555-0200',
+        role: 'professional',
+      );
+      await userRepository.insertUser(prof);
+
+      final appt = Appointment(
+        service: 'Facial',
+        dateTime: DateTime(2030, 9, 1, 11, 0),
+        durationMinutes: 60,
+        customerId: 'cust-1',
+        professionalId: 'prof-1',
+      );
+
+      await provider.addAppointment(appt);
+
+      // Repository owns id assignment; the caller's object stays untouched.
+      expect(appt.id, isNull);
+      expect(provider.appointments.first.id, isNotNull);
+      expect(notificationRepository.sent.length, 1);
+      expect(notificationRepository.sent.first.appointmentId,
+          provider.appointments.first.id);
+    });
+
+    test('updateAppointment modifies existing appointment and reloads',
+        () async {
       final appt = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 9, 1, 10, 0),
+        dateTime: DateTime(2030, 9, 1, 10, 0),
         durationMinutes: 60,
         customerId: 'cust-1',
         professionalId: 'prof-1',
       );
       await provider.addAppointment(appt);
 
-      final updated = provider.appointments.first.copyWith(service: 'Deep Tissue Massage');
+      final updated =
+          provider.appointments.first.copyWith(service: 'Deep Tissue Massage');
       await provider.updateAppointment(updated);
 
       expect(provider.appointments.first.service, 'Deep Tissue Massage');
@@ -353,7 +432,7 @@ void main() {
       final appt = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 9, 1, 10, 0),
+        dateTime: DateTime(2030, 9, 1, 10, 0),
         durationMinutes: 60,
         customerId: 'cust-1',
         professionalId: 'prof-1',
@@ -365,11 +444,12 @@ void main() {
       expect(provider.appointments, isEmpty);
     });
 
-    test('linkPaymentToAppointment links payment ID and marks completed', () async {
+    test('linkPaymentToAppointment links payment ID and marks completed',
+        () async {
       final appt = Appointment(
         id: '10',
         service: 'Massage',
-        dateTime: DateTime(2026, 9, 1, 10, 0),
+        dateTime: DateTime(2030, 9, 1, 10, 0),
         durationMinutes: 60,
         status: AppointmentStatus.confirmed,
         customerId: 'cust-1',
@@ -384,7 +464,8 @@ void main() {
       expect(updatedAppt.status, AppointmentStatus.completed);
     });
 
-    test('rescheduleAppointment works correctly if slot is available', () async {
+    test('rescheduleAppointment works correctly if slot is available',
+        () async {
       final prof = User(
         id: 'prof-1',
         name: 'Test Professional',
@@ -398,14 +479,14 @@ void main() {
       final appt = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 9, 1, 10, 0),
+        dateTime: DateTime(2030, 9, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
         customerId: 'cust-1',
       );
       await provider.addAppointment(appt);
 
-      final newTime = DateTime(2026, 9, 1, 14, 0);
+      final newTime = DateTime(2030, 9, 1, 14, 0);
       final error = await provider.rescheduleAppointment(
         appointment: provider.appointments.first,
         newDateTime: newTime,
@@ -429,7 +510,7 @@ void main() {
       final appt1 = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 9, 1, 10, 0),
+        dateTime: DateTime(2030, 9, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
         customerId: 'cust-1',
@@ -437,7 +518,7 @@ void main() {
       final appt2 = Appointment(
         id: '2',
         service: 'Facial',
-        dateTime: DateTime(2026, 9, 1, 10, 0),
+        dateTime: DateTime(2030, 9, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
         customerId: 'cust-1',
@@ -446,12 +527,12 @@ void main() {
       // appt2 occupies the same slot; insert it directly so the slot is taken
       // without relying on addAppointment throwing (current provider sets an
       // error instead of throwing when a slot is unavailable).
-      await bookingRepository.insertAppointment(appt2);
+      await bookingRepository.seedAppointment(appt2);
 
       // Try to reschedule appt1 to the exact same time as appt2
       final error = await provider.rescheduleAppointment(
         appointment: provider.appointments.firstWhere((a) => a.id == '1'),
-        newDateTime: DateTime(2026, 9, 1, 10, 0),
+        newDateTime: DateTime(2030, 9, 1, 10, 0),
       );
 
       expect(error, 'This time slot is no longer available');
@@ -461,22 +542,23 @@ void main() {
       final existingAppt = Appointment(
         id: '1',
         service: 'Massage',
-        dateTime: DateTime(2026, 9, 1, 10, 0),
+        dateTime: DateTime(2030, 9, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
         customerId: 'cust-1',
       );
-      await bookingRepository.insertAppointment(existingAppt);
+      await bookingRepository.seedAppointment(existingAppt);
 
       final newAppt = Appointment(
         service: 'Facial',
-        dateTime: DateTime(2026, 9, 1, 10, 0),
+        dateTime: DateTime(2030, 9, 1, 10, 0),
         durationMinutes: 60,
         professionalId: 'prof-1',
         customerId: 'cust-1',
       );
 
-      await expectLater(() => provider.addAppointment(newAppt), throwsA(isA<AppException>()));
+      await expectLater(
+          () => provider.addAppointment(newAppt), throwsA(isA<AppException>()));
 
       expect(provider.appointments.length, 0);
       expect(provider.error, 'This time slot is no longer available');
@@ -495,7 +577,8 @@ void main() {
         await provider.addAppointment(appt);
 
         final error = await provider.cancelAppointment('1');
-        expect(error, 'Appointments cannot be cancelled less than 2 hours before the start time.');
+        expect(error,
+            'Appointments cannot be cancelled less than 2 hours before the start time.');
       });
 
       test('cancelAppointment succeeds outside 2-hour window', () async {
@@ -512,10 +595,12 @@ void main() {
         final error = await provider.cancelAppointment('1');
         expect(error, isNull);
         expect(provider.appointments.length, 1);
-        expect(provider.appointments.first.status, AppointmentStatus.cancelledByCustomer);
+        expect(provider.appointments.first.status,
+            AppointmentStatus.cancelledByCustomer);
       });
 
-      test('professionalCancelAppointment fails within 2-hour window', () async {
+      test('professionalCancelAppointment fails within 2-hour window',
+          () async {
         final appt = Appointment(
           id: '1',
           service: 'Massage',
@@ -526,10 +611,12 @@ void main() {
         await provider.addAppointment(appt);
 
         final error = await provider.professionalCancelAppointment('1');
-        expect(error, 'Appointments cannot be cancelled less than 2 hours before the start time.');
+        expect(error,
+            'Appointments cannot be cancelled less than 2 hours before the start time.');
       });
 
-      test('professionalCancelAppointment succeeds outside 2-hour window', () async {
+      test('professionalCancelAppointment succeeds outside 2-hour window',
+          () async {
         final appt = Appointment(
           id: '1',
           service: 'Massage',
@@ -542,11 +629,14 @@ void main() {
         final error = await provider.professionalCancelAppointment('1');
         expect(error, isNull);
         expect(provider.appointments.length, 1);
-        expect(provider.appointments.first.status, AppointmentStatus.cancelledByProfessional);
+        expect(provider.appointments.first.status,
+            AppointmentStatus.cancelledByProfessional);
       });
 
       group('Notification Dispatch', () {
-        test('addAppointment sends bookingRequested notification when both parties exist', () async {
+        test(
+            'addAppointment sends bookingRequested notification when both parties exist',
+            () async {
           final prof = User(
             id: 'prof-1',
             name: 'Test Professional',
@@ -566,12 +656,15 @@ void main() {
           await provider.addAppointment(appt);
 
           expect(notificationRepository.sent.length, 1);
-          expect(notificationRepository.sent.first.type, NotificationType.bookingRequested);
+          expect(notificationRepository.sent.first.type,
+              NotificationType.bookingRequested);
           expect(notificationRepository.sent.first.receiverId, 'prof-1');
           expect(notificationRepository.sent.first.senderId, 'cust-1');
         });
 
-        test('addAppointment does not send notification when professionalId is missing', () async {
+        test(
+            'addAppointment does not send notification when professionalId is missing',
+            () async {
           final appt = Appointment(
             service: 'Massage',
             dateTime: DateTime.now().add(const Duration(days: 1)),
@@ -582,7 +675,9 @@ void main() {
           expect(notificationRepository.sent, isEmpty);
         });
 
-        test('updateAppointmentStatus pending->confirmed sends bookingConfirmed notification', () async {
+        test(
+            'updateAppointmentStatus pending->confirmed sends bookingConfirmed notification',
+            () async {
           final prof = User(
             id: 'prof-1',
             name: 'Test Professional',
@@ -602,15 +697,19 @@ void main() {
           await provider.addAppointment(appt);
           notificationRepository.sent.clear();
 
-          await provider.updateAppointmentStatus('1', AppointmentStatus.confirmed);
+          await provider.updateAppointmentStatus(
+              '1', AppointmentStatus.confirmed);
 
           expect(notificationRepository.sent.length, 1);
-          expect(notificationRepository.sent.first.type, NotificationType.bookingConfirmed);
+          expect(notificationRepository.sent.first.type,
+              NotificationType.bookingConfirmed);
           expect(notificationRepository.sent.first.receiverId, 'cust-1');
           expect(notificationRepository.sent.first.senderId, 'prof-1');
         });
 
-        test('updateAppointmentStatus to cancelledByProfessional sends bookingCancelled notification', () async {
+        test(
+            'updateAppointmentStatus to cancelledByProfessional sends bookingCancelled notification',
+            () async {
           final appt = Appointment(
             id: '1',
             service: 'Massage',
@@ -622,15 +721,19 @@ void main() {
           await provider.addAppointment(appt);
           notificationRepository.sent.clear();
 
-          await provider.updateAppointmentStatus('1', AppointmentStatus.cancelledByProfessional);
+          await provider.updateAppointmentStatus(
+              '1', AppointmentStatus.cancelledByProfessional);
 
           expect(notificationRepository.sent.length, 1);
-          expect(notificationRepository.sent.first.type, NotificationType.bookingCancelled);
+          expect(notificationRepository.sent.first.type,
+              NotificationType.bookingCancelled);
           expect(notificationRepository.sent.first.receiverId, 'cust-1');
           expect(notificationRepository.sent.first.senderId, 'prof-1');
         });
 
-        test('updateAppointmentStatus confirmed->cancelledByProfessional sends bookingCancelled notification', () async {
+        test(
+            'updateAppointmentStatus confirmed->cancelledByProfessional sends bookingCancelled notification',
+            () async {
           final appt = Appointment(
             id: '1',
             service: 'Massage',
@@ -642,10 +745,12 @@ void main() {
           await provider.addAppointment(appt);
           notificationRepository.sent.clear();
 
-          await provider.updateAppointmentStatus('1', AppointmentStatus.cancelledByProfessional);
+          await provider.updateAppointmentStatus(
+              '1', AppointmentStatus.cancelledByProfessional);
 
           expect(notificationRepository.sent.length, 1);
-          expect(notificationRepository.sent.first.type, NotificationType.bookingCancelled);
+          expect(notificationRepository.sent.first.type,
+              NotificationType.bookingCancelled);
         });
 
         test('_sendNotification swallows errors without throwing', () async {
@@ -671,15 +776,20 @@ void main() {
             customerId: 'cust-1',
             professionalId: 'prof-1',
           );
-          await bookingRepository.insertAppointment(appt);
+          await bookingRepository.seedAppointment(appt);
 
-          expect(() async => await provider.updateAppointmentStatus('1', AppointmentStatus.cancelledByProfessional), returnsNormally);
+          expect(
+              () async => await provider.updateAppointmentStatus(
+                  '1', AppointmentStatus.cancelledByProfessional),
+              returnsNormally);
         });
       });
     });
 
     group('State Machine Transitions', () {
-      test('updateAppointmentStatus rejects terminal to non-terminal transition', () async {
+      test(
+          'updateAppointmentStatus rejects terminal to non-terminal transition',
+          () async {
         final appt = Appointment(
           id: '1',
           service: 'Massage',
@@ -721,10 +831,42 @@ void main() {
         expect(provider.appointmentsStream, isNotNull);
         provider.stopRealtimeAppointments();
       });
+
+      test('admin subscribes to business scope stream', () async {
+        provider.currentUser = User(
+          id: 'admin-1',
+          name: 'Admin',
+          email: 'admin@test.com',
+          phone: '555-0000',
+          role: 'business_admin',
+          businessId: 'biz-1',
+        );
+
+        provider.startRealtimeAppointments();
+
+        expect(provider.appointmentsStream, isNotNull);
+        provider.stopRealtimeAppointments();
+      });
+
+      test('super_admin without business gets no stream', () async {
+        provider.currentUser = User(
+          id: 'super-1',
+          name: 'Super',
+          email: 'super@test.com',
+          phone: '555-0000',
+          role: 'super_admin',
+        );
+
+        provider.startRealtimeAppointments();
+
+        expect(provider.appointmentsStream, isNull);
+      });
     });
 
     group('Appointment Segregation', () {
-      test('upcomingAppointments lists future active bookings sorted closest first', () async {
+      test(
+          'upcomingAppointments lists future active bookings sorted closest first',
+          () async {
         final now = DateTime.now();
         final appts = [
           Appointment(
@@ -747,7 +889,7 @@ void main() {
           ),
         ];
         for (final a in appts) {
-          await bookingRepository.insertAppointment(a);
+          await bookingRepository.seedAppointment(a);
         }
         await provider.loadAppointments();
 
@@ -758,7 +900,8 @@ void main() {
         expect(upcoming[2].id, 'u1');
       });
 
-      test('upcomingAppointments excludes terminal bookings even if future', () async {
+      test('upcomingAppointments excludes terminal bookings even if future',
+          () async {
         final now = DateTime.now();
         final futureCompleted = Appointment(
           id: 't1',
@@ -767,14 +910,16 @@ void main() {
           status: AppointmentStatus.completed,
           customerId: 'cust-1',
         );
-        await bookingRepository.insertAppointment(futureCompleted);
+        await bookingRepository.seedAppointment(futureCompleted);
         await provider.loadAppointments();
 
         expect(provider.upcomingAppointments, isEmpty);
         expect(provider.pastAppointments, contains(futureCompleted));
       });
 
-      test('pastAppointments lists past and terminal bookings sorted most recent first', () async {
+      test(
+          'pastAppointments lists past and terminal bookings sorted most recent first',
+          () async {
         final now = DateTime.now();
         final appts = [
           Appointment(
@@ -799,7 +944,7 @@ void main() {
           ),
         ];
         for (final a in appts) {
-          await bookingRepository.insertAppointment(a);
+          await bookingRepository.seedAppointment(a);
         }
         await provider.loadAppointments();
 
@@ -841,7 +986,7 @@ void main() {
           ),
         ];
         for (final a in appts) {
-          await bookingRepository.insertAppointment(a);
+          await bookingRepository.seedAppointment(a);
         }
         await provider.loadAppointments();
 
@@ -858,6 +1003,181 @@ void main() {
         expect(pastIds, contains('c1'));
         expect(pastIds, contains('pa1'));
         expect(pastIds, contains('pa2'));
+      });
+    });
+
+    group('Cancellation window policy', () {
+      test('cancelAppointment enforces the business window', () async {
+        businessRepository.businesses['biz-1'] = Business(
+          id: 'biz-1',
+          name: 'Strict Biz',
+          settings: BusinessSettings(cancellationWindowHours: 24),
+        );
+        provider.currentUser = User(
+          id: 'cust-1',
+          name: 'Test User',
+          email: 'test@example.com',
+          phone: '555-0100',
+          role: 'customer',
+          businessId: 'biz-1',
+        );
+        await bookingRepository.seedAppointment(Appointment(
+          id: 'w1',
+          service: 'Massage',
+          dateTime: DateTime.now().add(const Duration(hours: 12)),
+          durationMinutes: 60,
+          customerId: 'cust-1',
+          professionalId: 'prof-1',
+        ));
+        await provider.loadAppointments();
+
+        final error = await provider.cancelAppointment('w1');
+
+        expect(error, contains('24 hours'));
+        expect(provider.appointments.first.status, AppointmentStatus.pending);
+      });
+
+      test('cancelAppointment allows outside the business window', () async {
+        businessRepository.businesses['biz-1'] = Business(
+          id: 'biz-1',
+          name: 'Strict Biz',
+          settings: BusinessSettings(cancellationWindowHours: 24),
+        );
+        provider.currentUser = User(
+          id: 'cust-1',
+          name: 'Test User',
+          email: 'test@example.com',
+          phone: '555-0100',
+          role: 'customer',
+          businessId: 'biz-1',
+        );
+        await bookingRepository.seedAppointment(Appointment(
+          id: 'w2',
+          service: 'Massage',
+          dateTime: DateTime.now().add(const Duration(days: 2)),
+          durationMinutes: 60,
+          customerId: 'cust-1',
+          professionalId: 'prof-1',
+        ));
+        await provider.loadAppointments();
+
+        final error = await provider.cancelAppointment('w2');
+
+        expect(error, isNull);
+      });
+    });
+
+    group('Mark as no-show', () {
+      test('marks past confirmed appointments as no-show', () async {
+        await bookingRepository.seedAppointment(Appointment(
+          id: 'ns1',
+          service: 'Massage',
+          dateTime: DateTime.now().subtract(const Duration(days: 1)),
+          durationMinutes: 60,
+          status: AppointmentStatus.confirmed,
+          customerId: 'cust-1',
+          professionalId: 'prof-1',
+        ));
+        await provider.loadAppointments();
+
+        final error = await provider.markNoShow('ns1');
+
+        expect(error, isNull);
+        expect(provider.appointments.first.status, AppointmentStatus.noShow);
+      });
+
+      test('rejects future and terminal appointments', () async {
+        await bookingRepository.seedAppointment(Appointment(
+          id: 'ns2',
+          service: 'Massage',
+          dateTime: DateTime.now().add(const Duration(days: 1)),
+          durationMinutes: 60,
+          status: AppointmentStatus.confirmed,
+          customerId: 'cust-1',
+          professionalId: 'prof-1',
+        ));
+        await bookingRepository.seedAppointment(Appointment(
+          id: 'ns3',
+          service: 'Massage',
+          dateTime: DateTime.now().subtract(const Duration(days: 1)),
+          durationMinutes: 60,
+          status: AppointmentStatus.completed,
+          customerId: 'cust-1',
+          professionalId: 'prof-1',
+        ));
+        await provider.loadAppointments();
+
+        expect(await provider.markNoShow('ns2'), isNotNull);
+        expect(await provider.markNoShow('ns3'), isNotNull);
+        expect(await provider.markNoShow('missing'), isNotNull);
+      });
+    });
+
+    group('Admin scope and error clearing', () {
+      test('business_admin loads whole business scope', () async {
+        await bookingRepository.seedAppointment(Appointment(
+          id: 'b1',
+          service: 'Massage',
+          dateTime: DateTime(2030, 6, 1, 10, 0),
+          durationMinutes: 60,
+          customerId: 'cust-9',
+          professionalId: 'prof-9',
+        ));
+        provider.currentUser = User(
+          id: 'admin-1',
+          name: 'Admin',
+          email: 'admin@test.com',
+          phone: '555-0000',
+          role: 'business_admin',
+          businessId: 'biz-1',
+        );
+
+        await provider.loadAppointments();
+
+        expect(provider.isLoading, isFalse);
+        expect(provider.appointments.length, 1);
+        expect(provider.appointments.first.id, 'b1');
+      });
+
+      test('super_admin without business loads nothing and does not throw',
+          () async {
+        provider.currentUser = User(
+          id: 'super-1',
+          name: 'Super',
+          email: 'super@test.com',
+          phone: '555-0000',
+          role: 'super_admin',
+        );
+
+        await provider.loadAppointments();
+
+        expect(provider.isLoading, isFalse);
+        expect(provider.appointments, isEmpty);
+      });
+
+      test('errorMessage does not linger after a later success', () async {
+        // Past date triggers the validation path, setting errorMessage.
+        await provider.addAppointment(Appointment(
+          service: 'Massage',
+          dateTime: DateTime(2020, 1, 1, 10, 0),
+          durationMinutes: 60,
+          customerId: 'cust-1',
+          professionalId: 'prof-1',
+        ));
+        expect(provider.errorMessage, isNotNull);
+
+        await bookingRepository.seedAppointment(Appointment(
+          id: 'ok-1',
+          service: 'Massage',
+          dateTime: DateTime(2030, 6, 1, 10, 0),
+          durationMinutes: 60,
+          customerId: 'cust-1',
+          professionalId: 'prof-1',
+        ));
+        await provider.loadAppointments();
+
+        expect(provider.errorMessage, isNull);
+        expect(provider.error, isNull);
       });
     });
   });

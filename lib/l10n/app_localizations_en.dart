@@ -87,6 +87,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectCustomer => 'Select Customer';
 
   @override
+  String get selectStaffMember => 'Select Staff Member';
+
+  @override
+  String get anyAvailable => 'Any available';
+
+  @override
+  String get bookAnother => 'Book another';
+
+  @override
+  String get fullyBookedPickAnother =>
+      'Fully booked for this day — pick another date';
+
+  @override
+  String get pickDateToContinue => 'Pick a date to continue';
+
+  @override
+  String get pickTimeToContinue => 'Pick a start time to continue';
+
+  @override
+  String get noStaffForCategory => 'No staff available for this category';
+
+  @override
+  String get selectStaffToContinue => 'Select a staff member to continue';
+
+  @override
+  String get browseOtherCategories => 'Browse other categories';
+
+  @override
+  String get markAsNoShow => 'Mark as no-show';
+
+  @override
+  String get markedNoShow => 'Marked as no-show';
+
+  @override
+  String depositDuePercent(Object percent) {
+    return 'A $percent% deposit will be due at payment time';
+  }
+
+  @override
+  String depositDueAmount(Object amount, Object percent) {
+    return 'A $percent% deposit ($amount) will be due at payment time';
+  }
+
+  @override
+  String get completeProfileSignInExplainer =>
+      'Your profile is incomplete. Sign in to finish setting it up — it takes less than a minute.';
+
+  @override
+  String get continueToSignIn => 'Continue to sign in';
+
+  @override
+  String get noBusinessAssigned =>
+      'No business is assigned to your account yet. Ask an administrator to invite you, or sign in with a different account.';
+
+  @override
   String get customerDetails => 'Customer Details';
 
   @override
@@ -503,6 +558,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noUpcomingAppointments => 'No upcoming appointments';
+
+  @override
+  String get noUpcomingAppointmentsSubtitle => 'Ready for your next visit?';
+
+  @override
+  String get noAppointmentHistory => 'No past appointments';
+
+  @override
+  String get noAppointmentHistorySubtitle =>
+      'Your completed bookings will show up here.';
 
   @override
   String get appointmentsSection => 'Appointments';

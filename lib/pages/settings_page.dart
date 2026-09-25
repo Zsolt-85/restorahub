@@ -15,20 +15,20 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-
-
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final theme = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)?.settings ?? 'Settings')),
+      appBar: AppBar(
+          title: Text(AppLocalizations.of(context)?.settings ?? 'Settings')),
       body: ListView(
         children: [
           ListTile(
             leading: const Icon(Icons.person_outline),
-            title: Text(AppLocalizations.of(context)?.profile ?? 'Edit profile'),
+            title:
+                Text(AppLocalizations.of(context)?.profile ?? 'Edit profile'),
             subtitle: Text(auth.currentUser?.email ?? ''),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.pushNamed(context, Routes.profile),
@@ -36,7 +36,8 @@ class _SettingsPageState extends State<SettingsPage> {
           const Divider(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text(AppLocalizations.of(context)?.theme ?? 'Theme', style: Theme.of(context).textTheme.titleSmall),
+            child: Text(AppLocalizations.of(context)?.theme ?? 'Theme',
+                style: Theme.of(context).textTheme.titleSmall),
           ),
           _ThemeTile(
             title: 'Teal Clean',
@@ -62,7 +63,6 @@ class _SettingsPageState extends State<SettingsPage> {
             iconColor: const Color(0xFF1E3A8A),
             selected: theme.currentTheme == AppTheme.indigo,
           ),
-
           const Divider(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -114,7 +114,8 @@ class _SettingsPageState extends State<SettingsPage> {
     {'locale': Locale('hu'), 'name': 'Magyar', 'flag': '🇭🇺'},
   ];
 
-  void _showLanguagePicker(BuildContext context, LocaleProvider localeProvider) {
+  void _showLanguagePicker(
+      BuildContext context, LocaleProvider localeProvider) {
     showDialog(
       context: context,
       builder: (context) => SimpleDialog(

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../helpers/format_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../constants/routes.dart';
 import '../models/payment.dart';
 import '../providers/auth_provider.dart';
+import '../providers/business_provider.dart';
 import '../providers/payment_provider.dart';
 
 class EarningsReportPage extends StatefulWidget {
@@ -31,6 +33,7 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
         professionalId,
         _startDate,
         _endDate,
+        businessId: authProvider.currentUser?.businessId,
       );
     });
   }
@@ -41,12 +44,13 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
     final payments = paymentProvider.payments;
     final totalRevenue = paymentProvider.totalRevenue;
     final completedCount = paymentProvider.completedCount;
-    final avgPerAppointment = completedCount > 0
-        ? totalRevenue / completedCount
-        : 0.0;
+    final avgPerAppointment =
+        completedCount > 0 ? totalRevenue / completedCount : 0.0;
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)?.earningsReport ?? 'Earnings Report')),
+      appBar: AppBar(
+          title: Text(AppLocalizations.of(context)?.earningsReport ??
+              'Earnings Report')),
       body: Column(
         children: [
           Padding(
@@ -73,32 +77,36 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _statColumn(
-                          AppLocalizations.of(context)?.revenueLabel ?? 'Revenue',
-                          '${payments.isEmpty ? "0.00" : payments.first.currency} ${totalRevenue.toStringAsFixed(2)}',
-                        ),
-                        _statColumn(
-                          AppLocalizations.of(context)?.completedLabel ?? 'Completed',
-                          '$completedCount',
-                        ),
-                        _statColumn(
-                          AppLocalizations.of(context)?.avgLabel ?? 'Avg',
-                          '${payments.isEmpty ? "0.00" : payments.first.currency} ${avgPerAppointment.toStringAsFixed(2)}',
-                        ),
-                      ],
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _statColumn(
+                      AppLocalizations.of(context)?.revenueLabel ?? 'Revenue',
+                      '${payments.isEmpty ? "0.00" : payments.first.currency} ${totalRevenue.toStringAsFixed(2)}',
                     ),
-                  ),
+                    _statColumn(
+                      AppLocalizations.of(context)?.completedLabel ??
+                          'Completed',
+                      '$completedCount',
+                    ),
+                    _statColumn(
+                      AppLocalizations.of(context)?.avgLabel ?? 'Avg',
+                      '${payments.isEmpty ? "0.00" : payments.first.currency} ${avgPerAppointment.toStringAsFixed(2)}',
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 8),
           Expanded(
             child: payments.isEmpty
-                ? Center(child: Text(AppLocalizations.of(context)?.noPaymentsRecorded ?? 'No payments recorded'))
+                ? Center(
+                    child: Text(
+                        AppLocalizations.of(context)?.noPaymentsRecorded ??
+                            'No payments recorded'))
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: payments.length,
@@ -112,10 +120,11 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
                           ),
                           title: Text(payment.service),
                           subtitle: Text(
-                            '${payment.customerName} · ${payment.methodLabel} · ${payment.appointmentDate.toLocal()}',
+                            '${payment.customerName} · ${payment.methodLabel} · ${FormatHelper.formatDate(payment.appointmentDate)}',
                           ),
                           trailing: Text(
-                            '${payment.currency} ${payment.amount.toStringAsFixed(2)}',
+                            FormatHelper.formatCurrency(payment.amount,
+                                currency: payment.currency),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                             ),
@@ -168,7 +177,7 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
         _startDate = updated.start;
         _endDate = updated.end;
         _rangeLabel =
-            '${_startDate.toLocal()} to ${_endDate.toLocal()}';
+            '${FormatHelper.formatDate(_startDate)} to ${FormatHelper.formatDate(_endDate)}';
       });
       if (!mounted) return;
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -178,6 +187,7 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
         professionalId,
         _startDate,
         _endDate,
+        businessId: authProvider.currentUser?.businessId,
       );
     }
   }
@@ -186,19 +196,24 @@ class _EarningsReportPageState extends State<EarningsReportPage> {
     List<Payment> payments,
     double totalRevenue,
   ) async {
+    final brand = (Provider.of<BusinessProvider>(context, listen: false)
+                .currentBusiness
+                ?.effectiveBusinessName ??
+            'Salon')
+        .toUpperCase();
     final lines = [
-      '===== RESTORAHUB EARNINGS REPORT =====',
+      '===== $brand EARNINGS REPORT =====',
       'Period: $_rangeLabel',
       '',
-      'Total Revenue: ${payments.first.currency} ${totalRevenue.toStringAsFixed(2)}',
+      'Total Revenue: ${FormatHelper.formatCurrency(totalRevenue, currency: payments.first.currency)}',
       'Completed Appointments: ${payments.length}',
       '',
       'INDIVIDUAL PAYMENTS',
       for (final p in payments) ...[
-        '${p.appointmentDate.toLocal()} · ${p.service} · ${p.customerName} · ${p.currency} ${p.amount.toStringAsFixed(2)} · ${p.methodLabel}',
+        '${FormatHelper.formatDate(p.appointmentDate)} · ${p.service} · ${p.customerName} · ${FormatHelper.formatCurrency(p.amount, currency: p.currency)} · ${p.methodLabel}',
       ],
       '',
-      'Generated by RestoraHub',
+      'Generated by ${Provider.of<BusinessProvider>(context, listen: false).currentBusiness?.effectiveBusinessName ?? 'Salon'}',
     ].join('\n');
 
     await Share.share(lines, subject: 'Earnings Report');

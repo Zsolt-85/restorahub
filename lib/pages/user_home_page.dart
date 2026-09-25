@@ -5,6 +5,7 @@ import '../constants/routes.dart';
 import '../helpers/appointment_actions.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
+import '../pages/booking_page.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
@@ -49,7 +50,7 @@ class _UserHomePageState extends State<UserHomePage> {
     final apptProvider = Provider.of<AppointmentProvider>(context);
     final user = auth.currentUser;
 
-      if (user == null) {
+    if (user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushNamedAndRemoveUntil(context, Routes.login, (_) => false);
       });
@@ -70,24 +71,25 @@ class _UserHomePageState extends State<UserHomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           if (isCustomer) {
-            Navigator.pushNamed(context, Routes.services);
+            _bookNow(context);
           } else {
             Navigator.pushNamed(context, Routes.professionalHome);
           }
         },
         tooltip: isCustomer
             ? AppLocalizations.of(context)?.bookNow ?? 'Book appointment'
-            : AppLocalizations.of(context)?.professionalContact ?? 'Manage bookings',
+            : AppLocalizations.of(context)?.professionalContact ??
+                'Manage bookings',
         child: Icon(isCustomer ? Icons.add : Icons.manage_accounts),
       ),
     );
   }
 
   Widget _buildBody(
-      BuildContext context,
-      AppointmentProvider apptProvider,
-      bool isCustomer,
-      ) {
+    BuildContext context,
+    AppointmentProvider apptProvider,
+    bool isCustomer,
+  ) {
     if (apptProvider.isLoading) {
       return ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -103,9 +105,10 @@ class _UserHomePageState extends State<UserHomePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.redAccent),
+              const Icon(Icons.wifi_off_rounded,
+                  size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
-               Text(
+              Text(
                 AppLocalizations.of(context)?.error ??
                     'Could not load appointments',
                 style: Theme.of(context).textTheme.titleMedium,
@@ -117,8 +120,7 @@ class _UserHomePageState extends State<UserHomePage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () =>
-                    apptProvider.loadAppointments(),
+                onPressed: () => apptProvider.loadAppointments(),
                 icon: const Icon(Icons.refresh),
                 label: Text(AppLocalizations.of(context)?.retry ?? 'Retry'),
               ),
@@ -136,7 +138,8 @@ class _UserHomePageState extends State<UserHomePage> {
     if (appointments.isEmpty) {
       return EmptyStateWidget(
         icon: Icons.calendar_today_outlined,
-        title: AppLocalizations.of(context)?.noAppointments ?? 'No Bookings Yet',
+        title:
+            AppLocalizations.of(context)?.noAppointments ?? 'No Bookings Yet',
         subtitle: AppLocalizations.of(context)?.noAppointments ??
             'Explore local wellness professionals and schedule your next appointment.',
         actionButton: ElevatedButton.icon(
@@ -144,7 +147,8 @@ class _UserHomePageState extends State<UserHomePage> {
             Navigator.pushNamed(context, Routes.services);
           },
           icon: const Icon(Icons.add),
-          label: Text(AppLocalizations.of(context)?.bookNow ?? 'Book a Service'),
+          label:
+              Text(AppLocalizations.of(context)?.bookNow ?? 'Book a Service'),
         ),
       );
     }
@@ -182,7 +186,8 @@ class _UserHomePageState extends State<UserHomePage> {
                 borderRadius: BorderRadius.circular(8),
               ),
               labelColor: Theme.of(context).colorScheme.onPrimary,
-              unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              unselectedLabelColor:
+                  Theme.of(context).colorScheme.onSurfaceVariant,
               tabs: [
                 Tab(text: AppLocalizations.of(context)?.upcoming ?? 'Upcoming'),
                 Tab(text: AppLocalizations.of(context)?.history ?? 'History'),
@@ -196,13 +201,13 @@ class _UserHomePageState extends State<UserHomePage> {
                 _buildAppointmentSection(
                   context,
                   apptProvider.upcomingAppointments,
-                  true,
+                  isUpcoming: true,
                   onEdit: (appt) => _navigateToReschedule(context, appt),
                 ),
                 _buildAppointmentSection(
                   context,
                   apptProvider.pastAppointments,
-                  true,
+                  isUpcoming: false,
                 ),
               ],
             ),
@@ -231,6 +236,7 @@ class _UserHomePageState extends State<UserHomePage> {
     }
     final category = ServiceProvider.getCategoryForService(baseService);
 
+    final auth = Provider.of<AuthProvider>(context, listen: false);
     Navigator.pushNamed(
       context,
       Routes.booking,
@@ -238,36 +244,59 @@ class _UserHomePageState extends State<UserHomePage> {
         'service': appt.service,
         'category': category.isEmpty ? null : category,
         'appointmentId': appt.id,
+        'businessId': auth.currentUser?.businessId,
       },
     );
   }
 
+  void _bookNow(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final businessId = user?.businessId;
+    if (businessId != null && businessId.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BookingPage(businessId: businessId),
+        ),
+      );
+    } else {
+      Navigator.pushNamed(context, Routes.services);
+    }
+  }
+
   Widget _buildAppointmentSection(
     BuildContext context,
-    List<Appointment> appointments,
-    bool isCustomer, {
+    List<Appointment> appointments, {
+    required bool isUpcoming,
     void Function(Appointment)? onEdit,
   }) {
+    final loc = AppLocalizations.of(context);
     if (appointments.isEmpty) {
+      final IconData icon;
+      final String title;
+      final String subtitle;
+      final Widget? actionButton;
+      if (isUpcoming) {
+        icon = Icons.calendar_today_outlined;
+        title = loc?.noUpcomingAppointments ?? 'No upcoming appointments';
+        subtitle =
+            loc?.noUpcomingAppointmentsSubtitle ?? 'Ready for your next visit?';
+        actionButton = ElevatedButton(
+          onPressed: () => _bookNow(context),
+          child: Text(loc?.bookNow ?? 'Book Now'),
+        );
+      } else {
+        icon = Icons.history;
+        title = loc?.noAppointmentHistory ?? 'No past appointments';
+        subtitle = loc?.noAppointmentHistorySubtitle ??
+            'Your completed bookings will show up here.';
+        actionButton = null;
+      }
       return EmptyStateWidget(
-        icon: isCustomer ? Icons.history : Icons.calendar_today_outlined,
-        title: isCustomer
-            ? AppLocalizations.of(context)?.history ?? 'No history to show'
-            : AppLocalizations.of(context)?.noAppointments ?? 'No bookings yet',
-        subtitle: isCustomer
-            ? AppLocalizations.of(context)?.history ??
-                'Completed and cancelled appointments will appear here'
-            : AppLocalizations.of(context)?.noAppointments ??
-                'Explore local wellness professionals and schedule your next appointment.',
-        actionButton: isCustomer
-            ? null
-            : ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(context, Routes.services);
-                },
-                icon: const Icon(Icons.add),
-                label: Text(AppLocalizations.of(context)?.bookNow ?? 'Book a Service'),
-              ),
+        icon: icon,
+        title: title,
+        subtitle: subtitle,
+        actionButton: actionButton,
       );
     }
 
@@ -278,7 +307,7 @@ class _UserHomePageState extends State<UserHomePage> {
         final appt = appointments[index];
         return AppointmentCard(
           appointment: appt,
-          viewerIsCustomer: isCustomer,
+          viewerIsCustomer: true,
           onEdit: onEdit,
           onCancel: () => AppointmentActions.confirmCancel(context, appt),
         );

@@ -22,7 +22,8 @@ class BusinessLifecycleHelper {
     return allowed != null && allowed.contains(to);
   }
 
-  static Business validateTransition(Business business, BusinessStatus newStatus) {
+  static Business validateTransition(
+      Business business, BusinessStatus newStatus) {
     if (!canTransitionTo(business.status, newStatus)) {
       throw BusinessLifecycleException(
         'Invalid status transition from ${business.status.name} to ${newStatus.name}',
@@ -31,7 +32,8 @@ class BusinessLifecycleHelper {
     return business.copyWith(status: newStatus);
   }
 
-  static bool get isTerminal => _validTransitions[BusinessStatus.archived]!.isEmpty;
+  static bool get isTerminal =>
+      _validTransitions[BusinessStatus.archived]!.isEmpty;
 
   static List<BusinessStatus> allowedTransitions(BusinessStatus status) {
     return _validTransitions[status] ?? const [];

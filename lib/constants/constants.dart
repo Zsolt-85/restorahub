@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-@Deprecated('Load service descriptions from Firestore per-tenant catalog instead')
+@Deprecated(
+    'Load service descriptions from Firestore per-tenant catalog instead')
 final Map<String, String> serviceDescriptions = {
   'Massage': 'Therapeutic bodywork tailored to your needs',
   'Haircut': 'Precision cuts and professional styling',

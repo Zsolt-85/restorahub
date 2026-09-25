@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 
+import '../exceptions/app_exception.dart';
 import '../helpers/schedule_helper.dart';
 import '../helpers/validation_helper.dart';
 import '../models/user.dart';
 import '../repositories/user_repository.dart';
 import '../repositories/firestore_user_repository.dart';
+import '../repositories/staff_directory_repository.dart';
+import '../repositories/firestore_staff_directory_repository.dart';
 import '../utils/app_logger.dart';
 
 enum LoginResult {
@@ -14,11 +17,35 @@ enum LoginResult {
   invalidCredentials,
 }
 
+/// Auth uses a return-value contract (`LoginResult`/`String?`/`bool`) with
+/// pages managing their own local loading spinners — deliberately exempt
+/// from the `_beginLoading`/`_endLoading` pattern used by data providers.
 class AuthProvider extends ChangeNotifier {
-  AuthProvider({UserRepository? userRepository})
-      : _userRepository = userRepository ?? FirestoreUserRepository.instance;
+  AuthProvider(
+      {UserRepository? userRepository,
+      StaffDirectoryRepository? staffDirectoryRepository})
+      : _userRepository = userRepository ?? FirestoreUserRepository.instance,
+        _staffDirectoryRepository = staffDirectoryRepository;
 
   final UserRepository _userRepository;
+  final StaffDirectoryRepository? _staffDirectoryRepository;
+
+  // Lazy on purpose: resolving the singleton touches FirebaseFirestore,
+  // which must not happen at construction time (unit tests, early startup).
+  StaffDirectoryRepository get _directory =>
+      _staffDirectoryRepository ?? FirestoreStaffDirectoryRepository.instance;
+
+  /// Publishes staff to the public booking directory. Blocking: without it
+  /// the professional is invisible to customers. Failures surface as errors.
+  Future<void> _publishStaffDirectory(User user) async {
+    if (!user.isStaff) return;
+    try {
+      await _directory.upsertEntry(user);
+    } catch (e, stack) {
+      AppLogger.error('AuthProvider staff directory publish error: $e\n$stack');
+      throw AppException('Failed to publish public staff profile', cause: e);
+    }
+  }
 
   User? currentUser;
 
@@ -66,17 +93,24 @@ class AuthProvider extends ChangeNotifier {
       final fbUser = _auth.currentUser;
       if (fbUser == null) return false;
 
+      final normalizedRole = User.normalizeRole(role);
       final newUser = User(
         id: fbUser.uid,
         name: name.trim(),
         email: fbUser.email!.toLowerCase(),
         phone: phone.trim(),
-        role: role,
-        category: role == Role.staff.name ? specialty.trim() : '',
+        role: normalizedRole,
+        category: normalizedRole == Role.staff.name ? specialty.trim() : '',
       );
 
       final insertResult = await _userRepository.insertUser(newUser);
       if (insertResult <= 0) return false;
+
+      try {
+        await _publishStaffDirectory(newUser);
+      } catch (e) {
+        return false;
+      }
 
       currentUser = newUser;
       notifyListeners();
@@ -106,13 +140,14 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
 
+      final normalizedRole = User.normalizeRole(role);
       final newUser = User(
         id: cred.user!.uid,
         name: name.trim(),
         email: normalizedEmail,
         phone: phone.trim(),
-        role: role,
-        category: specialty,
+        role: normalizedRole,
+        category: normalizedRole == Role.staff.name ? specialty.trim() : '',
       );
 
       try {
@@ -126,12 +161,20 @@ class AuthProvider extends ChangeNotifier {
         rethrow;
       }
 
+      try {
+        await _publishStaffDirectory(newUser);
+      } catch (e) {
+        await cred.user?.delete();
+        return 'Failed to publish public staff profile';
+      }
+
       currentUser = newUser;
       notifyListeners();
 
       return null;
     } on fb.FirebaseAuthException catch (e) {
-      AppLogger.error('Registration FirebaseAuthException: ${e.code} - ${e.message}');
+      AppLogger.error(
+          'Registration FirebaseAuthException: ${e.code} - ${e.message}');
       if (e.code == 'email-already-in-use') {
         return 'Email is already in use';
       } else if (e.code == 'weak-password') {
@@ -165,6 +208,16 @@ class AuthProvider extends ChangeNotifier {
 
       currentUser = user;
       notifyListeners();
+
+      // Backfill: staff created before the public directory existed have no
+      // entry and are invisible to customers. Best-effort, never blocks login.
+      if (user.isStaff) {
+        try {
+          await _directory.upsertEntry(user);
+        } catch (e, stack) {
+          AppLogger.error('AuthProvider directory backfill error: $e\n$stack');
+        }
+      }
       return true;
     } catch (_) {
       return false;
@@ -275,11 +328,9 @@ class AuthProvider extends ChangeNotifier {
       phone: phone.trim(),
       role: user.role,
       category: user.isStaff ? specialty!.trim() : user.category,
-      workStartTime: user.isStaff
-          ? User.formatTime(workStart!)
-          : user.workStartTime,
-      workEndTime:
-          user.isStaff ? User.formatTime(workEnd!) : user.workEndTime,
+      workStartTime:
+          user.isStaff ? User.formatTime(workStart!) : user.workStartTime,
+      workEndTime: user.isStaff ? User.formatTime(workEnd!) : user.workEndTime,
       slotDurationMinutes:
           user.isStaff ? slotDurationMinutes! : user.slotDurationMinutes,
       bufferTimeMinutes:
@@ -292,6 +343,14 @@ class AuthProvider extends ChangeNotifier {
     if (result <= 0) return 'Update failed';
 
     await _userRepository.syncUserInAppointments(updatedUser);
+
+    // Best-effort: the profile itself is saved; a later save retries this.
+    try {
+      await _publishStaffDirectory(updatedUser);
+    } catch (e, stack) {
+      AppLogger.error(
+          'AuthProvider profile directory refresh error: $e\n$stack');
+    }
 
     currentUser = updatedUser;
     notifyListeners();

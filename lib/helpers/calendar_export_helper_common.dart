@@ -42,5 +42,8 @@ String _formatIcsDate(DateTime date) {
 }
 
 String _escapeIcs(String value) {
-  return value.replaceAll('\\', '\\\\').replaceAll(';', '\\;').replaceAll(',', '\\,');
+  return value
+      .replaceAll('\\', '\\\\')
+      .replaceAll(';', '\\;')
+      .replaceAll(',', '\\,');
 }

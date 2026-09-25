@@ -6,7 +6,8 @@ import '../repositories/service_repository.dart';
 class ServiceProvider extends ChangeNotifier {
   final ServiceRepository _repository;
 
-  ServiceProvider({required ServiceRepository repository}) : _repository = repository;
+  ServiceProvider({required ServiceRepository repository})
+      : _repository = repository;
 
   Stream<List<Service>> streamServices({String? businessId}) {
     final effectiveBusinessId =
@@ -15,11 +16,13 @@ class ServiceProvider extends ChangeNotifier {
     return _repository.watchServices(businessId: effectiveBusinessId);
   }
 
-  static String getCategoryForService(String serviceName, {List<Service>? services}) {
+  static String getCategoryForService(String serviceName,
+      {List<Service>? services}) {
     if (services != null) {
       for (final service in services) {
         if (service.name == serviceName) return service.category ?? serviceName;
-        if (service.subtypes != null && service.subtypes!.contains(serviceName)) {
+        if (service.subtypes != null &&
+            service.subtypes!.contains(serviceName)) {
           return service.category ?? service.name;
         }
       }
@@ -27,7 +30,8 @@ class ServiceProvider extends ChangeNotifier {
     return serviceName;
   }
 
-  Stream<List<Service>> streamServicesForProfessional({String? businessId, String? professionalId}) {
+  Stream<List<Service>> streamServicesForProfessional(
+      {String? businessId, String? professionalId}) {
     return streamServices(businessId: businessId).map((services) {
       if (professionalId == null || professionalId.isEmpty) return services;
       return services.where((s) => s.isOfferedBy(professionalId)).toList();

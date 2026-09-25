@@ -29,7 +29,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)?.resetPassword ?? 'Reset password')),
+      appBar: AppBar(
+          title: Text(
+              AppLocalizations.of(context)?.resetPassword ?? 'Reset password')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

@@ -14,6 +14,9 @@ class Routes {
   static const success = '/success';
   static const profile = '/profile';
   static const notifications = '/notifications';
+  // Personal analytics for staff (AnalyticsPage). Kept separate from the
+  // business-level analyticsDashboard below: this one is role-gated to
+  // staff/business_admin in the drawer and shows the professional's own stats.
   static const analytics = '/analytics';
   static const pastAppointments = '/past_appointments';
   static const settings = '/settings';
@@ -23,5 +26,10 @@ class Routes {
   static const superAdminDashboard = '/super_admin_dashboard';
   static const setupWizard = '/setup_wizard';
   static const adminDashboard = '/admin/dashboard';
+  // Business-level analytics dashboard (AnalyticsDashboardPage) for admins,
+  // additionally gated by FeatureGate 'analytics'. Not a duplicate of
+  // [analytics]: that route serves individual staff stats.
   static const analyticsDashboard = '/admin/analytics';
+  // Professional earnings report (EarningsReportPage). Admin/staff route.
+  static const earningsReport = '/earnings_report';
 }

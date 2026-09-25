@@ -176,20 +176,22 @@ class ScheduleHelper {
       }
     }
 
+    // Wall-clock minute math above is correct for operating hours and breaks
+    // (those are defined in local wall time), but appointment collisions must
+    // use instant math: minute-of-day arithmetic breaks across DST transitions
+    // and midnight-spanning bookings. Reuse the DateTime-based check.
     for (final appointment in appointments) {
       if (appointment.id == excludeAppointmentId) continue;
       if (appointment.professionalId != professionalId) continue;
       if (!isSameDay(appointment.dateTime, start)) continue;
 
       final occupiedDuration = appointment.durationMinutes + bufferTimeMinutes;
-      final apptStart = appointment.dateTime.hour * 60 + appointment.dateTime.minute;
-      final apptEnd = apptStart + occupiedDuration;
 
-      if (rangesOverlap(
-        startA: startMinutes,
-        endA: endMinutes,
-        startB: apptStart,
-        endB: apptEnd,
+      if (intervalsOverlap(
+        startA: start,
+        durationA: durationMinutes,
+        startB: appointment.dateTime,
+        durationB: occupiedDuration,
       )) {
         return false;
       }
@@ -211,8 +213,7 @@ class ScheduleHelper {
       return 'Slot length must be greater than zero';
     }
 
-    final availableMinutes =
-        timeToMinutes(workEnd) - timeToMinutes(workStart);
+    final availableMinutes = timeToMinutes(workEnd) - timeToMinutes(workStart);
     if (slotDurationMinutes > availableMinutes) {
       return 'Slot length cannot exceed working hours';
     }

@@ -39,7 +39,14 @@ void main() {
     group('release mode', () {
       test('suppresses info output when release mode is active', () {
         bool called = false;
-        AppLogger.setLogFn((String? message, {int? level, DateTime? time, int? sequenceNumber, int? terminalWidth, String? name, String? error, StackTrace? stackTrace}) {
+        AppLogger.setLogFn((String? message,
+            {int? level,
+            DateTime? time,
+            int? sequenceNumber,
+            int? terminalWidth,
+            String? name,
+            String? error,
+            StackTrace? stackTrace}) {
           called = true;
         });
 
@@ -51,7 +58,14 @@ void main() {
       test('allows info output when release mode is inactive', () {
         bool called = false;
         String? capturedName;
-        AppLogger.setLogFn((String? message, {int? level, DateTime? time, int? sequenceNumber, int? terminalWidth, String? name, String? error, StackTrace? stackTrace}) {
+        AppLogger.setLogFn((String? message,
+            {int? level,
+            DateTime? time,
+            int? sequenceNumber,
+            int? terminalWidth,
+            String? name,
+            String? error,
+            StackTrace? stackTrace}) {
           called = true;
           capturedName = name;
         });

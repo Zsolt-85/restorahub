@@ -26,13 +26,16 @@ class RevenueTrendChart extends StatelessWidget {
     final dayMap = <DateTime, double>{};
     for (final p in payments) {
       if (p.status == PaymentStatus.completed) {
-        final day = DateTime(p.appointmentDate.year, p.appointmentDate.month, p.appointmentDate.day);
+        final day = DateTime(p.appointmentDate.year, p.appointmentDate.month,
+            p.appointmentDate.day);
         dayMap[day] = (dayMap[day] ?? 0) + p.amount;
       }
     }
 
     final days = <DateTime>[];
-    for (var d = DateTime(start.year, start.month, start.day); d.isBefore(DateTime(end.year, end.month, end.day)); d = d.add(const Duration(days: 1))) {
+    for (var d = DateTime(start.year, start.month, start.day);
+        d.isBefore(DateTime(end.year, end.month, end.day));
+        d = d.add(const Duration(days: 1))) {
       days.add(d);
     }
 
@@ -63,7 +66,10 @@ class RevenueTrendChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 if (index >= 0 && index < labels.length) {
-                  return Padding(padding: const EdgeInsets.only(top: 8), child: Text(labels[index], style: const TextStyle(fontSize: 10)));
+                  return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(labels[index],
+                          style: const TextStyle(fontSize: 10)));
                 }
                 return const Text('');
               },
@@ -77,14 +83,17 @@ class RevenueTrendChart extends StatelessWidget {
               getTitlesWidget: (value, meta) => Text(value.toInt().toString()),
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: true),
         lineTouchData: LineTouchData(
           enabled: true,
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (touchedSpot) => Colors.blueGrey.withValues(alpha: 0.8),
+            getTooltipColor: (touchedSpot) =>
+                Colors.blueGrey.withValues(alpha: 0.8),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 final index = spot.x.toInt();
@@ -97,7 +106,8 @@ class RevenueTrendChart extends StatelessWidget {
                     const TextStyle(color: Colors.white, fontSize: 12),
                   );
                 }
-                return const LineTooltipItem('', TextStyle(color: Colors.white));
+                return const LineTooltipItem(
+                    '', TextStyle(color: Colors.white));
               }).toList();
             },
           ),

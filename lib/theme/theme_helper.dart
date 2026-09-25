@@ -5,8 +5,10 @@ import '../models/business.dart';
 class ThemeHelper {
   static const _defaultPrimaryColor = Color(0xFF008080);
 
-  static ThemeData generateTenantTheme(BusinessBranding? branding, {bool isDark = false}) {
-    final seedColor = _parseHexColor(branding?.primaryColor) ?? _defaultPrimaryColor;
+  static ThemeData generateTenantTheme(BusinessBranding? branding,
+      {bool isDark = false}) {
+    final seedColor =
+        _parseHexColor(branding?.primaryColor) ?? _defaultPrimaryColor;
     final brightness = _resolveBrightness(branding?.themeMode, isDark);
 
     final colorScheme = ColorScheme.fromSeed(
@@ -63,7 +65,8 @@ class ThemeHelper {
     );
   }
 
-  static ElevatedButtonThemeData _buildElevatedButtonTheme(ColorScheme colorScheme) {
+  static ElevatedButtonThemeData _buildElevatedButtonTheme(
+      ColorScheme colorScheme) {
     final onSurface = colorScheme.onSurface;
     return ElevatedButtonThemeData(
       style: ButtonStyle(

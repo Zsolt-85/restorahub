@@ -13,22 +13,22 @@ class _FakeUserRepository implements UserRepository {
   }
 
   @override
-  Future<List<User>> getCustomers() async => [];
+  Future<List<User>> getCustomers({String? businessId}) async => [];
 
   @override
   Future<List<User>> getProfessionals({String? businessId}) async => [];
 
   @override
-  Future<List<User>> getProfessionalsByCategory(String category) async => [];
-
-  @override
-  Future<List<User>> getProfessionalsBySpecialty(String specialty) async => [];
+  Future<List<User>> getProfessionalsByCategory(String category,
+          {String? businessId}) async =>
+      [];
 
   @override
   Future<User?> getUserById(String id) async => _users[id];
 
   @override
-  Future<bool> isEmailTaken(String email, {String? excludeUserId}) async => false;
+  Future<bool> isEmailTaken(String email, {String? excludeUserId}) async =>
+      false;
 
   @override
   Future<int> insertUser(User user) async => 0;
@@ -40,7 +40,7 @@ class _FakeUserRepository implements UserRepository {
   Future<int> updateUser(User user) async => 0;
 
   @override
-  Stream<List<User>> watchProfessionals({String? businessId}) => Stream.value([]);
+  Future<List<User>> getProfessionalsByBusiness(String businessId) async => [];
 }
 
 void main() {
@@ -83,7 +83,8 @@ void main() {
     });
 
     test('resolveUserDisplayName returns custom fallback', () async {
-      final name = await helper.resolveUserDisplayName('nonexistent', fallback: 'N/A');
+      final name =
+          await helper.resolveUserDisplayName('nonexistent', fallback: 'N/A');
       expect(name, 'N/A');
     });
 
