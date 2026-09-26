@@ -7,7 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/business_provider.dart';
 import '../providers/notification_provider.dart';
 import '../helpers/semantic_color_helper.dart';
-import '../widgets/empty_state_widget.dart';
+import '../widgets/premium/branded_empty_state.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -76,7 +76,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         ],
       ),
       body: notifications.isEmpty
-          ? const EmptyStateWidget(
+          ? const BrandedEmptyState(
               icon: Icons.notifications_none,
               title: 'No notifications yet',
               subtitle:

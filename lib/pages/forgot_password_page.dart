@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
-import '../helpers/semantic_color_helper.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/premium/app_error_banner.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -68,12 +68,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                        color: SemanticColorHelper.errorOf(
-                            Theme.of(context).colorScheme)),
-                  ),
+                  child: AppErrorBanner(message: _error!),
                 ),
               ElevatedButton(
                 onPressed: _loading

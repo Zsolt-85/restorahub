@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../constants/routes.dart';
 import '../constants/constants.dart';
 import '../l10n/app_localizations.dart';
-import '../helpers/semantic_color_helper.dart';
 import '../models/service.dart';
 import '../models/user.dart';
 import '../providers/appointment_provider.dart';
@@ -13,6 +12,7 @@ import '../providers/auth_provider.dart';
 import '../providers/business_provider.dart';
 import '../repositories/service_repository.dart';
 import '../utils/error_handler.dart';
+import '../widgets/premium/app_error_banner.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -635,11 +635,7 @@ class _ProfilePageState extends State<ProfilePage> {
               obscureText: true,
             ),
             const SizedBox(height: 20),
-            if (_error != null)
-              Text(_error!,
-                  style: TextStyle(
-                      color: SemanticColorHelper.errorOf(
-                          Theme.of(context).colorScheme))),
+            if (_error != null) AppErrorBanner(message: _error!),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loading

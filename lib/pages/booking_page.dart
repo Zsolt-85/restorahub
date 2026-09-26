@@ -7,7 +7,6 @@ import '../widgets/tenant_brand_header.dart';
 import '../exceptions/app_exception.dart';
 import '../helpers/format_helper.dart';
 import '../helpers/schedule_helper.dart';
-import '../helpers/semantic_color_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../models/booking_summary.dart';
@@ -21,6 +20,11 @@ import '../repositories/staff_directory_repository.dart';
 import '../repositories/user_repository.dart';
 import '../utils/app_logger.dart';
 import '../utils/error_handler.dart';
+import '../widgets/premium/app_error_banner.dart';
+import '../widgets/premium/pro_profile_header.dart';
+import '../widgets/premium/service_card.dart';
+import '../widgets/premium/time_slot_picker.dart';
+import '../widgets/premium/wizard_shell.dart';
 
 class BookingPage extends StatefulWidget {
   final String? service;
@@ -64,6 +68,9 @@ class _BookingPageState extends State<BookingPage> {
   bool get _isReschedule =>
       widget.appointmentId != null && widget.appointmentId!.isNotEmpty;
   Appointment? _rescheduleAppointment;
+
+  /// Wizard position: 0 service, 1 professional, 2 time, 3 confirm.
+  int _step = 0;
 
   @override
   void initState() {
@@ -150,6 +157,8 @@ class _BookingPageState extends State<BookingPage> {
       if (mounted) setState(() => _loadingAppointment = false);
     }
     await _loadProfessionals();
+    // Reschedule preload fills service/pro/date/time, so land on time (2).
+    if (mounted) setState(() => _step = 2);
   }
 
   Future<void> _loadProfessionals() async {
@@ -278,118 +287,29 @@ class _BookingPageState extends State<BookingPage> {
     return filtered.first;
   }
 
-  List<Widget> _buildServiceCards(
-      BuildContext context, List<Service> services) {
-    final loc = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return services.map((service) {
-      final isSelected = _selectedService?.id == service.id;
-      return Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        color: isSelected ? theme.colorScheme.primaryContainer : null,
-        elevation: isSelected ? 2 : 1,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            setState(() => _selectedService = service);
-            if (_selectedProfessional != null) {
-              _recalculateEndTime(_selectedProfessional!);
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        service.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: isSelected
-                              ? theme.colorScheme.onPrimaryContainer
-                              : null,
-                        ),
-                      ),
-                    ),
-                    if (isSelected)
-                      Icon(Icons.check_circle,
-                          color: theme.colorScheme.primary),
-                  ],
-                ),
-                if (service.description != null &&
-                    service.description!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    service.description!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isSelected
-                          ? theme.colorScheme.onPrimaryContainer
-                          : null,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: [
-                    if (service.durationMinutes != null)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.timer_outlined,
-                              size: 16, color: theme.colorScheme.primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${service.durationMinutes} ${loc?.mins ?? 'min'}',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    if (service.price != null)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.payments_outlined,
-                              size: 16, color: theme.colorScheme.primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            FormatHelper.formatCurrency(service.price!),
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }).toList();
+  void _selectProfessional(User? value) {
+    // Same assignment as the old staff dropdown: "Any available" auto-assigns
+    // the first professional instead of erroring at confirm time.
+    final effective =
+        value ?? (_professionals.isNotEmpty ? _professionals.first : null);
+    setState(() {
+      _selectedProfessional = effective;
+      _startTime = null;
+      _endTime = null;
+      _rangeError = null;
+      _dayAppointments = [];
+      if (effective == null) _selectedService = null;
+      if (effective != null) _step = 2;
+    });
+    if (effective != null) {
+      _loadDayAppointments(effective);
+    }
   }
 
-  bool _servicesMatch(Service a, Service b) {
-    if (a.id != null && b.id != null) return a.id == b.id;
-    return a.name == b.name ||
-        a.name.startsWith('${b.name} \u2014 ') ||
-        b.name.startsWith('${a.name} \u2014 ');
-  }
-
-  Widget _buildServiceChooser(BuildContext context) {
+  /// Step 0 (service): the EXISTING streamServices StreamBuilder, unchanged
+  /// apart from rendering results as a 2-column ServiceCard grid
+  /// (imageUrl/rating have no data source, so null).
+  Widget _buildServiceStep(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final businessId = auth.currentUser?.businessId;
     final serviceProvider =
@@ -411,20 +331,10 @@ class _BookingPageState extends State<BookingPage> {
         if (snapshot.hasError) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              children: [
-                Text(
-                  ErrorHandler.getDisplayMessage(snapshot.error!),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                FilledButton.tonal(
-                  // Rebuild resubscribes (fresh stream per build) = retry.
-                  onPressed: () => setState(() {}),
-                  child: const Text('Retry'),
-                ),
-              ],
+            child: AppErrorBanner(
+              message: ErrorHandler.getDisplayMessage(snapshot.error!),
+              // Rebuild resubscribes (fresh stream per build) = retry.
+              onRetry: () => setState(() {}),
             ),
           );
         }
@@ -460,12 +370,125 @@ class _BookingPageState extends State<BookingPage> {
                 ? [_selectedService!]
                 : displayServices;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: _buildServiceCards(context, servicesToShow),
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 0.8,
+          ),
+          itemCount: servicesToShow.length,
+          itemBuilder: (context, index) {
+            final service = servicesToShow[index];
+            return ServiceCard(
+              service: service,
+              imageUrl: null,
+              rating: null,
+              onTap: () {
+                setState(() {
+                  _selectedService = service;
+                  _step = 1;
+                });
+                if (_selectedProfessional != null) {
+                  _recalculateEndTime(_selectedProfessional!);
+                }
+              },
+            );
+          },
         );
       },
     );
+  }
+
+  /// Step 1 (professional): the EXISTING _professionals list, rendered as
+  /// tappable ProProfileHeader rows instead of a dropdown.
+  Widget _buildProfessionalStep(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          loc?.selectStaffMember ?? 'Select Staff Member',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _selectProfessional(null),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.person_search),
+                const SizedBox(width: 8),
+                Text(
+                  loc?.anyAvailable ?? 'Any available',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        ..._professionals.map(
+          (pro) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ProProfileHeader(
+              name: pro.name,
+              specialty: pro.category,
+              imageUrl: null,
+              rating: null,
+              selected: _selectedProfessional?.id == pro.id,
+              onTap: () => _selectProfessional(pro),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Footer for steps 0-2: Next advances when the step's selection exists.
+  /// Step 3 (confirm) shows the existing confirm action inline: no footer.
+  Widget? _buildWizardFooter(BuildContext context) {
+    if (_step >= 3) return null;
+    final canProceed = _step == 0
+        ? _selectedService != null
+        : _step == 1
+            ? _selectedProfessional != null
+            : _startTime != null;
+    final blockerReason = _confirmBlockerReason();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ElevatedButton(
+            onPressed: canProceed ? () => setState(() => _step++) : null,
+            child: const Text('Next'),
+          ),
+          if (!canProceed && blockerReason != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              blockerReason,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  bool _servicesMatch(Service a, Service b) {
+    if (a.id != null && b.id != null) return a.id == b.id;
+    return a.name == b.name ||
+        a.name.startsWith('${b.name} \u2014 ') ||
+        b.name.startsWith('${a.name} \u2014 ');
   }
 
   Future<void> _pickDate() async {
@@ -725,12 +748,20 @@ class _BookingPageState extends State<BookingPage> {
             ? '${loc?.bookNow ?? 'Book Now'} $_category'
             : '${loc?.bookNow ?? 'Book Now'} ${serviceSubtype.isNotEmpty ? serviceSubtype : ''}';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+    return WizardShell(
+      currentStep: _step,
+      totalSteps: 4,
+      title: title,
+      onBack: _step == 0 ? null : () => setState(() => _step--),
+      footer: _buildWizardFooter(context),
+      child: AnimatedSwitcher(
+        duration: MediaQuery.of(context).disableAnimations
+            ? Duration.zero
+            : const Duration(milliseconds: 200),
+        switchInCurve: Curves.easeOut,
+        child: SingleChildScrollView(
+          key: ValueKey(_step),
+          padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -816,77 +847,14 @@ class _BookingPageState extends State<BookingPage> {
                   ],
                 ),
               )
-            else if (_professionals.length == 1)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text(
-                    _selectedProfessional?.name ?? 'Staff Member',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  subtitle: _selectedProfessional != null
-                      ? Text(
-                          '${_selectedProfessional!.workStart.format(context)}\u2013${_selectedProfessional!.workEnd.format(context)} \u00b7 ${_selectedProfessional!.slotDurationMinutes} min slots',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        )
-                      : null,
-                ),
-              )
-            else
-              DropdownButtonFormField<User>(
-                key: ValueKey(professional?.id),
-                initialValue: _selectedProfessional,
-                decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context)?.selectStaffMember ??
-                      'Select Staff Member',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.person_search),
-                ),
-                hint: Text(
-                  AppLocalizations.of(context)?.anyAvailable ?? 'Any available',
-                ),
-                items: [
-                  DropdownMenuItem<User>(
-                    value: null,
-                    child: Text(
-                      AppLocalizations.of(context)?.anyAvailable ??
-                          'Any available',
-                    ),
-                  ),
-                  ..._professionals
-                      .map(
-                        (pro) => DropdownMenuItem(
-                          value: pro,
-                          child: Text(
-                            '${pro.name} · ${pro.workStart.format(context)}\u2013${pro.workEnd.format(context)} · ${pro.slotDurationMinutes} min slots',
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ],
-                onChanged: (User? value) {
-                  // "Any available" auto-assigns the first professional
-                  // instead of erroring at confirm time.
-                  final effective = value ??
-                      (_professionals.isNotEmpty ? _professionals.first : null);
-                  setState(() {
-                    _selectedProfessional = effective;
-                    _startTime = null;
-                    _endTime = null;
-                    _rangeError = null;
-                    _dayAppointments = [];
-                    if (effective == null) _selectedService = null;
-                  });
-                  if (effective != null) {
-                    _loadDayAppointments(effective);
-                  }
-                },
+            else if (_step == 1)
+              _buildProfessionalStep(context),
+            if (_step == 0) ...[
+              const SizedBox(height: 12),
+              Text(
+                AppLocalizations.of(context)?.selectService ?? 'Select service',
+                style: Theme.of(context).textTheme.titleSmall,
               ),
-            const SizedBox(height: 12),
-            Text(
-              AppLocalizations.of(context)?.selectService ?? 'Select service',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
             const SizedBox(height: 8),
             if (_selectedProfessional == null)
               Card(
@@ -909,8 +877,9 @@ class _BookingPageState extends State<BookingPage> {
                 ),
               ),
             const SizedBox(height: 8),
-            _buildServiceChooser(context),
-            if (_selectedService != null) ...[
+              _buildServiceStep(context),
+            ],
+            if (_step == 3 && _selectedService != null) ...[
               const SizedBox(height: 12),
               _buildDepositNotice(context),
               Card(
@@ -1003,8 +972,25 @@ class _BookingPageState extends State<BookingPage> {
                 ),
               ),
             ],
-            const SizedBox(height: 12),
-            Card(
+            if (_step == 3 && _selectedProfessional != null) ...[
+              const SizedBox(height: 12),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.person),
+                  title: Text(_selectedProfessional!.name),
+                  subtitle: Text(
+                    _selectedDate == null
+                        ? ''
+                        : _startTime == null
+                            ? FormatHelper.formatDate(_selectedDate!)
+                            : '${FormatHelper.formatDate(_selectedDate!)} · ${_startTime!.format(context)}',
+                  ),
+                ),
+              ),
+            ],
+            if (_step == 2) ...[
+              const SizedBox(height: 12),
+              Card(
               child: ListTile(
                 leading: const Icon(Icons.calendar_today),
                 title: Text(AppLocalizations.of(context)?.selectDate ?? 'Date'),
@@ -1039,22 +1025,19 @@ class _BookingPageState extends State<BookingPage> {
                     ),
                   );
                 }
-                return DropdownButtonFormField<TimeOfDay>(
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Start time',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.access_time),
-                  ),
-                  initialValue:
-                      availableStarts.contains(_startTime) ? _startTime : null,
-                  items: availableStarts.map((t) {
-                    return DropdownMenuItem(
-                      value: t,
-                      child: Text(t.format(context)),
-                    );
-                  }).toList(),
-                  onChanged: (t) {
+                // Slots come from the SAME _availableStartTimes computation
+                // that fed the old dropdown: conflicts, breaks and
+                // out-of-hours overflow are already removed, so nothing is
+                // marked unavailable here (adapted shape only). onSelect keeps
+                // the old onChanged lines, including end-time recalculation
+                // and validation.
+                return TimeSlotPicker(
+                  slots: availableStarts,
+                  unavailable: const {},
+                  selected: availableStarts.contains(_startTime)
+                      ? _startTime
+                      : null,
+                  onSelect: (t) {
                     setState(() => _startTime = t);
                     _recalculateEndTime(professional);
                   },
@@ -1066,20 +1049,13 @@ class _BookingPageState extends State<BookingPage> {
               if (_rangeError != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    _rangeError!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
+                  child: AppErrorBanner(message: _rangeError!),
                 ),
             ],
-            const SizedBox(height: 20),
-            if (_error != null)
-              Text(_error!,
-                  style: TextStyle(
-                      color: SemanticColorHelper.errorOf(
-                          Theme.of(context).colorScheme))),
+            ],
+            if (_step == 3) ...[
+              const SizedBox(height: 20),
+              if (_error != null) AppErrorBanner(message: _error!),
             const SizedBox(height: 12),
             Builder(builder: (context) {
               final blocked = _loading ||
@@ -1288,7 +1264,9 @@ class _BookingPageState extends State<BookingPage> {
                 ],
               );
             }),
+            ],
           ],
+        ),
         ),
       ),
     );

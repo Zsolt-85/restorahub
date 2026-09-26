@@ -19,6 +19,21 @@ class ThemeHelper {
     if (surface != null || onSurface != null) {
       colorScheme = colorScheme.copyWith(surface: surface, onSurface: onSurface);
     }
+    if (brightness == Brightness.light && surface == null) {
+      colorScheme = ColorScheme.fromSeed(
+        seedColor: seedColor,
+        brightness: brightness,
+      ).copyWith(
+        surface: Color.alphaBlend(
+          const Color(0xFFFAF7F2).withValues(alpha: 0.6),
+          colorScheme.surface,
+        ),
+      );
+    }
+    final baseTextTheme = Typography.material2021().englishLike.apply(
+      bodyColor: colorScheme.onSurface,
+      displayColor: colorScheme.onSurface,
+    );
     return ThemeData(
       colorScheme: colorScheme,
       scaffoldBackgroundColor: colorScheme.surface,
@@ -30,10 +45,29 @@ class ThemeHelper {
         border: OutlineInputBorder(),
       ),
       appBarTheme: const AppBarTheme(centerTitle: false),
-      textTheme: Typography.material2021().englishLike.apply(
-            bodyColor: colorScheme.onSurface,
-            displayColor: colorScheme.onSurface,
-          ),
+      textTheme: baseTextTheme.copyWith(
+        displayLarge:
+            baseTextTheme.displayLarge?.copyWith(fontFamily: 'Fraunces'),
+        displayMedium:
+            baseTextTheme.displayMedium?.copyWith(fontFamily: 'Fraunces'),
+        displaySmall:
+            baseTextTheme.displaySmall?.copyWith(fontFamily: 'Fraunces'),
+        headlineLarge:
+            baseTextTheme.headlineLarge?.copyWith(fontFamily: 'Fraunces'),
+        headlineMedium:
+            baseTextTheme.headlineMedium?.copyWith(fontFamily: 'Fraunces'),
+        headlineSmall:
+            baseTextTheme.headlineSmall?.copyWith(fontFamily: 'Fraunces'),
+        bodyLarge: baseTextTheme.bodyLarge?.copyWith(
+          fontFamily: 'Inter',
+          fontSize: 16,
+        ),
+        bodyMedium: baseTextTheme.bodyMedium?.copyWith(fontFamily: 'Inter'),
+        bodySmall: baseTextTheme.bodySmall?.copyWith(fontFamily: 'Inter'),
+        labelLarge: baseTextTheme.labelLarge?.copyWith(fontFamily: 'Inter'),
+        labelMedium: baseTextTheme.labelMedium?.copyWith(fontFamily: 'Inter'),
+        labelSmall: baseTextTheme.labelSmall?.copyWith(fontFamily: 'Inter'),
+      ),
       chipTheme: _buildChipTheme(colorScheme),
       elevatedButtonTheme: _buildElevatedButtonTheme(colorScheme),
       tabBarTheme: _buildTabBarTheme(colorScheme),

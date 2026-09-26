@@ -92,5 +92,16 @@ void main() {
       expect(theme.appBarTheme.centerTitle, isFalse);
       expect(theme.textTheme.bodyMedium?.fontSize, 14);
     });
+
+    test('applies premium type scale and warm paper surface', () {
+      final theme = ThemeHelper.generateTenantTheme(
+        BusinessBranding(primaryColor: '#2F5D50'),
+      );
+
+      expect(theme.textTheme.displayLarge?.fontFamily, contains('Fraunces'));
+      expect(theme.textTheme.bodyLarge?.fontFamily, contains('Inter'));
+      expect(theme.textTheme.bodyLarge?.fontSize, 16);
+      expect(theme.cardTheme.shape, isA<RoundedRectangleBorder>());
+    });
   });
 }

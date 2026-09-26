@@ -4,12 +4,13 @@ import 'package:provider/provider.dart';
 import '../constants/routes.dart';
 import '../constants/constants.dart';
 import '../l10n/app_localizations.dart';
-import '../helpers/semantic_color_helper.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/user.dart';
 import '../utils/error_handler.dart';
+import '../widgets/premium/app_error_banner.dart';
+import '../widgets/premium/tenant_hero.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -117,6 +118,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const TenantHero(),
+            const SizedBox(height: 24),
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -184,13 +187,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
               ),
             ],
             const SizedBox(height: 12),
-            if (_error != null)
-              Text(
-                _error!,
-                style: TextStyle(
-                    color: SemanticColorHelper.errorOf(
-                        Theme.of(context).colorScheme)),
-              ),
+            if (_error != null) AppErrorBanner(message: _error!),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loading ? null : _register,

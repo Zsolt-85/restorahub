@@ -4,13 +4,14 @@ import 'package:provider/provider.dart';
 import '../constants/routes.dart';
 import '../constants/constants.dart';
 import '../l10n/app_localizations.dart';
-import '../helpers/semantic_color_helper.dart';
 import '../helpers/validation_helper.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/business_provider.dart';
 import '../models/business.dart';
 import '../models/user.dart';
+import '../widgets/premium/app_error_banner.dart';
+import '../widgets/premium/tenant_hero.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -44,6 +45,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const TenantHero(),
             const SizedBox(height: 24),
             Text(
               'Welcome back',
@@ -89,12 +91,7 @@ class _LoginPageState extends State<LoginPage> {
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  _error!,
-                  style: TextStyle(
-                      color: SemanticColorHelper.errorOf(
-                          Theme.of(context).colorScheme)),
-                ),
+                child: AppErrorBanner(message: _error!),
               ),
             ElevatedButton(
               onPressed: _loading

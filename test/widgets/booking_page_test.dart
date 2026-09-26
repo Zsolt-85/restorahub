@@ -8,6 +8,10 @@ import 'package:restorahub/models/notification.dart';
 import 'package:restorahub/models/service.dart';
 import 'package:restorahub/models/user.dart';
 import 'package:restorahub/pages/booking_page.dart';
+import 'package:restorahub/widgets/premium/pro_profile_header.dart';
+import 'package:restorahub/widgets/premium/service_card.dart';
+import 'package:restorahub/widgets/premium/time_slot_picker.dart';
+import 'package:restorahub/widgets/premium/wizard_shell.dart';
 import 'package:restorahub/providers/appointment_provider.dart';
 import 'package:restorahub/providers/auth_provider.dart';
 import 'package:restorahub/providers/business_provider.dart';
@@ -258,34 +262,46 @@ Future<void> _pumpBookingPage(
 void main() {
   group('BookingPage staff picker', () {
     testWidgets('uses staff labels, not customer labels', (tester) async {
-      await _pumpBookingPage(tester, professionals: [
-        _professional('p1', 'Alice'),
-        _professional('p2', 'Bob'),
-      ]);
+      await _pumpBookingPage(
+        tester,
+        professionals: [
+          _professional('p1', 'Alice'),
+          _professional('p2', 'Bob'),
+        ],
+        services: [Service(name: 'Massage', price: 100.0)],
+      );
+
+      // Service step first; tap through to the professional step.
+      await tester.ensureVisible(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
 
       expect(find.text('Select Staff Member'), findsOneWidget);
       expect(find.text('Select Customer'), findsNothing);
-
-      await tester.tap(find.byType(DropdownButtonFormField<User>));
-      await tester.pumpAndSettle();
-      expect(find.text('Any available'), findsWidgets);
+      expect(find.text('Any available'), findsOneWidget);
     });
 
     testWidgets('Any available auto-assigns the first professional',
         (tester) async {
-      await _pumpBookingPage(tester, professionals: [
-        _professional('p1', 'Alice'),
-        _professional('p2', 'Bob'),
-      ]);
+      await _pumpBookingPage(
+        tester,
+        professionals: [
+          _professional('p1', 'Alice'),
+          _professional('p2', 'Bob'),
+        ],
+        services: [Service(name: 'Massage', price: 100.0)],
+      );
 
-      await tester.tap(find.byType(DropdownButtonFormField<User>));
+      await tester.ensureVisible(find.byType(ServiceCard).first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Any available').last);
+      await tester.tap(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Any available'));
       await tester.pumpAndSettle();
 
-      // Dropdown now shows Alice instead of the hint; info card is gone.
-      expect(find.text('Any available'), findsNothing);
-      expect(find.textContaining('Alice'), findsWidgets);
+      // First professional auto-assigned: time step reached, info card gone.
+      expect(find.text('Date'), findsOneWidget);
       expect(
           find.text(
               'Select a staff member to see their offered services, or choose from the business-wide services below.'),
@@ -333,11 +349,106 @@ void main() {
         services: [Service(name: 'Massage', price: 100.0)],
       );
 
-      await tester.tap(find.text('Massage').first);
+      // Drive the wizard to the confirm step: service, pro, date, slot.
+      await tester.ensureVisible(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ProProfileHeader).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Date'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      final depositPicker = find.byType(TimeSlotPicker);
+      expect(depositPicker, findsOneWidget);
+      await tester.tap(
+        find
+            .descendant(
+                of: depositPicker, matching: find.byType(InkWell))
+            .first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('10% deposit'), findsOneWidget);
     });
+
+  group('BookingPage wizard', () {
+    testWidgets('shows service step first with progress', (tester) async {
+      await _pumpBookingPage(
+        tester,
+        professionals: [
+          _professional('p1', 'Alice'),
+          _professional('p2', 'Bob'),
+        ],
+        services: [Service(name: 'Massage', price: 100.0)],
+      );
+
+      expect(find.byType(WizardShell), findsOneWidget);
+      expect(find.byType(ServiceCard), findsWidgets);
+    });
+
+    testWidgets('advances to professional step after service tap',
+        (tester) async {
+      await _pumpBookingPage(
+        tester,
+        professionals: [
+          _professional('p1', 'Alice'),
+          _professional('p2', 'Bob'),
+        ],
+        services: [Service(name: 'Massage', price: 100.0)],
+      );
+
+      await tester.ensureVisible(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProProfileHeader), findsWidgets);
+    });
+
+    testWidgets('confirm step shows summary and confirm action',
+        (tester) async {
+      await _pumpBookingPage(
+        tester,
+        professionals: [
+          _professional('p1', 'Alice'),
+          _professional('p2', 'Bob'),
+        ],
+        services: [Service(name: 'Massage', price: 100.0)],
+      );
+
+      await tester.ensureVisible(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byType(ProProfileHeader).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ProProfileHeader).first);
+      await tester.pumpAndSettle();
+
+      // Time step: pick a date, then an available slot.
+      await tester.tap(find.text('Date'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      final picker = find.byType(TimeSlotPicker);
+      expect(picker, findsOneWidget);
+      await tester.tap(
+        find.descendant(of: picker, matching: find.byType(InkWell)).first,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Massage'), findsWidgets);
+      expect(find.text('Confirm booking'), findsOneWidget);
+    });
+  });
 
     testWidgets('fully booked day says so instead of empty slots',
         (tester) async {
@@ -351,9 +462,20 @@ void main() {
         workStartTime: '09:00',
         workEndTime: '09:00',
       );
-      await _pumpBookingPage(tester, professionals: [pro]);
+      await _pumpBookingPage(
+        tester,
+        professionals: [pro],
+        services: [Service(name: 'Massage')],
+      );
 
-      // Single pro is auto-selected; pick a date via the date tile.
+      // Drive the wizard to the time step: service, then the
+      // auto-selected single pro; pick a date via the date tile.
+      await tester.ensureVisible(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ServiceCard).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ProProfileHeader).first);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Date'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('OK'));

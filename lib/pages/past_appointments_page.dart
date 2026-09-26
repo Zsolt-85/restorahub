@@ -6,7 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/appointment_card.dart';
-import '../widgets/empty_state_widget.dart';
+import '../widgets/premium/branded_empty_state.dart';
 
 class PastAppointmentsPage extends StatefulWidget {
   const PastAppointmentsPage({super.key});
@@ -34,7 +34,7 @@ class _PastAppointmentsPageState extends State<PastAppointmentsPage> {
             'Past appointments'),
       ),
       body: pastAppointments.isEmpty
-          ? EmptyStateWidget(
+          ? BrandedEmptyState(
               icon: Icons.history,
               title: AppLocalizations.of(context)?.noAppointments ??
                   'No past appointments',

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
 import '../helpers/appointment_actions.dart';
+import '../helpers/format_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../models/appointment.dart';
 import '../pages/booking_page.dart';
@@ -12,8 +13,22 @@ import '../providers/service_provider.dart';
 import '../widgets/appointment_card.dart';
 import '../widgets/appointment_card_skeleton.dart';
 import '../widgets/app_drawer.dart';
-import '../widgets/empty_state_widget.dart';
+import '../widgets/premium/branded_empty_state.dart';
 import '../widgets/user_profile_avatar.dart';
+
+String greetingForHour(int hour) {
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+String firstName(String name) {
+  final token = name.trim().split(RegExp(r'\s+')).firstWhere(
+        (p) => p.isNotEmpty,
+        orElse: () => '',
+      );
+  return token;
+}
 
 class UserHomePage extends StatefulWidget {
   const UserHomePage({super.key});
@@ -136,7 +151,7 @@ class _UserHomePageState extends State<UserHomePage> {
 
     final appointments = apptProvider.filteredAppointments;
     if (appointments.isEmpty) {
-      return EmptyStateWidget(
+      return BrandedEmptyState(
         icon: Icons.calendar_today_outlined,
         title:
             AppLocalizations.of(context)?.noAppointments ?? 'No Bookings Yet',
@@ -176,6 +191,30 @@ class _UserHomePageState extends State<UserHomePage> {
       length: 2,
       child: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    greetingForHour(DateTime.now().hour),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  Text(
+                    firstName(Provider.of<AuthProvider>(context, listen: false)
+                            .currentUser
+                            ?.name ??
+                        ''),
+                    style: Theme.of(context).textTheme.displaySmall,
+                  ),
+                ],
+              ),
+            ),
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TabBar(
@@ -292,7 +331,7 @@ class _UserHomePageState extends State<UserHomePage> {
             'Your completed bookings will show up here.';
         actionButton = null;
       }
-      return EmptyStateWidget(
+      return BrandedEmptyState(
         icon: icon,
         title: title,
         subtitle: subtitle,
@@ -302,9 +341,12 @@ class _UserHomePageState extends State<UserHomePage> {
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: appointments.length,
+      itemCount: appointments.length + (isUpcoming ? 1 : 0),
       itemBuilder: (context, index) {
-        final appt = appointments[index];
+        if (index == 0 && isUpcoming) {
+          return _buildNextHero(context, appointments.first);
+        }
+        final appt = appointments[isUpcoming ? index - 1 : index];
         return AppointmentCard(
           appointment: appt,
           viewerIsCustomer: true,
@@ -312,6 +354,61 @@ class _UserHomePageState extends State<UserHomePage> {
           onCancel: () => AppointmentActions.confirmCancel(context, appt),
         );
       },
+    );
+  }
+
+  Widget _buildNextHero(BuildContext context, Appointment appt) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.inverseSurface,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Next appointment',
+            style: text.labelSmall?.copyWith(
+              color: scheme.inversePrimary,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            appt.service,
+            style: text.titleLarge?.copyWith(color: scheme.onInverseSurface),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${FormatHelper.formatDateTime(appt.dateTime)} · ${appt.professionalName ?? ''}',
+            style: text.bodyMedium?.copyWith(color: scheme.onInverseSurface),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => _navigateToReschedule(context, appt),
+                  child: const Text('Reschedule'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () =>
+                      AppointmentActions.confirmCancel(context, appt),
+                  child: const Text('Cancel'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
