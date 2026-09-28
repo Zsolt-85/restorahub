@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
+import '../config/photo_catalog.dart';
+import '../widgets/premium/brand_image.dart';
+import '../widgets/premium/entrance.dart';
 import '../helpers/appointment_actions.dart';
 import '../helpers/format_helper.dart';
 import '../l10n/app_localizations.dart';
@@ -22,6 +25,16 @@ String greetingForHour(int hour) {
   return 'Good evening';
 }
 
+/// Localized greeting mirroring [greetingForHour]'s day-part branching.
+/// Kept as a separate helper so the pure [greetingForHour] (and its unit
+/// test) stays untouched; call sites use this for customer-visible copy.
+String localizedGreetingForHour(BuildContext context, int hour) {
+  final l10n = AppLocalizations.of(context);
+  if (hour < 12) return l10n?.greetingMorning ?? 'Good morning';
+  if (hour < 18) return l10n?.greetingAfternoon ?? 'Good afternoon';
+  return l10n?.greetingEvening ?? 'Good evening';
+}
+
 String firstName(String name) {
   final token = name.trim().split(RegExp(r'\s+')).firstWhere(
         (p) => p.isNotEmpty,
@@ -31,20 +44,26 @@ String firstName(String name) {
 }
 
 class UserHomePage extends StatefulWidget {
-  const UserHomePage({super.key});
+  const UserHomePage({super.key, this.showChrome = true});
+
+  final bool showChrome;
 
   @override
   State<UserHomePage> createState() => _UserHomePageState();
 }
 
 class _UserHomePageState extends State<UserHomePage> {
+  AppointmentProvider? _appointmentProvider;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final apptProvider =
           Provider.of<AppointmentProvider>(context, listen: false);
+      _appointmentProvider = apptProvider;
       if (auth.currentUser != null) {
         apptProvider.setCurrentUser(auth.currentUser!);
         apptProvider.startRealtimeAppointments();
@@ -54,8 +73,7 @@ class _UserHomePageState extends State<UserHomePage> {
 
   @override
   void dispose() {
-    Provider.of<AppointmentProvider>(context, listen: false)
-        .stopRealtimeAppointments();
+    _appointmentProvider?.stopRealtimeAppointments();
     super.dispose();
   }
 
@@ -75,28 +93,34 @@ class _UserHomePageState extends State<UserHomePage> {
     final isCustomer = user.role == 'customer';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.dashboard ?? 'Dashboard'),
-        actions: const [
-          UserProfileAvatar(),
-        ],
-      ),
-      drawer: AppDrawer(user: user, auth: auth),
+      appBar: widget.showChrome
+          ? AppBar(
+              title:
+                  Text(AppLocalizations.of(context)?.dashboard ?? 'Dashboard'),
+              actions: const [
+                UserProfileAvatar(),
+              ],
+            )
+          : null,
+      drawer:
+          widget.showChrome ? AppDrawer(user: user, auth: auth) : null,
       body: _buildBody(context, apptProvider, isCustomer),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (isCustomer) {
-            _bookNow(context);
-          } else {
-            Navigator.pushNamed(context, Routes.professionalHome);
-          }
-        },
-        tooltip: isCustomer
-            ? AppLocalizations.of(context)?.bookNow ?? 'Book appointment'
-            : AppLocalizations.of(context)?.professionalContact ??
-                'Manage bookings',
-        child: Icon(isCustomer ? Icons.add : Icons.manage_accounts),
-      ),
+      floatingActionButton: widget.showChrome
+          ? FloatingActionButton(
+              onPressed: () {
+                if (isCustomer) {
+                  _bookNow(context);
+                } else {
+                  Navigator.pushNamed(context, Routes.professionalHome);
+                }
+              },
+              tooltip: isCustomer
+                  ? AppLocalizations.of(context)?.bookNow ?? 'Book appointment'
+                  : AppLocalizations.of(context)?.professionalContact ??
+                      'Manage bookings',
+              child: Icon(isCustomer ? Icons.add : Icons.manage_accounts),
+            )
+          : null,
     );
   }
 
@@ -124,8 +148,8 @@ class _UserHomePageState extends State<UserHomePage> {
                   size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
               Text(
-                AppLocalizations.of(context)?.error ??
-                    'Could not load appointments',
+                AppLocalizations.of(context)?.appointmentsLoadFail ??
+                    "We couldn't load your visits — check connection and retry.",
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -173,11 +197,15 @@ class _UserHomePageState extends State<UserHomePage> {
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appt = appointments[index];
-        return AppointmentCard(
-          appointment: appt,
-          viewerIsCustomer: isCustomer,
-          onEdit: (appt) => AppointmentActions.confirmReschedule(context, appt),
-          onCancel: () => AppointmentActions.confirmCancel(context, appt),
+        return Entrance(
+          index: index,
+          child: AppointmentCard(
+            appointment: appt,
+            viewerIsCustomer: isCustomer,
+            onEdit: (appt) =>
+                AppointmentActions.confirmReschedule(context, appt),
+            onCancel: () => AppointmentActions.confirmCancel(context, appt),
+          ),
         );
       },
     );
@@ -199,7 +227,7 @@ class _UserHomePageState extends State<UserHomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    greetingForHour(DateTime.now().hour),
+                    localizedGreetingForHour(context, DateTime.now().hour),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -261,8 +289,8 @@ class _UserHomePageState extends State<UserHomePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)?.error ??
-                'Unable to reschedule this appointment',
+            AppLocalizations.of(context)?.rescheduleOpenFail ??
+                "We couldn't open rescheduling — try again.",
           ),
         ),
       );
@@ -317,9 +345,9 @@ class _UserHomePageState extends State<UserHomePage> {
       final Widget? actionButton;
       if (isUpcoming) {
         icon = Icons.calendar_today_outlined;
-        title = loc?.noUpcomingAppointments ?? 'No upcoming appointments';
+        title = loc?.emptyUpcomingTitle ?? 'No upcoming visits';
         subtitle =
-            loc?.noUpcomingAppointmentsSubtitle ?? 'Ready for your next visit?';
+            loc?.emptyUpcomingSubtitle ?? 'Ready for your next visit?';
         actionButton = ElevatedButton(
           onPressed: () => _bookNow(context),
           child: Text(loc?.bookNow ?? 'Book Now'),
@@ -344,14 +372,20 @@ class _UserHomePageState extends State<UserHomePage> {
       itemCount: appointments.length + (isUpcoming ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == 0 && isUpcoming) {
-          return _buildNextHero(context, appointments.first);
+          return Entrance(
+            index: 0,
+            child: _buildNextHero(context, appointments.first),
+          );
         }
         final appt = appointments[isUpcoming ? index - 1 : index];
-        return AppointmentCard(
-          appointment: appt,
-          viewerIsCustomer: true,
-          onEdit: onEdit,
-          onCancel: () => AppointmentActions.confirmCancel(context, appt),
+        return Entrance(
+          index: index,
+          child: AppointmentCard(
+            appointment: appt,
+            viewerIsCustomer: true,
+            onEdit: onEdit,
+            onCancel: () => AppointmentActions.confirmCancel(context, appt),
+          ),
         );
       },
     );
@@ -370,8 +404,17 @@ class _UserHomePageState extends State<UserHomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          BrandImage(
+            catalogKey: heroImage(),
+            imageUrl: null,
+            fallbackLabel: appt.service,
+            height: 140,
+            borderRadius: 20,
+          ),
+          const SizedBox(height: 12),
           Text(
-            'Next appointment',
+            AppLocalizations.of(context)?.nextAppointment ??
+                'Next appointment',
             style: text.labelSmall?.copyWith(
               color: scheme.inversePrimary,
               letterSpacing: 1.2,

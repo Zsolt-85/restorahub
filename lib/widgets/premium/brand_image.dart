@@ -8,6 +8,7 @@ class BrandImage extends StatelessWidget {
     super.key,
     required this.imageUrl,
     required this.fallbackLabel,
+    this.catalogKey,
     this.width,
     this.height,
     this.borderRadius = 14,
@@ -16,6 +17,7 @@ class BrandImage extends StatelessWidget {
 
   final String? imageUrl;
   final String fallbackLabel;
+  final String? catalogKey;
   final double? width;
   final double? height;
   final double borderRadius;
@@ -23,6 +25,44 @@ class BrandImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (catalogKey != null && catalogKey!.startsWith('assets/')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Image.asset(
+          catalogKey!,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, _, __) => MonogramTile(
+            label: fallbackLabel,
+            size: height ?? width ?? 52,
+            borderRadius: 0,
+          ),
+        ),
+      );
+    }
+    if (catalogKey != null &&
+        catalogKey!.isNotEmpty &&
+        !catalogKey!.startsWith('assets/')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: CachedNetworkImage(
+          imageUrl: catalogKey!,
+          width: width,
+          height: height,
+          fit: fit,
+          fadeInDuration: MediaQuery.of(context).disableAnimations
+              ? Duration.zero
+              : const Duration(milliseconds: 200),
+          placeholder: (context, _) => const _ShimmerBlock(),
+          errorWidget: (context, _, __) => MonogramTile(
+            label: fallbackLabel,
+            size: height ?? width ?? 52,
+            borderRadius: 0,
+          ),
+        ),
+      );
+    }
     final url = imageUrl?.trim() ?? '';
     if (url.isEmpty) {
       return MonogramTile(
@@ -38,6 +78,9 @@ class BrandImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
+        fadeInDuration: MediaQuery.of(context).disableAnimations
+            ? Duration.zero
+            : const Duration(milliseconds: 200),
         placeholder: (context, _) => const _ShimmerBlock(),
         errorWidget: (context, _, __) => MonogramTile(
           label: fallbackLabel,

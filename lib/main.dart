@@ -22,6 +22,8 @@ import 'repositories/firestore_payment_repository.dart';
 import 'repositories/payment_repository.dart';
 import 'helpers/notification_schedule_helper.dart';
 import 'helpers/route_guard_helper.dart';
+import 'config/brand_config.dart';
+import 'config/salon_config.dart';
 import 'constants/routes.dart';
 
 import 'models/booking_summary.dart';
@@ -50,7 +52,6 @@ import 'pages/professional_manual_booking_page.dart';
 import 'pages/registration_page.dart';
 import 'pages/success_page.dart';
 import 'pages/team_management_page.dart';
-import 'pages/user_home_page.dart';
 import 'pages/services_page.dart';
 import 'pages/booking_page.dart';
 import 'pages/edit_appointment_page.dart';
@@ -63,7 +64,9 @@ import 'pages/setup_wizard_page.dart';
 import 'pages/admin_dashboard_page.dart';
 import 'pages/analytics_dashboard_page.dart';
 import 'pages/business_settings_page.dart';
+import 'pages/customer_shell.dart';
 import 'pages/earnings_report_page.dart';
+import 'pages/visits_page.dart';
 
 Future<void> main() async {
   FlutterError.onError = (details) {
@@ -110,6 +113,7 @@ Future<void> main() async {
     final setupWizardProvider = SetupWizardProvider();
 
     await themeProvider.loadTheme();
+    BrandConfig.setCurrentForTest(await BrandConfig.load());
 
     final hasSession = await authProvider.restoreSession();
     if (hasSession && authProvider.currentUser != null) {
@@ -122,6 +126,20 @@ Future<void> main() async {
             await businessRepo.getBusinessById(currentUser.businessId!);
         if (business != null) {
           businessProvider.setBusiness(business);
+        }
+      } else if ((currentUser.businessId == null ||
+              currentUser.businessId!.isEmpty) &&
+          currentUser.roleEnum != null) {
+        final fallbackId = RouteGuardHelper.resolveDefaultBusinessId(
+          userBusinessId: currentUser.businessId,
+          userRole: currentUser.roleEnum!,
+          configuredDefault: SalonConfig.defaultBusinessId,
+        );
+        if (fallbackId != null) {
+          final business = await businessRepo.getBusinessById(fallbackId);
+          if (business != null) {
+            businessProvider.setBusiness(business);
+          }
         }
       }
     } else {
@@ -294,7 +312,11 @@ Widget buildRouteWidget(
     case Routes.forgotPassword:
       return const ForgotPasswordPage();
     case Routes.customerHome:
-      return const UserHomePage();
+      return const CustomerShell();
+    case Routes.customerShell:
+      return const CustomerShell();
+    case Routes.visits:
+      return const VisitsPage();
     case Routes.professionalHome:
       return const ProfessionalBookingManagementPage();
     case Routes.professionalManualBooking:

@@ -47,6 +47,10 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    - assets/images/stock/
+    - assets/brand/maya.json
+    - assets/fonts/
   fonts:
     - family: Inter
       fonts:

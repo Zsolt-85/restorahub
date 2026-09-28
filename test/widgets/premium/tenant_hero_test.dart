@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:restorahub/config/brand_config.dart';
 import 'package:restorahub/models/business.dart';
 import 'package:restorahub/providers/business_provider.dart';
 import 'package:restorahub/widgets/premium/tenant_hero.dart';
@@ -41,6 +42,31 @@ void main() {
       );
       expect(find.text('Restore by Maya'), findsOneWidget);
       expect(find.text('R'), findsOneWidget);
+    });
+
+    testWidgets('shows JSON name when business is null', (tester) async {
+      BrandConfig.setCurrentForTest(
+        await BrandConfig.load(
+          jsonString:
+              '{"displayName":"JSON Salon","tagline":"JSON tagline"}',
+        ),
+      );
+      addTearDown(() async {
+        BrandConfig.setCurrentForTest(
+          await BrandConfig.load(jsonString: '{}'),
+        );
+      });
+      final provider = BusinessProvider();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChangeNotifierProvider<BusinessProvider>.value(
+            value: provider,
+            child: const Scaffold(body: TenantHero()),
+          ),
+        ),
+      );
+      expect(find.text('JSON Salon'), findsOneWidget);
+      expect(find.text('JSON tagline'), findsOneWidget);
     });
   });
 }

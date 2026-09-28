@@ -8,6 +8,7 @@ class ProProfileHeader extends StatelessWidget {
     required this.name,
     this.specialty,
     this.imageUrl,
+    this.catalogKey,
     this.rating,
     this.selected = false,
     this.onTap,
@@ -16,6 +17,7 @@ class ProProfileHeader extends StatelessWidget {
   final String name;
   final String? specialty;
   final String? imageUrl;
+  final String? catalogKey;
   final double? rating;
   final bool selected;
   final VoidCallback? onTap;
@@ -47,6 +49,7 @@ class ProProfileHeader extends StatelessWidget {
         child: Row(
           children: [
             BrandImage(
+              catalogKey: catalogKey,
               imageUrl: imageUrl,
               fallbackLabel: name,
               width: 52,

@@ -65,8 +65,13 @@ void main() {
       expect(find.textContaining('Massage'), findsWidgets);
     });
 
-    testWidgets('Book another returns to services', (tester) async {
-      await _pump(
+    testWidgets('greets with warm see-you-soon copy', (tester) async {
+      await _pump(tester, const SuccessPage());
+
+      expect(find.text('See you soon'), findsOneWidget);
+    });
+
+    testWidgets('Book another returns to services', (tester) async {      await _pump(
         tester,
         SuccessPage(summary: _summary(price: 50.0)),
         routes: {

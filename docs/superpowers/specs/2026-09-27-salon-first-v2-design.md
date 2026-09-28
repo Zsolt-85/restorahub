@@ -46,7 +46,7 @@ P1 delivered premium components, but the app still feels like booking *software*
 ## 6. Photo catalog
 
 - `assets/images/stock/`: ~10 bundled spa/salon photos (massage, facial, nails, hair, stones, salon interior, 2–3 staff portraits, 1 hero). Sourced at implementation time from Unsplash (license permits app use); exact filenames recorded in the plan. Declared in `pubspec.yaml` assets.
-- `lib/config/photo_catalog.dart`: `photoForService(String serviceName, String? category)` keyword map + `staffAvatar(int index)` rotation + `heroImage()`; pure functions, unit-tested.
+- `lib/config/photo_catalog.dart`: `photoForService(String serviceName)` keyword map + `staffAvatar(int index)` rotation + `heroImage()`; pure functions, unit-tested.
 - `BrandImage` gains optional `catalogKey` param (falls back to current `imageUrl` → monogram chain; signature additive only).
 - Service wizard/discovery passes `photoForService(...)`; pro rows pass `staffAvatar(...)`; home hero passes `heroImage()`. When brand JSON (Ingredient 7) supplies URL overrides, catalog returns those instead (network path via existing `CachedNetworkImage`).
 

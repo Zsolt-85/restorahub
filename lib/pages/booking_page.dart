@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/routes.dart';
+import '../config/photo_catalog.dart';
 import '../widgets/tenant_brand_header.dart';
 import '../exceptions/app_exception.dart';
 import '../helpers/format_helper.dart';
@@ -21,6 +23,7 @@ import '../repositories/user_repository.dart';
 import '../utils/app_logger.dart';
 import '../utils/error_handler.dart';
 import '../widgets/premium/app_error_banner.dart';
+import '../widgets/premium/entrance.dart';
 import '../widgets/premium/pro_profile_header.dart';
 import '../widgets/premium/service_card.dart';
 import '../widgets/premium/time_slot_picker.dart';
@@ -117,7 +120,14 @@ class _BookingPageState extends State<BookingPage> {
       final appt = await apptProvider.getAppointmentById(widget.appointmentId!);
       if (appt == null) {
         if (!mounted) return;
-        setState(() => _error = 'Failed to load appointment details');
+        // ignore: use_build_context_synchronously
+        final bookingLoadFail =
+            AppLocalizations.of(context)?.bookingLoadFail ??
+                "We couldn't load this booking — pull down to retry.";
+        setState(() {
+          _error = bookingLoadFail;
+          _loadingProfessionals = false;
+        });
         return;
       }
 
@@ -152,7 +162,10 @@ class _BookingPageState extends State<BookingPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = 'Failed to load appointment details');
+      // ignore: use_build_context_synchronously
+      final bookingLoadFail = AppLocalizations.of(context)?.bookingLoadFail ??
+          "We couldn't load this booking — pull down to retry.";
+      setState(() => _error = bookingLoadFail);
     } finally {
       if (mounted) setState(() => _loadingAppointment = false);
     }
@@ -382,19 +395,23 @@ class _BookingPageState extends State<BookingPage> {
           itemCount: servicesToShow.length,
           itemBuilder: (context, index) {
             final service = servicesToShow[index];
-            return ServiceCard(
-              service: service,
-              imageUrl: null,
-              rating: null,
-              onTap: () {
-                setState(() {
-                  _selectedService = service;
-                  _step = 1;
-                });
-                if (_selectedProfessional != null) {
-                  _recalculateEndTime(_selectedProfessional!);
-                }
-              },
+            return Entrance(
+              index: index,
+              child: ServiceCard(
+                service: service,
+                catalogKey: photoForService(service.name),
+                imageUrl: null,
+                rating: null,
+                onTap: () {
+                  setState(() {
+                    _selectedService = service;
+                    _step = 1;
+                  });
+                  if (_selectedProfessional != null) {
+                    _recalculateEndTime(_selectedProfessional!);
+                  }
+                },
+              ),
             );
           },
         );
@@ -432,16 +449,17 @@ class _BookingPageState extends State<BookingPage> {
           ),
         ),
         const SizedBox(height: 8),
-        ..._professionals.map(
-          (pro) => Padding(
+        ..._professionals.asMap().entries.map(
+          (entry) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: ProProfileHeader(
-              name: pro.name,
-              specialty: pro.category,
+              name: entry.value.name,
+              specialty: entry.value.category,
+              catalogKey: staffAvatar(entry.key),
               imageUrl: null,
               rating: null,
-              selected: _selectedProfessional?.id == pro.id,
-              onTap: () => _selectProfessional(pro),
+              selected: _selectedProfessional?.id == entry.value.id,
+              onTap: () => _selectProfessional(entry.value),
             ),
           ),
         ),
@@ -467,7 +485,8 @@ class _BookingPageState extends State<BookingPage> {
         children: [
           ElevatedButton(
             onPressed: canProceed ? () => setState(() => _step++) : null,
-            child: const Text('Next'),
+            child: Text(
+                AppLocalizations.of(context)?.wizardNext ?? 'Next'),
           ),
           if (!canProceed && blockerReason != null) ...[
             const SizedBox(height: 8),
@@ -850,6 +869,7 @@ class _BookingPageState extends State<BookingPage> {
             else if (_step == 1)
               _buildProfessionalStep(context),
             if (_step == 0) ...[
+              if (_error != null) AppErrorBanner(message: _error!),
               const SizedBox(height: 12),
               Text(
                 AppLocalizations.of(context)?.selectService ?? 'Select service',
@@ -1031,16 +1051,19 @@ class _BookingPageState extends State<BookingPage> {
                 // marked unavailable here (adapted shape only). onSelect keeps
                 // the old onChanged lines, including end-time recalculation
                 // and validation.
-                return TimeSlotPicker(
-                  slots: availableStarts,
-                  unavailable: const {},
-                  selected: availableStarts.contains(_startTime)
-                      ? _startTime
-                      : null,
-                  onSelect: (t) {
-                    setState(() => _startTime = t);
-                    _recalculateEndTime(professional);
-                  },
+                return Entrance(
+                  index: 0,
+                  child: TimeSlotPicker(
+                    slots: availableStarts,
+                    unavailable: const {},
+                    selected: availableStarts.contains(_startTime)
+                        ? _startTime
+                        : null,
+                    onSelect: (t) {
+                      setState(() => _startTime = t);
+                      _recalculateEndTime(professional);
+                    },
+                  ),
                 );
               }),
               const SizedBox(height: 12),
@@ -1196,6 +1219,7 @@ class _BookingPageState extends State<BookingPage> {
                                   ));
                                 navigator.pop(true);
                               } else {
+                                HapticFeedback.lightImpact();
                                 await apptProvider.addAppointment(newAppt);
 
                                 if (!mounted) return;

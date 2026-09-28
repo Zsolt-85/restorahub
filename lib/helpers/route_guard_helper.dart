@@ -81,6 +81,23 @@ class RouteGuardHelper {
     return null;
   }
 
+  static String? resolveDefaultBusinessId({
+    required String? userBusinessId,
+    required Role userRole,
+    required String? configuredDefault,
+  }) {
+    if (userBusinessId != null && userBusinessId.isNotEmpty) {
+      return userBusinessId;
+    }
+    if (userRole == Role.superAdmin || userRole == Role.businessAdmin) {
+      return null;
+    }
+    if (configuredDefault == null || configuredDefault.isEmpty) {
+      return null;
+    }
+    return configuredDefault;
+  }
+
   static bool _isAdminRoute(String route) {
     const adminRoutes = <String>{
       Routes.adminDashboard,

@@ -36,10 +36,11 @@ class _PastAppointmentsPageState extends State<PastAppointmentsPage> {
       body: pastAppointments.isEmpty
           ? BrandedEmptyState(
               icon: Icons.history,
-              title: AppLocalizations.of(context)?.noAppointments ??
+              title: AppLocalizations.of(context)?.noAppointmentHistory ??
                   'No past appointments',
-              subtitle: AppLocalizations.of(context)?.history ??
-                  'Completed and cancelled appointments will appear here',
+              subtitle:
+                  AppLocalizations.of(context)?.noAppointmentHistorySubtitle ??
+                      'Your completed bookings will show up here.',
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),

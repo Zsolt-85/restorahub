@@ -32,4 +32,6 @@ class Routes {
   static const analyticsDashboard = '/admin/analytics';
   // Professional earnings report (EarningsReportPage). Admin/staff route.
   static const earningsReport = '/earnings_report';
+  static const customerShell = '/home';
+  static const visits = '/visits';
 }

@@ -27,5 +27,19 @@ void main() {
       );
       expect(find.byIcon(Icons.check), findsOneWidget);
     });
+
+    testWidgets('catalogKey renders an Image widget', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ProProfileHeader(
+              name: 'Elena',
+              catalogKey: 'assets/images/stock/staff-elena.jpg',
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(Image), findsOneWidget);
+    });
   });
 }

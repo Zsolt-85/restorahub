@@ -525,6 +525,74 @@ void main() {
       );
       expect(redirect, Routes.adminDashboard);
     });
+
+    group('resolveDefaultBusinessId', () {
+      test('user business id wins when present', () {
+        expect(
+          RouteGuardHelper.resolveDefaultBusinessId(
+            userBusinessId: 'b-user',
+            userRole: Role.customer,
+            configuredDefault: 'b-maya',
+          ),
+          'b-user',
+        );
+      });
+
+      test('configured default fills gap for customers', () {
+        expect(
+          RouteGuardHelper.resolveDefaultBusinessId(
+            userBusinessId: null,
+            userRole: Role.customer,
+            configuredDefault: 'b-maya',
+          ),
+          'b-maya',
+        );
+      });
+
+      test('empty user business id also falls back', () {
+        expect(
+          RouteGuardHelper.resolveDefaultBusinessId(
+            userBusinessId: '',
+            userRole: Role.customer,
+            configuredDefault: 'b-maya',
+          ),
+          'b-maya',
+        );
+      });
+
+      test('null default preserves current behavior', () {
+        expect(
+          RouteGuardHelper.resolveDefaultBusinessId(
+            userBusinessId: null,
+            userRole: Role.customer,
+            configuredDefault: null,
+          ),
+          isNull,
+        );
+      });
+
+      test('super admins never get a default business', () {
+        expect(
+          RouteGuardHelper.resolveDefaultBusinessId(
+            userBusinessId: null,
+            userRole: Role.superAdmin,
+            configuredDefault: 'b-maya',
+          ),
+          isNull,
+        );
+      });
+
+      test('business admins keep existing behavior', () {
+        expect(
+          RouteGuardHelper.resolveDefaultBusinessId(
+            userBusinessId: null,
+            userRole: Role.businessAdmin,
+            configuredDefault: 'b-maya',
+          ),
+          isNull,
+        );
+      });
+    });
   });
 
   group('Role x route matrix', () {

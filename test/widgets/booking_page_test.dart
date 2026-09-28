@@ -8,6 +8,7 @@ import 'package:restorahub/models/notification.dart';
 import 'package:restorahub/models/service.dart';
 import 'package:restorahub/models/user.dart';
 import 'package:restorahub/pages/booking_page.dart';
+import 'package:restorahub/widgets/premium/app_error_banner.dart';
 import 'package:restorahub/widgets/premium/pro_profile_header.dart';
 import 'package:restorahub/widgets/premium/service_card.dart';
 import 'package:restorahub/widgets/premium/time_slot_picker.dart';
@@ -483,6 +484,54 @@ void main() {
 
       expect(find.text('Fully booked for this day — pick another date'),
           findsOneWidget);
+    });
+
+    testWidgets('reschedule with missing appointment shows error, no spinner',
+        (tester) async {
+      final auth = AuthProvider(userRepository: FakeUserRepository());
+      auth.currentUser = User(
+        id: 'cust-1',
+        name: 'Customer',
+        email: 'cust@test.com',
+        phone: '555',
+        role: 'customer',
+      );
+      final appointmentProvider = AppointmentProvider(
+        bookingRepository: FakeBookingRepository(),
+        userRepository: FakeUserRepository(),
+        notificationRepository: FakeNotificationRepository(),
+        businessRepository: FakeBusinessRepository(),
+      );
+      appointmentProvider.currentUser = auth.currentUser;
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AuthProvider>.value(value: auth),
+            ChangeNotifierProvider<AppointmentProvider>.value(
+                value: appointmentProvider),
+            ChangeNotifierProvider<ServiceProvider>(
+                create: (_) => ServiceProvider(
+                    repository: FakeServiceRepository(services: const []))),
+            ChangeNotifierProvider<BusinessProvider>.value(
+                value: BusinessProvider()..setBusiness(null)),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Provider<StaffDirectoryRepository>.value(
+                value: FakeStaffDirectoryRepository(const []),
+                child: const BookingPage(
+                    category: 'Massage',
+                    appointmentId: 'missing-appt'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppErrorBanner), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
   });
 }

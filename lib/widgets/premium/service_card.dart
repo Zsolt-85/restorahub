@@ -9,12 +9,14 @@ class ServiceCard extends StatelessWidget {
     super.key,
     required this.service,
     this.imageUrl,
+    this.catalogKey,
     this.rating,
     required this.onTap,
   });
 
   final Service service;
   final String? imageUrl;
+  final String? catalogKey;
   final double? rating;
   final VoidCallback onTap;
 
@@ -44,6 +46,7 @@ class ServiceCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               BrandImage(
+                catalogKey: catalogKey,
                 imageUrl: imageUrl,
                 fallbackLabel: service.name,
                 height: 96,

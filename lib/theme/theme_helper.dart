@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/brand_config.dart';
 import '../models/business.dart';
 
 class ThemeHelper {
@@ -10,6 +11,8 @@ class ThemeHelper {
     required Brightness brightness,
     Color? surface,
     Color? onSurface,
+    String displayFont = 'Fraunces',
+    String bodyFont = 'Inter',
   }) {
     var colorScheme = ColorScheme.fromSeed(
       seedColor: seedColor,
@@ -47,26 +50,26 @@ class ThemeHelper {
       appBarTheme: const AppBarTheme(centerTitle: false),
       textTheme: baseTextTheme.copyWith(
         displayLarge:
-            baseTextTheme.displayLarge?.copyWith(fontFamily: 'Fraunces'),
+            baseTextTheme.displayLarge?.copyWith(fontFamily: displayFont),
         displayMedium:
-            baseTextTheme.displayMedium?.copyWith(fontFamily: 'Fraunces'),
+            baseTextTheme.displayMedium?.copyWith(fontFamily: displayFont),
         displaySmall:
-            baseTextTheme.displaySmall?.copyWith(fontFamily: 'Fraunces'),
+            baseTextTheme.displaySmall?.copyWith(fontFamily: displayFont),
         headlineLarge:
-            baseTextTheme.headlineLarge?.copyWith(fontFamily: 'Fraunces'),
+            baseTextTheme.headlineLarge?.copyWith(fontFamily: displayFont),
         headlineMedium:
-            baseTextTheme.headlineMedium?.copyWith(fontFamily: 'Fraunces'),
+            baseTextTheme.headlineMedium?.copyWith(fontFamily: displayFont),
         headlineSmall:
-            baseTextTheme.headlineSmall?.copyWith(fontFamily: 'Fraunces'),
+            baseTextTheme.headlineSmall?.copyWith(fontFamily: displayFont),
         bodyLarge: baseTextTheme.bodyLarge?.copyWith(
-          fontFamily: 'Inter',
+          fontFamily: bodyFont,
           fontSize: 16,
         ),
-        bodyMedium: baseTextTheme.bodyMedium?.copyWith(fontFamily: 'Inter'),
-        bodySmall: baseTextTheme.bodySmall?.copyWith(fontFamily: 'Inter'),
-        labelLarge: baseTextTheme.labelLarge?.copyWith(fontFamily: 'Inter'),
-        labelMedium: baseTextTheme.labelMedium?.copyWith(fontFamily: 'Inter'),
-        labelSmall: baseTextTheme.labelSmall?.copyWith(fontFamily: 'Inter'),
+        bodyMedium: baseTextTheme.bodyMedium?.copyWith(fontFamily: bodyFont),
+        bodySmall: baseTextTheme.bodySmall?.copyWith(fontFamily: bodyFont),
+        labelLarge: baseTextTheme.labelLarge?.copyWith(fontFamily: bodyFont),
+        labelMedium: baseTextTheme.labelMedium?.copyWith(fontFamily: bodyFont),
+        labelSmall: baseTextTheme.labelSmall?.copyWith(fontFamily: bodyFont),
       ),
       chipTheme: _buildChipTheme(colorScheme),
       elevatedButtonTheme: _buildElevatedButtonTheme(colorScheme),
@@ -75,8 +78,22 @@ class ThemeHelper {
   }
 
   static ThemeData generateTenantTheme(BusinessBranding? branding, {bool isDark = false}) {
-    final seedColor = _parseHexColor(branding?.primaryColor) ?? _defaultPrimaryColor;
-    final brightness = _resolveBrightness(branding?.themeMode, isDark);
+    if (branding == null) {
+      // No Firestore branding: fall back to the BrandConfig runtime
+      // (assets/brand/maya.json mirror) instead of hardcoded literals.
+      final config = BrandConfig.current;
+      final seedColor =
+          _parseHexColor(config.seedColorHex) ?? _defaultPrimaryColor;
+      final brightness = _resolveBrightness(null, isDark);
+      return buildThemeData(
+        seedColor: seedColor,
+        brightness: brightness,
+        displayFont: config.displayFont,
+        bodyFont: config.bodyFont,
+      );
+    }
+    final seedColor = _parseHexColor(branding.primaryColor) ?? _defaultPrimaryColor;
+    final brightness = _resolveBrightness(branding.themeMode, isDark);
     return buildThemeData(seedColor: seedColor, brightness: brightness);
   }
 

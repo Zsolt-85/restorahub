@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/brand_config.dart';
 import '../../providers/business_provider.dart';
 import 'brand_image.dart';
 
@@ -10,10 +11,10 @@ class TenantHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final business = context.watch<BusinessProvider>().currentBusiness;
-    final name = business?.name ?? 'RestoraHub';
+    final name = business?.name ?? BrandConfig.current.displayName;
     final logoUrl =
         business?.branding?.logo ?? business?.logoUrl;
-    final tagline = business?.address ?? 'Beauty & wellness bookings';
+    final tagline = business?.address ?? BrandConfig.current.tagline;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

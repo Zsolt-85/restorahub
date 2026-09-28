@@ -38,5 +38,20 @@ void main() {
       );
       expect(find.text('H'), findsOneWidget);
     });
+
+    testWidgets('catalogKey renders an Image widget', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ServiceCard(
+              service: Service(name: 'Swedish Massage'),
+              catalogKey: 'assets/images/stock/massage-deep-tissue.jpg',
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(Image), findsOneWidget);
+    });
   });
 }

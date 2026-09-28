@@ -16,6 +16,8 @@ import 'package:restorahub/pages/analytics_dashboard_page.dart';
 import 'package:restorahub/pages/analytics_page.dart';
 import 'package:restorahub/pages/booking_page.dart';
 import 'package:restorahub/pages/business_settings_page.dart';
+import 'package:restorahub/pages/customer_shell.dart';
+import 'package:restorahub/pages/visits_page.dart';
 import 'package:restorahub/pages/earnings_report_page.dart';
 import 'package:restorahub/pages/edit_appointment_page.dart';
 import 'package:restorahub/pages/forgot_password_page.dart';
@@ -33,7 +35,6 @@ import 'package:restorahub/pages/setup_wizard_page.dart';
 import 'package:restorahub/pages/success_page.dart';
 import 'package:restorahub/pages/super_admin_dashboard_page.dart';
 import 'package:restorahub/pages/team_management_page.dart';
-import 'package:restorahub/pages/user_home_page.dart';
 import 'package:restorahub/providers/auth_provider.dart';
 import 'package:restorahub/providers/business_provider.dart';
 import 'package:restorahub/providers/notification_provider.dart';
@@ -135,7 +136,11 @@ void main() {
         Routes.login: LoginPage,
         Routes.register: RegistrationPage,
         Routes.forgotPassword: ForgotPasswordPage,
-        Routes.customerHome: UserHomePage,
+        // Spec §4: the CustomerShell IS the customer home (it embeds
+        // UserHomePage as its Home tab); /user_home must land on the shell.
+        Routes.customerHome: CustomerShell,
+        Routes.customerShell: CustomerShell,
+        Routes.visits: VisitsPage,
         Routes.professionalHome: ProfessionalBookingManagementPage,
         Routes.professionalManualBooking: ProfessionalManualBookingPage,
         Routes.services: ServicesPage,
@@ -160,6 +165,16 @@ void main() {
         expect(widget.runtimeType, entry.value,
             reason: 'route ${entry.key} should build ${entry.value}');
       }
+    });
+
+    testWidgets('customerHome lands on the shell (spec §4)', (tester) async {
+      final context = await _testContext(tester);
+      // Spec §4: the shell IS the customer home; it embeds UserHomePage
+      // as its Home tab, so /user_home must build CustomerShell.
+      expect(
+          buildRouteWidget(context, Routes.customerHome,
+              const RouteSettings(name: Routes.customerHome)),
+          isA<CustomerShell>());
     });
 
     testWidgets('booking route handles all argument shapes', (tester) async {

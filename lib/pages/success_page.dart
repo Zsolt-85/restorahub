@@ -124,7 +124,7 @@ class _SuccessPageState extends State<SuccessPage> {
               ),
               const SizedBox(height: 20),
               Text(
-                'See you soon',
+                AppLocalizations.of(context)?.seeYouSoon ?? 'See you soon',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.displaySmall,
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:restorahub/config/brand_config.dart';
 import 'package:restorahub/models/business.dart';
 import 'package:restorahub/theme/theme_helper.dart';
 
@@ -102,6 +103,31 @@ void main() {
       expect(theme.textTheme.bodyLarge?.fontFamily, contains('Inter'));
       expect(theme.textTheme.bodyLarge?.fontSize, 16);
       expect(theme.cardTheme.shape, isA<RoundedRectangleBorder>());
+    });
+
+    test('null branding uses BrandConfig seed and fonts', () async {
+      BrandConfig.setCurrentForTest(
+        await BrandConfig.load(
+          jsonString:
+              '{"seedColor":"#123456","displayFont":"TestDisplay","bodyFont":"TestBody"}',
+        ),
+      );
+      addTearDown(() async {
+        BrandConfig.setCurrentForTest(
+          await BrandConfig.load(jsonString: '{}'),
+        );
+      });
+      final theme = ThemeHelper.generateTenantTheme(null);
+
+      expect(theme.textTheme.displayLarge?.fontFamily, 'TestDisplay');
+      expect(theme.textTheme.bodyLarge?.fontFamily, 'TestBody');
+      expect(
+        theme.colorScheme.primary,
+        ColorScheme.fromSeed(
+          seedColor: const Color(0x123456FF),
+          brightness: Brightness.light,
+        ).primary,
+      );
     });
   });
 }

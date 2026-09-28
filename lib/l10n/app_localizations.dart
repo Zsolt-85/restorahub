@@ -102,6 +102,72 @@ abstract class AppLocalizations {
     Locale('ro')
   ];
 
+  /// No description provided for @greetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get greetingMorning;
+
+  /// No description provided for @greetingAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon'**
+  String get greetingAfternoon;
+
+  /// No description provided for @greetingEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get greetingEvening;
+
+  /// No description provided for @nextAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Next appointment'**
+  String get nextAppointment;
+
+  /// No description provided for @seeYouSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'See you soon'**
+  String get seeYouSoon;
+
+  /// No description provided for @wizardNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get wizardNext;
+
+  /// No description provided for @bookingLoadFail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load this booking — pull down to retry.'**
+  String get bookingLoadFail;
+
+  /// No description provided for @appointmentsLoadFail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your visits — check connection and retry.'**
+  String get appointmentsLoadFail;
+
+  /// No description provided for @rescheduleOpenFail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t open rescheduling — try again.'**
+  String get rescheduleOpenFail;
+
+  /// No description provided for @emptyUpcomingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming visits'**
+  String get emptyUpcomingTitle;
+
+  /// No description provided for @emptyUpcomingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for your next visit?'**
+  String get emptyUpcomingSubtitle;
+
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:

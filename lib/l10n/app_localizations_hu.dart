@@ -9,6 +9,42 @@ class AppLocalizationsHu extends AppLocalizations {
   AppLocalizationsHu([String locale = 'hu']) : super(locale);
 
   @override
+  String get greetingMorning => 'Good morning';
+
+  @override
+  String get greetingAfternoon => 'Good afternoon';
+
+  @override
+  String get greetingEvening => 'Good evening';
+
+  @override
+  String get nextAppointment => 'Next appointment';
+
+  @override
+  String get seeYouSoon => 'See you soon';
+
+  @override
+  String get wizardNext => 'Next';
+
+  @override
+  String get bookingLoadFail =>
+      'We couldn\'t load this booking — pull down to retry.';
+
+  @override
+  String get appointmentsLoadFail =>
+      'We couldn\'t load your visits — check connection and retry.';
+
+  @override
+  String get rescheduleOpenFail =>
+      'We couldn\'t open rescheduling — try again.';
+
+  @override
+  String get emptyUpcomingTitle => 'No upcoming visits';
+
+  @override
+  String get emptyUpcomingSubtitle => 'Ready for your next visit?';
+
+  @override
   String get appTitle => 'RestoraHub';
 
   @override
