@@ -434,6 +434,18 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               keyboardType: TextInputType.phone,
             ),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.settings_outlined),
+              title: Text(
+                AppLocalizations.of(context)?.settings ?? 'Settings',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.pushNamed(context, Routes.settings),
+            ),
+            const SizedBox(height: 16),
             if (user.isStaff) ...[
               const SizedBox(height: 24),
               Text(
